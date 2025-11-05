@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil - Medicare{% endblock %}
+
+{% block content %}
+<h2>Bienvenue sur Medicare Booking</h2>
+<p>La plateforme de rendez-vous médicaux simple et efficace</p>
+
+<div style="margin: 2rem 0;">
+    <a href="/prendre-rdv" class="btn">📅 Prendre Rendez-vous</a>
+    <a href="/medecins" class="btn" style="background: #28a745;">👨‍⚕️ Trouver un Médecin</a>
+    <a href="/mes-rdv" class="btn" style="background: #ffc107; color: black;">📋 Mes Rendez-vous</a>
+</div>
+
+<div class="features">
+    <h3>✨ Nos Services</h3>
+    <ul>
+        <li>✅ Recherche de médecins par spécialité</li>
+        <li>✅ Prise de rendez-vous en ligne</li>
+        <li>✅ Gestion de votre profil</li>
+        <li>✅ Rappels par email</li>
+    </ul>
+</div>
+{% endblock %}
