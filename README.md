@@ -1,8 +1,8 @@
-# 🏥 Plateforme RDV Médicaux
+#  Plateforme RDV Médicaux
 
 Système de rendez-vous médicaux avec architecture distribuée Flask + RPC
 
-## 🚀 Installation Rapide
+##  Installation Rapide
 
 ```bash
 # 1. Cloner le projet
