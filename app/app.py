@@ -2,6 +2,11 @@ from flask import Flask, render_template
 
 app = Flask(__name__)
 
+#---zainab-----#
+@app.route('/admin/dashboard')
+def admin_dashboard():
+    return render_template('admin/dashboard.html')
+#---zainab-----#
 @app.route('/')
 def accueil():
     return render_template('patient/accueil.html')
