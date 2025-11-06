@@ -6,6 +6,9 @@ app = Flask(__name__)
 @app.route('/admin/dashboard')
 def admin_dashboard():
     return render_template('admin/dashboard.html')
+@app.route('/admin/medecins')
+def admin_medecins():
+    return render_template('admin/medecins.html')
 #---zainab-----#
 @app.route('/')
 def accueil():
