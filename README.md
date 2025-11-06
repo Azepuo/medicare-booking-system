@@ -18,6 +18,5 @@ python scripts/setup_database.py
 # 4. Démarrer l'application
 python app/app.py
 
-
 # Tester la connexion
 python -c "from database.connection import test_connection; test_connection()"
