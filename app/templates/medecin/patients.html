@@ -1,0 +1,123 @@
+{% extends "medecin/base.html" %}
+
+{% block title %}Patients • Médecin{% endblock %}
+
+{% block body_id %}patients-page{% endblock %}
+
+{% block content %}
+<div class="header-row">
+  <h1 class="h1">Gestion des Patients</h1>
+  <button class="btn" id="addPatientBtn">
+    <i class="fas fa-plus"></i> Nouveau Patient
+  </button>
+</div>
+
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Nom</th>
+        <th>Email</th>
+        <th>Téléphone</th>
+        <th>Dernière Visite</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Marie Dupont</td>
+        <td>marie.dupont@email.com</td>
+        <td>01 23 45 67 89</td>
+        <td>2024-01-15</td>
+        <td>
+          <button class="btn secondary" onclick="viewPatient(1)">
+            <i class="fas fa-eye"></i> Voir
+          </button>
+        </td>
+      </tr>
+      <tr>
+        <td>Pierre Martin</td>
+        <td>pierre.martin@email.com</td>
+        <td>01 34 56 78 90</td>
+        <td>2024-01-14</td>
+        <td>
+          <button class="btn secondary" onclick="viewPatient(2)">
+            <i class="fas fa-eye"></i> Voir
+          </button>
+        </td>
+      </tr>
+      <tr>
+        <td>Sophie Lambert</td>
+        <td>sophie.lambert@email.com</td>
+        <td>01 45 67 89 01</td>
+        <td>2024-01-13</td>
+        <td>
+          <button class="btn secondary" onclick="viewPatient(3)">
+            <i class="fas fa-eye"></i> Voir
+          </button>
+        </td>
+      </tr>
+    
+    </tbody>
+  </table>
+</div>
+
+<!-- Statistiques des patients -->
+<div class="grid" style="margin-top: 20px;">
+  <div class="card">
+    <h3>Total Patients</h3>
+    <p>128</p>
+  </div>
+  <div class="card">
+    <h3>Nouveaux ce Mois</h3>
+    <p>15</p>
+  </div>
+  <div class="card">
+    <h3>Prochains RDV</h3>
+    <p>8</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function viewPatient(id) {
+  // Simulation - vous pouvez rediriger vers une page détaillée du patient
+  alert(`Ouverture du dossier patient #${id}`);
+  
+  // Exemple de redirection :
+  // window.location.href = `/medecin/patient/${id}`;
+}
+
+document.getElementById('addPatientBtn').addEventListener('click', function() {
+  // Simulation - vous pouvez ouvrir un formulaire modal
+  const patientName = prompt('Nom du nouveau patient:');
+  const patientEmail = prompt('Email du patient:');
+  
+  if (patientName && patientEmail) {
+    alert(`Nouveau patient "${patientName}" ajouté avec succès!`);
+    // Ici vous feriez un appel API pour créer le patient
+  }
+});
+
+// Recherche en temps réel
+document.getElementById('searchInput').addEventListener('input', function(e) {
+  const searchTerm = e.target.value.toLowerCase();
+  const rows = document.querySelectorAll('.table tbody tr');
+  
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    if (text.includes(searchTerm)) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+});
+
+// Chargement initial
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('Page patients chargée');
+});
+</script>
+{% endblock %}

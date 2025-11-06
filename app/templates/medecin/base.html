@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Medicare - Espace Médecin{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/medecin.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app">
+        <!-- Sidebar Verticale -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div style="width:44px;height:44px;background:var(--blue-500);border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">
+                    <i class="fas fa-stethoscope"></i>
+                </div>
+                <h1>Medicare</h1>
+            </div>
+            <nav>
+                <a href="{{ url_for('dashboard_medecin') }}" class="nav-link {% if request.endpoint == 'dashboard_medecin' %}active{% endif %}">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </a>
+                <a href="{{ url_for('rdv_du_jour') }}" class="nav-link {% if request.endpoint == 'rdv_du_jour' %}active{% endif %}">
+                    <i class="fas fa-calendar-day"></i> RDV du jour
+                </a>
+                <a href="{{ url_for('agenda') }}" class="nav-link {% if request.endpoint == 'agenda' %}active{% endif %}">
+                    <i class="fas fa-calendar-alt"></i> Agenda
+                </a>
+                <a href="{{ url_for('disponibilites') }}" class="nav-link {% if request.endpoint == 'disponibilites' %}active{% endif %}">
+                    <i class="fas fa-clock"></i> Disponibilités
+                </a>
+              
+                <a href="{{ url_for('patients') }}" class="nav-link {% if request.endpoint == 'patients' %}active{% endif %}">
+                    <i class="fas fa-users"></i> Patients
+                </a>
+                <a href="{{ url_for('avis') }}" class="nav-link {% if request.endpoint == 'avis' %}active{% endif %}">
+                    <i class="fas fa-star"></i> Avis
+                </a>
+                <a href="{{ url_for('chat') }}" class="nav-link {% if request.endpoint == 'chat' %}active{% endif %}">
+                    <i class="fas fa-comments"></i> Chat
+                </a>
+                <a href="{{ url_for('profil') }}" class="nav-link {% if request.endpoint == 'profil' %}active{% endif %}">
+                    <i class="fas fa-user-md"></i> Profil
+                </a>
+                <button class="btn-ghost" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Se déconnecter
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Contenu Principal -->
+        <main class="main">
+            <header class="topbar">
+                <div class="search">
+                    <input type="text" placeholder="Rechercher patients / rdv...">
+                </div>
+                <div class="profile">
+                    <span>Dr. Jean Martin</span>
+                    <div style="width:40px;height:40px;background:var(--blue-500);border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">
+                        JM
+                    </div>
+                </div>
+            </header>
+
+            <section class="content">
+                {% block content %}{% endblock %}
+            </section>
+        </main>
+    </div>
+
+    <script>
+        function logout() {
+            if (confirm('Voulez-vous vraiment vous déconnecter ?')) {
+                window.location.href = '/logout';
+            }
+        }
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

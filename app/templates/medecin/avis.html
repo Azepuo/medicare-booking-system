@@ -1,0 +1,523 @@
+{% extends "medecin/base.html" %}
+
+{% block title %}Avis patients • Médecin{% endblock %}
+
+{% block body_id %}avis-page{% endblock %}
+
+{% block content %}
+<div class="header-row">
+  <h1 class="h1">Avis de mes Patients</h1>
+  <div>
+    <button class="btn secondary" onclick="filterAvis('all')">
+      <i class="fas fa-star"></i> Tous les avis
+    </button>
+    <button class="btn" onclick="refreshAvis()">
+      <i class="fas fa-sync-alt"></i> Actualiser
+    </button>
+  </div>
+</div>
+
+<!-- Statistiques générales -->
+<div class="grid" style="margin-bottom: 20px;">
+  <div class="card">
+    <h3>Note Moyenne</h3>
+    <p id="averageRating" class="stat-number">4.8</p>
+    <div class="small">sur 5 étoiles</div>
+  </div>
+  <div class="card">
+    <h3>Total Avis</h3>
+    <p id="totalAvis" class="stat-number">128</p>
+    <div class="small" id="avisEvolution">+12 ce mois</div>
+  </div>
+  <div class="card">
+    <h3>Répartition</h3>
+    <p id="positiveRate" class="stat-number">94%</p>
+    <div class="small">Avis positifs</div>
+  </div>
+  <div class="card">
+    <h3>Réponse</h3>
+    <p id="responseRate" class="stat-number">78%</p>
+    <div class="small">Avis répondus</div>
+  </div>
+</div>
+
+<!-- Filtres et recherche -->
+<div class="card" style="margin-bottom: 20px;">
+  <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+    <div style="display: flex; gap: 5px;">
+      <button class="btn secondary active" onclick="filterAvis('all')">Tous</button>
+      <button class="btn secondary" onclick="filterAvis('5')">5⭐</button>
+      <button class="btn secondary" onclick="filterAvis('4')">4⭐</button>
+      <button class="btn secondary" onclick="filterAvis('3')">3⭐</button>
+      <button class="btn secondary" onclick="filterAvis('2')">2⭐</button>
+      <button class="btn secondary" onclick="filterAvis('1')">1⭐</button>
+    </div>
+    <div style="flex: 1; max-width: 300px;">
+      <input type="text" id="searchAvis" class="input" placeholder="🔍 Rechercher un avis..." />
+    </div>
+    <select id="sortAvis" class="input" style="width: 200px;" onchange="sortAvis(this.value)">
+      <option value="recent">Plus récents</option>
+      <option value="oldest">Plus anciens</option>
+      <option value="highest">Meilleures notes</option>
+      <option value="lowest">Moins bonnes notes</option>
+    </select>
+  </div>
+</div>
+
+<!-- Graphique de répartition des notes -->
+<div class="card" style="margin-bottom: 20px;">
+  <h3>Répartition des Notes</h3>
+  <div style="display: flex; align-items: center; gap: 20px;">
+    <div style="flex: 1;">
+      <div class="rating-distribution">
+        <div class="rating-bar">
+          <span>5 étoiles</span>
+          <div class="bar-container">
+            <div class="bar-fill" data-rating="5" style="width: 65%; background: #28a745;"></div>
+          </div>
+          <span>65%</span>
+        </div>
+        <div class="rating-bar">
+          <span>4 étoiles</span>
+          <div class="bar-container">
+            <div class="bar-fill" data-rating="4" style="width: 25%; background: #20c997;"></div>
+          </div>
+          <span>25%</span>
+        </div>
+        <div class="rating-bar">
+          <span>3 étoiles</span>
+          <div class="bar-container">
+            <div class="bar-fill" data-rating="3" style="width: 6%; background: #ffc107;"></div>
+          </div>
+          <span>6%</span>
+        </div>
+        <div class="rating-bar">
+          <span>2 étoiles</span>
+          <div class="bar-container">
+            <div class="bar-fill" data-rating="2" style="width: 3%; background: #fd7e14;"></div>
+          </div>
+          <span>3%</span>
+        </div>
+        <div class="rating-bar">
+          <span>1 étoile</span>
+          <div class="bar-container">
+            <div class="bar-fill" data-rating="1" style="width: 1%; background: #dc3545;"></div>
+          </div>
+          <span>1%</span>
+        </div>
+      </div>
+    </div>
+    <div style="text-align: center; min-width: 120px;">
+      <div class="average-circle">
+        <span class="average-number">4.8</span>
+        <span class="average-text">/5</span>
+      </div>
+      <div class="small" style="margin-top: 8px;">Note moyenne</div>
+    </div>
+  </div>
+</div>
+
+<!-- Liste des avis -->
+<div id="avisList" class="avis-container">
+  <!-- Avis 1 -->
+  <div class="avis-card" data-rating="5" data-date="2024-01-15">
+    <div class="avis-header">
+      <div class="patient-info">
+        <div class="patient-avatar" style="background: #0d6efd;">MD</div>
+        <div>
+          <strong>Marie Dupont</strong>
+          <div class="small">Consultation le 12/01/2024</div>
+        </div>
+      </div>
+      <div class="avis-rating">
+        <div class="stars">
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+        </div>
+        <div class="small">Il y a 3 jours</div>
+      </div>
+    </div>
+    <div class="avis-content">
+      <p>Docteur extrêmement compétent et à l'écoute. Il a pris le temps de m'expliquer mon traitement en détail. Je recommande vivement !</p>
+    </div>
+    <div class="avis-actions">
+      <button class="btn secondary" onclick="repondreAvis(1)">
+        <i class="fas fa-reply"></i> Répondre
+      </button>
+      <button class="btn secondary" onclick="signalerAvis(1)">
+        <i class="fas fa-flag"></i> Signaler
+      </button>
+    </div>
+  </div>
+
+  <!-- Avis 2 -->
+  <div class="avis-card" data-rating="4" data-date="2024-01-14">
+    <div class="avis-header">
+      <div class="patient-info">
+        <div class="patient-avatar" style="background: #1e90ff;">PM</div>
+        <div>
+          <strong>Pierre Martin</strong>
+          <div class="small">Suivi le 10/01/2024</div>
+        </div>
+      </div>
+      <div class="avis-rating">
+        <div class="stars">
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="far fa-star"></i>
+        </div>
+        <div class="small">Il y a 4 jours</div>
+      </div>
+    </div>
+    <div class="avis-content">
+      <p>Très bon médecin, professionnel et attentionné. Un peu d'attente en salle mais le temps de consultation était de qualité.</p>
+    </div>
+    <!-- Réponse du médecin -->
+    <div class="avis-reponse">
+      <div class="reponse-header">
+        <strong>Votre réponse :</strong>
+        <span class="small">Répondu le 14/01/2024</span>
+      </div>
+      <p>Merci pour votre retour Pierre. Nous travaillons à améliorer les temps d'attente. Au plaisir de vous revoir.</p>
+    </div>
+    <div class="avis-actions">
+      <button class="btn secondary" onclick="modifierReponse(2)">
+        <i class="fas fa-edit"></i> Modifier
+      </button>
+    </div>
+  </div>
+
+  <!-- Avis 3 -->
+  <div class="avis-card" data-rating="5" data-date="2024-01-13">
+    <div class="avis-header">
+      <div class="patient-info">
+        <div class="patient-avatar" style="background: #3b82f6;">SL</div>
+        <div>
+          <strong>Sophie Lambert</strong>
+          <div class="small">Urgence le 09/01/2024</div>
+        </div>
+      </div>
+      <div class="avis-rating">
+        <div class="stars">
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+        </div>
+        <div class="small">Il y a 5 jours</div>
+      </div>
+    </div>
+    <div class="avis-content">
+      <p>Exceptionnel ! Le docteur m'a reçue en urgence et m'a rassurée immédiatement. Professionnalisme et humanité rare de nos jours.</p>
+    </div>
+    <div class="avis-actions">
+      <button class="btn secondary" onclick="repondreAvis(3)">
+        <i class="fas fa-reply"></i> Répondre
+      </button>
+      <button class="btn secondary" onclick="signalerAvis(3)">
+        <i class="fas fa-flag"></i> Signaler
+      </button>
+    </div>
+  </div>
+
+  <!-- Avis 4 -->
+  <div class="avis-card" data-rating="3" data-date="2024-01-12">
+    <div class="avis-header">
+      <div class="patient-info">
+        <div class="patient-avatar" style="background: #60a5fa;">LB</div>
+        <div>
+          <strong>Luc Bernard</strong>
+          <div class="small">Bilan le 08/01/2024</div>
+        </div>
+      </div>
+      <div class="avis-rating">
+        <div class="stars">
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="far fa-star"></i>
+          <i class="far fa-star"></i>
+        </div>
+        <div class="small">Il y a 6 jours</div>
+      </div>
+    </div>
+    <div class="avis-content">
+      <p>Consultation correcte mais un peu rapide. J'aurais aimé plus d'explications sur les résultats de mon bilan.</p>
+    </div>
+    <div class="avis-actions">
+      <button class="btn secondary" onclick="repondreAvis(4)">
+        <i class="fas fa-reply"></i> Répondre
+      </button>
+      <button class="btn secondary" onclick="signalerAvis(4)">
+        <i class="fas fa-flag"></i> Signaler
+      </button>
+    </div>
+  </div>
+
+  <!-- Avis 5 -->
+  <div class="avis-card" data-rating="5" data-date="2024-01-10">
+    <div class="avis-header">
+      <div class="patient-info">
+        <div class="patient-avatar" style="background: #93c5fd;">EP</div>
+        <div>
+          <strong>Émilie Petit</strong>
+          <div class="small">Première visite le 05/01/2024</div>
+        </div>
+      </div>
+      <div class="avis-rating">
+        <div class="stars">
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+        </div>
+        <div class="small">Il y a 1 semaine</div>
+      </div>
+    </div>
+    <div class="avis-content">
+      <p>Médecin remarquable ! Très à l'écoute, explique clairement et prend le temps nécessaire. Cabinet très agréable.</p>
+    </div>
+    <div class="avis-actions">
+      <button class="btn secondary" onclick="repondreAvis(5)">
+        <i class="fas fa-reply"></i> Répondre
+      </button>
+      <button class="btn secondary" onclick="signalerAvis(5)">
+        <i class="fas fa-flag"></i> Signaler
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Pagination -->
+<div class="pagination">
+  <button class="pagination-btn" disabled>
+    <i class="fas fa-chevron-left"></i>
+  </button>
+  <button class="pagination-btn active">1</button>
+  <button class="pagination-btn">2</button>
+  <button class="pagination-btn">3</button>
+  <button class="pagination-btn">
+    <i class="fas fa-chevron-right"></i>
+  </button>
+</div>
+
+<!-- Modal de réponse -->
+<div id="reponseModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modalTitle">Répondre à l'avis</h3>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div id="modalBody">
+      <div class="avis-preview">
+        <strong id="patientName">Marie Dupont</strong>
+        <div class="stars" id="previewStars"></div>
+        <p id="previewAvis">Chargement...</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Votre réponse :</label>
+        <textarea id="reponseText" class="input" rows="4" placeholder="Votre réponse sera visible publiquement..." style="width: 100%;"></textarea>
+      </div>
+    </div>
+    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+      <button class="btn secondary" onclick="closeModal()">Annuler</button>
+      <button class="btn" onclick="envoyerReponse()">
+        <i class="fas fa-paper-plane"></i> Publier la réponse
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Données des avis (simulation)
+let avisData = [
+  { id: 1, patient: "Marie Dupont", date: "2024-01-15", consultation: "Consultation le 12/01/2024", rating: 5, 
+    comment: "Docteur extrêmement compétent et à l'écoute. Il a pris le temps de m'expliquer mon traitement en détail. Je recommande vivement !", 
+    reponse: null },
+  { id: 2, patient: "Pierre Martin", date: "2024-01-14", consultation: "Suivi le 10/01/2024", rating: 4, 
+    comment: "Très bon médecin, professionnel et attentionné. Un peu d'attente en salle mais le temps de consultation était de qualité.", 
+    reponse: "Merci pour votre retour Pierre. Nous travaillons à améliorer les temps d'attente. Au plaisir de vous revoir." },
+  { id: 3, patient: "Sophie Lambert", date: "2024-01-13", consultation: "Urgence le 09/01/2024", rating: 5, 
+    comment: "Exceptionnel ! Le docteur m'a reçue en urgence et m'a rassurée immédiatement. Professionnalisme et humanité rare de nos jours.", 
+    reponse: null },
+  { id: 4, patient: "Luc Bernard", date: "2024-01-12", consultation: "Bilan le 08/01/2024", rating: 3, 
+    comment: "Consultation correcte mais un peu rapide. J'aurais aimé plus d'explications sur les résultats de mon bilan.", 
+    reponse: null },
+  { id: 5, patient: "Émilie Petit", date: "2024-01-10", consultation: "Première visite le 05/01/2024", rating: 5, 
+    comment: "Médecin remarquable ! Très à l'écoute, explique clairement et prend le temps nécessaire. Cabinet très agréable.", 
+    reponse: null }
+];
+
+let currentAvisId = null;
+
+function refreshAvis() {
+  showLoading();
+  setTimeout(() => {
+    updateStatistics();
+    hideLoading();
+    showNotification('Avis actualisés !', 'success');
+  }, 1000);
+}
+
+function filterAvis(rating) {
+  const avisCards = document.querySelectorAll('.avis-card');
+  avisCards.forEach(card => {
+    if (rating === 'all' || card.dataset.rating === rating) {
+      card.style.display = 'block';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+
+  // Mettre à jour les boutons actifs
+  document.querySelectorAll('.btn.secondary').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+}
+
+function sortAvis(method) {
+  const container = document.getElementById('avisList');
+  const cards = Array.from(container.querySelectorAll('.avis-card'));
+
+  cards.sort((a, b) => {
+    switch(method) {
+      case 'recent':
+        return new Date(b.dataset.date) - new Date(a.dataset.date);
+      case 'oldest':
+        return new Date(a.dataset.date) - new Date(b.dataset.date);
+      case 'highest':
+        return parseInt(b.dataset.rating) - parseInt(a.dataset.rating);
+      case 'lowest':
+        return parseInt(a.dataset.rating) - parseInt(b.dataset.rating);
+      default:
+        return 0;
+    }
+  });
+
+  // Réorganiser les cartes
+  cards.forEach(card => container.appendChild(card));
+}
+
+function repondreAvis(avisId) {
+  currentAvisId = avisId;
+  const avis = avisData.find(a => a.id === avisId);
+  
+  document.getElementById('patientName').textContent = avis.patient;
+  document.getElementById('previewAvis').textContent = avis.comment;
+  
+  // Afficher les étoiles
+  const starsContainer = document.getElementById('previewStars');
+  starsContainer.innerHTML = '';
+  for (let i = 1; i <= 5; i++) {
+    const star = document.createElement('i');
+    star.className = i <= avis.rating ? 'fas fa-star' : 'far fa-star';
+    starsContainer.appendChild(star);
+  }
+  
+  document.getElementById('reponseText').value = avis.reponse || '';
+  document.getElementById('reponseModal').style.display = 'flex';
+}
+
+function modifierReponse(avisId) {
+  repondreAvis(avisId);
+}
+
+function envoyerReponse() {
+  const reponse = document.getElementById('reponseText').value;
+  if (!reponse.trim()) {
+    alert('Veuillez écrire une réponse');
+    return;
+  }
+
+  const avisIndex = avisData.findIndex(a => a.id === currentAvisId);
+  if (avisIndex !== -1) {
+    avisData[avisIndex].reponse = reponse;
+    closeModal();
+    renderAvisList();
+    updateStatistics();
+    showNotification('Réponse publiée avec succès !', 'success');
+  }
+}
+
+function signalerAvis(avisId) {
+  if (confirm('Signaler cet avis comme inapproprié ?')) {
+    showNotification('Avis signalé à l\'administration', 'warning');
+  }
+}
+
+function closeModal() {
+  document.getElementById('reponseModal').style.display = 'none';
+  currentAvisId = null;
+}
+
+function updateStatistics() {
+  const totalAvis = avisData.length;
+  const totalRating = avisData.reduce((sum, avis) => sum + avis.rating, 0);
+  const averageRating = (totalRating / totalAvis).toFixed(1);
+  const repondus = avisData.filter(avis => avis.reponse).length;
+  const responseRate = Math.round((repondus / totalAvis) * 100);
+
+  document.getElementById('averageRating').textContent = averageRating;
+  document.getElementById('totalAvis').textContent = totalAvis;
+  document.getElementById('responseRate').textContent = responseRate + '%';
+
+  // Mettre à jour le cercle de moyenne
+  document.querySelector('.average-number').textContent = averageRating;
+}
+
+function renderAvisList() {
+  // Cette fonction serait utilisée si on génère dynamiquement les avis
+  // Pour l'instant, les avis sont en HTML statique
+}
+
+function showLoading() {
+  // Implémentez un indicateur de chargement si nécessaire
+}
+
+function hideLoading() {
+  // Cacher l'indicateur de chargement
+}
+
+function showNotification(message, type) {
+  alert(message);
+}
+
+// Recherche en temps réel
+document.getElementById('searchAvis').addEventListener('input', function(e) {
+  const searchTerm = e.target.value.toLowerCase();
+  const cards = document.querySelectorAll('.avis-card');
+  
+  cards.forEach(card => {
+    const text = card.textContent.toLowerCase();
+    if (text.includes(searchTerm)) {
+      card.style.display = 'block';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+});
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+  updateStatistics();
+  
+  // Animation des barres de distribution
+  setTimeout(() => {
+    document.querySelectorAll('.bar-fill').forEach(bar => {
+      bar.style.width = bar.style.width;
+    });
+  }, 500);
+});
+</script>
+
+{% endblock %}
