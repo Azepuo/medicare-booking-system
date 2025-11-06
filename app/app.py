@@ -15,6 +15,9 @@ def admin_patients():
 @app.route('/admin/facturation')
 def admin_facturation():
     return render_template('admin/facturation.html')
+@app.route('/admin/facture_view')
+def admin_facture_view():
+    return render_template('admin/facture_view.html')
 #---zainab-----#
 @app.route('/')
 def accueil():
