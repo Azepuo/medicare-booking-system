@@ -22,8 +22,9 @@
 <header class="theheader">
     <a href="#" class="sitelogo"><h2><span>Med</span>I<span>care</span></h2></a>
     <nav class="nav">
+        <a href="/admin/dashboard">Accueil</a>
         <a href="/admin/patients">Patients</a>  
-        <a href="#">Rendez-vous</a>
+        <a href="/admin/facturation">Rendez-vous</a>
         <a href="#">Facturation</a>
         <a href="#">Statistiques</a>
     </nav>
@@ -67,7 +68,7 @@
                 <td>En conge</td>
                 <td>
                     <a href="#"><i class="material-icons" style="color: #3C91E6;" title="Edit">&#xE254;</i></a>
-                    <a onclick="return confirm('Are you sure you want to delete the announcement?')" href="#"><i class="material-icons" style="color: #3C91E6;" title="Delete">&#xE872;</i></a>
+                    <a onclick="return confirm('Voulez-vous supprimer cette facture ?')" href="#"><i class="material-icons" style="color: red;" title="Supprimer">&#xE872;</i></a>
                 </td>
             </tr>
         </table>
