@@ -9,6 +9,9 @@ def admin_dashboard():
 @app.route('/admin/medecins')
 def admin_medecins():
     return render_template('admin/medecins.html')
+@app.route('/admin/patients')
+def admin_patients():
+    return render_template('admin/patients.html')
 #---zainab-----#
 @app.route('/')
 def accueil():
