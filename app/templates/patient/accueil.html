@@ -1,24 +1,158 @@
 {% extends "base.html" %}
 
-{% block title %}Accueil - Medicare{% endblock %}
+{% block title %}Accueil - Medicare Booking{% endblock %}
+
+{% block custom_styles %}
+<style>
+    /* Styles généraux du corps et de la structure */
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f7f7f7;
+    }
+    .main-content {
+        padding: 20px;
+        max-width: 1200px;
+        margin: auto;
+    }
+
+    /* Section d'Entête : Titre et Description */
+    .welcome-section {
+        text-align: center;
+        padding: 40px 0;
+        margin-bottom: 30px;
+        background-color: #f0f7ff; /* Fond bleu clair pour l'entête */
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .display-title {
+        font-size: 2.5rem;
+        color: #0056b3;
+        margin-bottom: 10px;
+    }
+    .subtitle {
+        font-size: 1.2rem;
+        color: #555;
+    }
+
+    /* Styles pour les messages flash (après connexion, etc.) */
+    .flash-message {
+        padding: 10px;
+        margin: 15px auto;
+        border-radius: 4px;
+        max-width: 80%;
+        text-align: center;
+    }
+    .flash-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+
+
+    /* Section Boutons d'Action Clés */
+    .main-actions-container {
+        display: flex;
+        justify-content: center;
+        gap: 25px; /* Espace entre les boutons */
+        margin-bottom: 50px;
+        flex-wrap: wrap;
+    }
+    .btn-action {
+        text-decoration: none;
+        padding: 18px 35px;
+        border-radius: 8px;
+        font-weight: bold;
+        font-size: 1.1rem;
+        transition: transform 0.2s, opacity 0.2s;
+        box-shadow: 0 4px #00000033; /* Effet 3D léger */
+        min-width: 200px; /* Assure une taille minimale pour chaque bouton */
+        text-align: center;
+    }
+    .btn-action:hover {
+        transform: translateY(-3px);
+        opacity: 0.95;
+    }
+
+    /* Couleurs des boutons (basées sur l'image) */
+    .btn-blue {
+        background-color: #007bff;
+        color: white;
+    }
+    .btn-green {
+        background-color: #28a745;
+        color: white;
+    }
+    .btn-yellow {
+        background-color: #ffc107;
+        color: black;
+    }
+
+    /* Section Services (Liste à puces) */
+    .services-list {
+        max-width: 700px;
+        margin: 0 auto;
+        padding: 30px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background-color: white;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .services-list h3 {
+        color: #333;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 10px;
+    }
+    .services-list ul {
+        list-style: none;
+        padding: 0;
+        margin-top: 20px;
+    }
+    .services-list li {
+        padding: 10px 0;
+        border-bottom: 1px dotted #eee;
+        color: #444;
+        text-align: left;
+        position: relative;
+        padding-left: 25px;
+    }
+    .services-list li:before {
+        content: '✔️'; /* Utilisation d'une icône Unicode pour le style */
+        position: absolute;
+        left: 0;
+        color: #28a745;
+    }
+    .services-list li:last-child {
+        border-bottom: none;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<h2>Bienvenue sur Medicare Booking</h2>
-<p>La plateforme de rendez-vous médicaux simple et efficace</p>
+<div class="main-content">
+    
+    <header class="welcome-section">
+        <h1 class="display-title">Plateforme de Réservation Médicale</h1>
+        <p class="subtitle">Votre portail pour des soins de santé simples et rapides.</p>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </header>
 
-<div style="margin: 2rem 0;">
-    <a href="/prendre-rdv" class="btn">📅 Prendre Rendez-vous</a>
-    <a href="/medecins" class="btn" style="background: #28a745;">👨‍⚕️ Trouver un Médecin</a>
-    <a href="/mes-rdv" class="btn" style="background: #ffc107; color: black;">📋 Mes Rendez-vous</a>
-</div>
+    <div class="main-actions-container">
+        <a href="#" class="btn-action btn-blue">Prendre Rendez-vous</a>
+        <a href="#" class="btn-action btn-green">Trouver un Médecin</a>
+        <a href="#" class="btn-action btn-yellow">Mes Rendez-vous</a>
+    </div>
 
-<div class="features">
-    <h3>✨ Nos Services</h3>
-    <ul>
-        <li>✅ Recherche de médecins par spécialité</li>
-        <li>✅ Prise de rendez-vous en ligne</li>
-        <li>✅ Gestion de votre profil</li>
-        <li>✅ Rappels par email</li>
-    </ul>
+    <section class="services-list">
+        <h3>Nos Services Clés</h3>
+        <ul>
+            <li>Recherche de médecins par spécialité</li>
+            <li>Prise de rendez-vous en ligne</li>
+            <li>Gestion de votre profil et de vos informations</li>
+            <li>Rappels de rendez-vous par email</li>
+        </ul>
+    </section>
 </div>
 {% endblock %}

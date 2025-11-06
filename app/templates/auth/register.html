@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Inscription Patient</title>
+    <style>
+        body { 
+            margin: 0; 
+            font-family: Arial, Helvetica, sans-serif; 
+            background: #f4f9ff; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+        }
+
+        .register-box { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 12px; 
+            box-shadow: 0 0 20px rgba(0,0,0,0.15); 
+            text-align: center; 
+            width: 400px; 
+        }
+
+        h2 { 
+            color: #0078ff; 
+            margin-bottom: 25px; 
+        }
+
+        input, select { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 8px 0; 
+            border-radius: 6px; 
+            border: 1px solid #ccc; 
+            font-size: 15px; 
+        }
+
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background: #0078ff; 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            margin-top: 15px; 
+            font-size: 16px; 
+            cursor: pointer; 
+        }
+
+        button:hover { 
+            background: #005fcc; 
+        }
+
+        a { 
+            color: #0078ff; 
+            text-decoration: none; 
+            display: block; 
+            margin-top: 15px; 
+        }
+    </style>
+</head>
+<body>
+
+<div class="register-box">
+    <h2>Inscription Patient</h2>
+    <form action="register" method="POST">
+        <input type="text" name="nom" placeholder="Nom" required>
+        <input type="text" name="prenom" placeholder="Prénom" required>
+        <input type="email" name="email" placeholder="Email" required>
+        <input type="password" name="password" placeholder="Mot de passe" required>
+        <input type="password" name="confirm_password" placeholder="Confirmer le mot de passe" required>
+
+        <button type="submit">Créer le compte</button>
+    </form>
+    <a href="login">Déjà inscrit ? Se connecter</a>
+</div>
+
+</body>
+</html>
