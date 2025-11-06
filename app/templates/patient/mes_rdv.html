@@ -1,11 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Historique des Rendez-vous</title>
+ <link rel="stylesheet" href="css/patient.css">
 </head>
 <body>
-    <h1>mes rendez-vous </h1>
+  <div class="container">
+    <div class="header">
+      <h1>Historique des Rendez-vous</h1>
+      <div class="filters">
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="Rechercher par médecin, spécialité ou date...">
+        </div>
+        <div class="filter-buttons">
+          <button class="filter-btn active" data-filter="tous">Tous</button>
+          <button class="filter-btn" data-filter="confirmé">Confirmés</button>
+          <button class="filter-btn" data-filter="terminé">Terminés</button>
+          <button class="filter-btn" data-filter="annulé">Annulés</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats" id="stats"></div>
+    
+    <div class="appointments-grid" id="appointmentsGrid"></div>
+    
+    <div class="empty-state" id="emptyState" style="display: none;">
+      <div class="empty-state-icon">📅</div>
+      <h3>Aucun rendez-vous trouvé</h3>
+      <p>Essayez de modifier vos critères de recherche</p>
+    </div>
+  </div>
+
+<script src="js/patient.js"></script>
 </body>
 </html>
