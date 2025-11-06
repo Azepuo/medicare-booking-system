@@ -3,12 +3,28 @@
 Script d'initialisation complète de la base de données
 """
 
-from database.connection import test_connection
-from database.migrations.migration_manager import run_all_migrations
-from database.seeders.seeder_manager import run_all_seeders
+import sys
+import os
+
+# Ajouter le répertoire racine au chemin Python
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, parent_dir)
+
+try:
+    from database.connection import test_connection
+    from database.migrations.migration_manager import run_all_migrations
+    from database.seeders.seeder_manager import run_all_seeders
+    print("✅ Modules importés avec succès!")
+except ImportError as e:
+    print(f" Erreur d'import: {e}")
+    print(f" Current dir: {current_dir}")
+    print(f" Parent dir: {parent_dir}")
+    print(f" Python path: {sys.path}")
+    sys.exit(1)
 
 def main():
-    print("🔧 Initialisation de la base de données Medicare...")
+    print(" Initialisation de la base de données Medicare...")
     print("=" * 50)
     
     # 1. Test de connexion
