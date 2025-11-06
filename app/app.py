@@ -18,6 +18,9 @@ def admin_facturation():
 @app.route('/admin/facture_view')
 def admin_facture_view():
     return render_template('admin/facture_view.html')
+@app.route('/admin/rendez_vous')
+def admin_rendez_vous():
+    return render_template('admin/rendez_vous.html')
 #---zainab-----#
 @app.route('/')
 def accueil():
