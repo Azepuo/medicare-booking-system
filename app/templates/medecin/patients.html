@@ -12,6 +12,22 @@
   </button>
 </div>
 
+<!-- Barre de recherche et filtres -->
+<div class="filters-row">
+  <div class="search-container">
+    <i class="fas fa-search"></i>
+    <input type="text" id="searchInput" placeholder="Rechercher un patient...">
+  </div>
+  <div class="filter-group">
+    <select id="statusFilter">
+      <option value="">Tous les statuts</option>
+      <option value="actif">Actif</option>
+      <option value="inactif">Inactif</option>
+      <option value="nouveau">Nouveau</option>
+    </select>
+  </div>
+</div>
+
 <div class="card">
   <table class="table">
     <thead>
@@ -20,44 +36,95 @@
         <th>Email</th>
         <th>Téléphone</th>
         <th>Dernière Visite</th>
+        <th>Statut</th>
         <th>Actions</th>
       </tr>
     </thead>
-    <tbody>
-      <tr>
-        <td>Marie Dupont</td>
+    <tbody id="patientsTable">
+      <tr data-id="1" data-status="actif">
+        <td>
+          <strong>Marie Dupont</strong>
+          <div class="small">45 ans</div>
+        </td>
         <td>marie.dupont@email.com</td>
         <td>01 23 45 67 89</td>
         <td>2024-01-15</td>
+        <td><span class="status-badge actif">Actif</span></td>
         <td>
           <button class="btn secondary" onclick="viewPatient(1)">
-            <i class="fas fa-eye"></i> Voir
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="btn secondary" onclick="editPatient(1)">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn danger" onclick="deletePatient(1)">
+            <i class="fas fa-trash"></i>
           </button>
         </td>
       </tr>
-      <tr>
-        <td>Pierre Martin</td>
+      <tr data-id="2" data-status="actif">
+        <td>
+          <strong>Pierre Martin</strong>
+          <div class="small">52 ans</div>
+        </td>
         <td>pierre.martin@email.com</td>
         <td>01 34 56 78 90</td>
         <td>2024-01-14</td>
+        <td><span class="status-badge actif">Actif</span></td>
         <td>
           <button class="btn secondary" onclick="viewPatient(2)">
-            <i class="fas fa-eye"></i> Voir
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="btn secondary" onclick="editPatient(2)">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn danger" onclick="deletePatient(2)">
+            <i class="fas fa-trash"></i>
           </button>
         </td>
       </tr>
-      <tr>
-        <td>Sophie Lambert</td>
+      <tr data-id="3" data-status="nouveau">
+        <td>
+          <strong>Sophie Lambert</strong>
+          <div class="small">38 ans</div>
+        </td>
         <td>sophie.lambert@email.com</td>
         <td>01 45 67 89 01</td>
         <td>2024-01-13</td>
+        <td><span class="status-badge nouveau">Nouveau</span></td>
         <td>
           <button class="btn secondary" onclick="viewPatient(3)">
-            <i class="fas fa-eye"></i> Voir
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="btn secondary" onclick="editPatient(3)">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn danger" onclick="deletePatient(3)">
+            <i class="fas fa-trash"></i>
           </button>
         </td>
       </tr>
-    
+      <tr data-id="4" data-status="inactif">
+        <td>
+          <strong>Thomas Moreau</strong>
+          <div class="small">34 ans</div>
+        </td>
+        <td>thomas.moreau@email.com</td>
+        <td>01 78 90 12 34</td>
+        <td>2023-11-20</td>
+        <td><span class="status-badge inactif">Inactif</span></td>
+        <td>
+          <button class="btn secondary" onclick="viewPatient(4)">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="btn secondary" onclick="editPatient(4)">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn danger" onclick="deletePatient(4)">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      </tr>
     </tbody>
   </table>
 </div>
@@ -66,57 +133,449 @@
 <div class="grid" style="margin-top: 20px;">
   <div class="card">
     <h3>Total Patients</h3>
-    <p>128</p>
+    <p id="totalPatients">128</p>
   </div>
   <div class="card">
     <h3>Nouveaux ce Mois</h3>
-    <p>15</p>
+    <p id="nouveauxPatients">15</p>
+  </div>
+  <div class="card">
+    <h3>Patients Actifs</h3>
+    <p id="patientsActifs">112</p>
   </div>
   <div class="card">
     <h3>Prochains RDV</h3>
     <p>8</p>
   </div>
 </div>
+
+<!-- Modal d'ajout/modification de patient -->
+<div id="patientModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="modalTitle">Nouveau Patient</h2>
+      <span class="close">&times;</span>
+    </div>
+    <div class="modal-body">
+      <form id="patientForm">
+        <input type="hidden" id="patientId">
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="prenom">Prénom</label>
+            <input type="text" id="prenom" required>
+          </div>
+          <div class="form-group">
+            <label for="nom">Nom</label>
+            <input type="text" id="nom" required>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="dateNaissance">Date de naissance</label>
+            <input type="date" id="dateNaissance" required>
+          </div>
+          <div class="form-group">
+            <label for="genre">Genre</label>
+            <select id="genre">
+              <option value="homme">Homme</option>
+              <option value="femme">Femme</option>
+              <option value="autre">Autre</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="telephone">Téléphone</label>
+          <input type="tel" id="telephone" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="adresse">Adresse</label>
+          <textarea id="adresse" placeholder="Adresse complète"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="statut">Statut</label>
+          <select id="statut">
+            <option value="actif">Actif</option>
+            <option value="inactif">Inactif</option>
+            <option value="nouveau">Nouveau</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="notes">Notes médicales</label>
+          <textarea id="notes" placeholder="Informations médicales importantes..."></textarea>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn secondary" id="cancelBtn">Annuler</button>
+          <button type="submit" class="btn" id="saveBtn">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+<div id="deleteModal" class="modal">
+  <div class="modal-content small">
+    <div class="modal-header">
+      <h2>Confirmer la suppression</h2>
+      <span class="close">&times;</span>
+    </div>
+    <div class="modal-body">
+      <p>Êtes-vous sûr de vouloir supprimer ce patient ?</p>
+      <div class="form-actions">
+        <button type="button" class="btn secondary" id="cancelDeleteBtn">Annuler</button>
+        <button type="button" class="btn danger" id="confirmDeleteBtn">Supprimer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block styles %}
+
 {% endblock %}
 
 {% block scripts %}
 <script>
+// Variables globales
+let currentPatientId = null;
+let patients = [
+  {
+    id: 1,
+    nom: "Dupont",
+    prenom: "Marie",
+    dateNaissance: "1979-05-15",
+    age: "45 ans",
+    genre: "femme",
+    email: "marie.dupont@email.com",
+    telephone: "01 23 45 67 89",
+    adresse: "123 Avenue des Champs, Paris",
+    statut: "actif",
+    derniereVisite: "2024-01-15",
+    notes: "Patient régulier, suivi hypertension"
+  },
+  {
+    id: 2,
+    nom: "Martin",
+    prenom: "Pierre",
+    dateNaissance: "1972-08-22",
+    age: "52 ans",
+    genre: "homme",
+    email: "pierre.martin@email.com",
+    telephone: "01 34 56 78 90",
+    adresse: "456 Rue de la République, Lyon",
+    statut: "actif",
+    derniereVisite: "2024-01-14",
+    notes: "Suivi diabète"
+  },
+  {
+    id: 3,
+    nom: "Lambert",
+    prenom: "Sophie",
+    dateNaissance: "1986-03-10",
+    age: "38 ans",
+    genre: "femme",
+    email: "sophie.lambert@email.com",
+    telephone: "01 45 67 89 01",
+    adresse: "789 Boulevard Voltaire, Marseille",
+    statut: "nouveau",
+    derniereVisite: "2024-01-13",
+    notes: "Première consultation"
+  },
+  {
+    id: 4,
+    nom: "Moreau",
+    prenom: "Thomas",
+    dateNaissance: "1990-11-30",
+    age: "34 ans",
+    genre: "homme",
+    email: "thomas.moreau@email.com",
+    telephone: "01 78 90 12 34",
+    adresse: "321 Rue de la Paix, Toulouse",
+    statut: "inactif",
+    derniereVisite: "2023-11-20",
+    notes: "Déménagement prévu"
+  }
+];
+
+// Éléments DOM
+const patientModal = document.getElementById('patientModal');
+const deleteModal = document.getElementById('deleteModal');
+const patientForm = document.getElementById('patientForm');
+const searchInput = document.getElementById('searchInput');
+const statusFilter = document.getElementById('statusFilter');
+
+// Fonctions de gestion des patients
 function viewPatient(id) {
-  // Simulation - vous pouvez rediriger vers une page détaillée du patient
-  alert(`Ouverture du dossier patient #${id}`);
-  
-  // Exemple de redirection :
-  // window.location.href = `/medecin/patient/${id}`;
+  const patient = patients.find(p => p.id === id);
+  if (patient) {
+    alert(`Détails du patient #${id}\n\n` +
+          `Nom: ${patient.prenom} ${patient.nom}\n` +
+          `Âge: ${patient.age} (${patient.dateNaissance})\n` +
+          `Genre: ${patient.genre}\n` +
+          `Email: ${patient.email}\n` +
+          `Téléphone: ${patient.telephone}\n` +
+          `Adresse: ${patient.adresse}\n` +
+          `Statut: ${getStatutText(patient.statut)}\n` +
+          `Dernière visite: ${patient.derniereVisite}\n` +
+          `Notes: ${patient.notes || 'Aucune'}`);
+  }
 }
 
-document.getElementById('addPatientBtn').addEventListener('click', function() {
-  // Simulation - vous pouvez ouvrir un formulaire modal
-  const patientName = prompt('Nom du nouveau patient:');
-  const patientEmail = prompt('Email du patient:');
+function editPatient(id) {
+  const patient = patients.find(p => p.id === id);
+  if (patient) {
+    document.getElementById('modalTitle').textContent = 'Modifier le Patient';
+    document.getElementById('patientId').value = patient.id;
+    document.getElementById('prenom').value = patient.prenom;
+    document.getElementById('nom').value = patient.nom;
+    document.getElementById('dateNaissance').value = patient.dateNaissance;
+    document.getElementById('genre').value = patient.genre;
+    document.getElementById('email').value = patient.email;
+    document.getElementById('telephone').value = patient.telephone;
+    document.getElementById('adresse').value = patient.adresse;
+    document.getElementById('statut').value = patient.statut;
+    document.getElementById('notes').value = patient.notes;
+    
+    patientModal.style.display = 'block';
+    currentPatientId = id;
+  }
+}
+
+function deletePatient(id) {
+  currentPatientId = id;
+  deleteModal.style.display = 'block';
+}
+
+function addPatient() {
+  document.getElementById('modalTitle').textContent = 'Nouveau Patient';
+  patientForm.reset();
+  document.getElementById('patientId').value = '';
+  document.getElementById('statut').value = 'nouveau';
   
-  if (patientName && patientEmail) {
-    alert(`Nouveau patient "${patientName}" ajouté avec succès!`);
-    // Ici vous feriez un appel API pour créer le patient
+  patientModal.style.display = 'block';
+  currentPatientId = null;
+}
+
+// Fonctions utilitaires
+function getStatutText(statut) {
+  const statutMap = {
+    'actif': 'Actif',
+    'inactif': 'Inactif',
+    'nouveau': 'Nouveau'
+  };
+  return statutMap[statut] || statut;
+}
+
+function calculateAge(dateNaissance) {
+  const today = new Date();
+  const birthDate = new Date(dateNaissance);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  
+  return age + ' ans';
+}
+
+function updateStatistics() {
+  const total = patients.length;
+  const actifs = patients.filter(p => p.statut === 'actif').length;
+  const nouveaux = patients.filter(p => p.statut === 'nouveau').length;
+  
+  document.getElementById('totalPatients').textContent = total;
+  document.getElementById('patientsActifs').textContent = actifs;
+  document.getElementById('nouveauxPatients').textContent = nouveaux;
+}
+
+function filterPatients() {
+  const searchTerm = searchInput.value.toLowerCase();
+  const statutValue = statusFilter.value;
+  
+  const rows = document.querySelectorAll('#patientsTable tr');
+  
+  rows.forEach(row => {
+    const id = row.getAttribute('data-id');
+    const patient = patients.find(p => p.id === parseInt(id));
+    
+    if (!patient) return;
+    
+    let show = true;
+    
+    // Filtre par recherche
+    if (searchTerm) {
+      const text = row.textContent.toLowerCase();
+      if (!text.includes(searchTerm)) {
+        show = false;
+      }
+    }
+    
+    // Filtre par statut
+    if (statutValue && patient.statut !== statutValue) {
+      show = false;
+    }
+    
+    row.style.display = show ? '' : 'none';
+  });
+}
+
+// Gestion des événements
+document.getElementById('addPatientBtn').addEventListener('click', addPatient);
+
+// Fermeture des modals
+document.querySelectorAll('.close').forEach(closeBtn => {
+  closeBtn.addEventListener('click', function() {
+    patientModal.style.display = 'none';
+    deleteModal.style.display = 'none';
+  });
+});
+
+// Annulation
+document.getElementById('cancelBtn').addEventListener('click', function() {
+  patientModal.style.display = 'none';
+});
+
+document.getElementById('cancelDeleteBtn').addEventListener('click', function() {
+  deleteModal.style.display = 'none';
+});
+
+// Confirmation de suppression
+document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+  if (currentPatientId) {
+    // Supprimer le patient
+    patients = patients.filter(p => p.id !== currentPatientId);
+    
+    // Mettre à jour l'interface
+    const row = document.querySelector(`#patientsTable tr[data-id="${currentPatientId}"]`);
+    if (row) {
+      row.remove();
+    }
+    
+    alert(`Patient #${currentPatientId} supprimé avec succès!`);
+    deleteModal.style.display = 'none';
+    currentPatientId = null;
+    updateStatistics();
   }
 });
 
-// Recherche en temps réel
-document.getElementById('searchInput').addEventListener('input', function(e) {
-  const searchTerm = e.target.value.toLowerCase();
-  const rows = document.querySelectorAll('.table tbody tr');
+// Soumission du formulaire
+patientForm.addEventListener('submit', function(e) {
+  e.preventDefault();
   
-  rows.forEach(row => {
-    const text = row.textContent.toLowerCase();
-    if (text.includes(searchTerm)) {
-      row.style.display = '';
-    } else {
-      row.style.display = 'none';
+  const id = document.getElementById('patientId').value;
+  const prenom = document.getElementById('prenom').value;
+  const nom = document.getElementById('nom').value;
+  const dateNaissance = document.getElementById('dateNaissance').value;
+  const genre = document.getElementById('genre').value;
+  const email = document.getElementById('email').value;
+  const telephone = document.getElementById('telephone').value;
+  const adresse = document.getElementById('adresse').value;
+  const statut = document.getElementById('statut').value;
+  const notes = document.getElementById('notes').value;
+  
+  const patientData = {
+    id: id ? parseInt(id) : patients.length > 0 ? Math.max(...patients.map(p => p.id)) + 1 : 1,
+    nom: nom,
+    prenom: prenom,
+    dateNaissance: dateNaissance,
+    age: calculateAge(dateNaissance),
+    genre: genre,
+    email: email,
+    telephone: telephone,
+    adresse: adresse,
+    statut: statut,
+    derniereVisite: id ? patients.find(p => p.id === parseInt(id)).derniereVisite : new Date().toISOString().split('T')[0],
+    notes: notes
+  };
+  
+  if (id) {
+    // Modification
+    const index = patients.findIndex(p => p.id === parseInt(id));
+    if (index !== -1) {
+      patients[index] = patientData;
+      
+      // Mettre à jour la ligne du tableau
+      const row = document.querySelector(`#patientsTable tr[data-id="${id}"]`);
+      if (row) {
+        row.dataset.status = statut;
+        row.cells[0].innerHTML = `<strong>${prenom} ${nom}</strong><div class="small">${calculateAge(dateNaissance)}</div>`;
+        row.cells[1].textContent = email;
+        row.cells[2].textContent = telephone;
+        row.cells[3].textContent = patientData.derniereVisite;
+        row.cells[4].innerHTML = `<span class="status-badge ${statut}">${getStatutText(statut)}</span>`;
+      }
+      
+      alert(`Patient #${id} modifié avec succès!`);
     }
-  });
+  } else {
+    // Ajout
+    patients.push(patientData);
+    
+    // Ajouter une nouvelle ligne au tableau
+    const newRow = document.createElement('tr');
+    newRow.setAttribute('data-id', patientData.id);
+    newRow.setAttribute('data-status', statut);
+    newRow.innerHTML = `
+      <td>
+        <strong>${prenom} ${nom}</strong>
+        <div class="small">${calculateAge(dateNaissance)}</div>
+      </td>
+      <td>${email}</td>
+      <td>${telephone}</td>
+      <td>${patientData.derniereVisite}</td>
+      <td><span class="status-badge ${statut}">${getStatutText(statut)}</span></td>
+      <td>
+        <button class="btn secondary" onclick="viewPatient(${patientData.id})">
+          <i class="fas fa-eye"></i>
+        </button>
+        <button class="btn secondary" onclick="editPatient(${patientData.id})">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn danger" onclick="deletePatient(${patientData.id})">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    `;
+    
+    document.getElementById('patientsTable').appendChild(newRow);
+    alert(`Nouveau patient créé avec succès!`);
+  }
+  
+  patientModal.style.display = 'none';
+  updateStatistics();
+});
+
+// Filtrage en temps réel
+searchInput.addEventListener('input', filterPatients);
+statusFilter.addEventListener('change', filterPatients);
+
+// Fermer les modals en cliquant à l'extérieur
+window.addEventListener('click', function(e) {
+  if (e.target === patientModal) {
+    patientModal.style.display = 'none';
+  }
+  if (e.target === deleteModal) {
+    deleteModal.style.display = 'none';
+  }
 });
 
 // Chargement initial
 document.addEventListener('DOMContentLoaded', function() {
+  updateStatistics();
   console.log('Page patients chargée');
 });
 </script>

@@ -24,6 +24,9 @@
                 <a href="{{ url_for('rdv_du_jour') }}" class="nav-link {% if request.endpoint == 'rdv_du_jour' %}active{% endif %}">
                     <i class="fas fa-calendar-day"></i> RDV du jour
                 </a>
+                <a href="{{ url_for('prescriptions') }}" class="nav-link {% if request.endpoint == 'prescriptions' %}active{% endif %}">
+                    <i class="fas fa-star"></i> Prescription
+                </a>
                 <a href="{{ url_for('agenda') }}" class="nav-link {% if request.endpoint == 'agenda' %}active{% endif %}">
                     <i class="fas fa-calendar-alt"></i> Agenda
                 </a>

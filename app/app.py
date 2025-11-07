@@ -36,6 +36,11 @@ def statistiques():
 def rdv_du_jour():
     return render_template('medecin/rdv_du_jour.html')
 
+# CORRECTION : Changer le nom de la fonction pour prescriptions
+@app.route('/medecin/prescriptions')
+def prescriptions():  # Changer de 'rdv_du_jour' à 'prescriptions'
+    return render_template('medecin/prescriptions.html')
+
 @app.route('/medecin/agenda')
 def agenda():
     return render_template('medecin/agenda.html')
@@ -55,4 +60,5 @@ if __name__ == '__main__':
     print("👥 Patients: http://localhost:5000/medecin/patients")
     print("💬 Chat: http://localhost:5000/medecin/chat")
     print("👤 Profil: http://localhost:5000/medecin/profil")
+    print("💊 Prescriptions: http://localhost:5000/medecin/prescriptions")  # Ajout
     app.run(debug=True, host='0.0.0.0', port=5000)

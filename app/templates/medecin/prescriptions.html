@@ -1,0 +1,483 @@
+{% extends "medecin/base.html" %}
+
+{% block title %}Prescriptions • Médecin{% endblock %}
+
+{% block body_id %}prescriptions-page{% endblock %}
+
+{% block content %}
+<div class="header-row">
+  <h1 class="h1">Gestion des Prescriptions</h1>
+  <button class="btn" id="addPrescriptionBtn">
+    <i class="fas fa-plus"></i> Nouvelle Prescription
+  </button>
+</div>
+
+<!-- Barre de recherche et filtres -->
+<div class="filters-row">
+  <div class="search-container">
+    <i class="fas fa-search"></i>
+    <input type="text" id="searchInput" placeholder="Rechercher une prescription...">
+  </div>
+  <div class="filter-group">
+    <select id="statusFilter">
+      <option value="">Tous les statuts</option>
+      <option value="active">Active</option>
+      <option value="completed">Terminée</option>
+      <option value="expired">Expirée</option>
+    </select>
+    <select id="patientFilter">
+      <option value="">Tous les patients</option>
+      <option value="1">Marie Dupont</option>
+      <option value="2">Pierre Martin</option>
+      <option value="3">Sophie Lambert</option>
+    </select>
+  </div>
+</div>
+
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Patient</th>
+        <th>Date</th>
+        <th>Médicaments</th>
+        <th>Posologie</th>
+        <th>Statut</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="prescriptionsTable">
+      <tr data-id="1">
+        <td>Marie Dupont</td>
+        <td>2024-01-15</td>
+        <td>Paracétamol 500mg</td>
+        <td>1 comprimé, 3 fois/jour</td>
+        <td><span class="status-badge active">Active</span></td>
+        <td>
+          <button class="btn secondary" onclick="viewPrescription(1)">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="btn secondary" onclick="editPrescription(1)">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn danger" onclick="deletePrescription(1)">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+      <tr data-id="2">
+        <td>Pierre Martin</td>
+        <td>2024-01-14</td>
+        <td>Amoxicilline 1g, Ibuprofène 400mg</td>
+        <td>Amox: 1 comprimé 2 fois/jour, Ibu: 1 si douleur</td>
+        <td><span class="status-badge completed">Terminée</span></td>
+        <td>
+          <button class="btn secondary" onclick="viewPrescription(2)">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="btn secondary" onclick="editPrescription(2)">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn danger" onclick="deletePrescription(2)">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+      <tr data-id="3">
+        <td>Sophie Lambert</td>
+        <td>2024-01-10</td>
+        <td>Vitamine D 1000 UI</td>
+        <td>1 gélule par jour</td>
+        <td><span class="status-badge expired">Expirée</span></td>
+        <td>
+          <button class="btn secondary" onclick="viewPrescription(3)">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="btn secondary" onclick="editPrescription(3)">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn danger" onclick="deletePrescription(3)">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Statistiques des prescriptions -->
+<div class="grid" style="margin-top: 20px;">
+  <div class="card">
+    <h3>Prescriptions Actives</h3>
+    <p>24</p>
+  </div>
+  <div class="card">
+    <h3>Nouvelles cette Semaine</h3>
+    <p>8</p>
+  </div>
+  <div class="card">
+    <h3>À Renouveler</h3>
+    <p>5</p>
+  </div>
+</div>
+
+<!-- Modal d'ajout/modification de prescription -->
+<div id="prescriptionModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="modalTitle">Nouvelle Prescription</h2>
+      <span class="close">&times;</span>
+    </div>
+    <div class="modal-body">
+      <form id="prescriptionForm">
+        <input type="hidden" id="prescriptionId">
+        
+        <div class="form-group">
+          <label for="patientSelect">Patient</label>
+          <select id="patientSelect" required>
+            <option value="">Sélectionner un patient</option>
+            <option value="1">Marie Dupont</option>
+            <option value="2">Pierre Martin</option>
+            <option value="3">Sophie Lambert</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="prescriptionDate">Date</label>
+          <input type="date" id="prescriptionDate" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="medications">Médicaments</label>
+          <textarea id="medications" placeholder="Liste des médicaments prescrits" required></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="posology">Posologie</label>
+          <textarea id="posology" placeholder="Instructions de prise" required></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="duration">Durée du traitement (jours)</label>
+          <input type="number" id="duration" min="1" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="status">Statut</label>
+          <select id="status">
+            <option value="active">Active</option>
+            <option value="completed">Terminée</option>
+            <option value="expired">Expirée</option>
+          </select>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn secondary" id="cancelBtn">Annuler</button>
+          <button type="submit" class="btn" id="saveBtn">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+<div id="deleteModal" class="modal">
+  <div class="modal-content small">
+    <div class="modal-header">
+      <h2>Confirmer la suppression</h2>
+      <span class="close">&times;</span>
+    </div>
+    <div class="modal-body">
+      <p>Êtes-vous sûr de vouloir supprimer cette prescription ?</p>
+      <div class="form-actions">
+        <button type="button" class="btn secondary" id="cancelDeleteBtn">Annuler</button>
+        <button type="button" class="btn danger" id="confirmDeleteBtn">Supprimer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block styles %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Variables globales
+let currentPrescriptionId = null;
+let prescriptions = [
+  {
+    id: 1,
+    patient: "Marie Dupont",
+    date: "2024-01-15",
+    medications: "Paracétamol 500mg",
+    posology: "1 comprimé, 3 fois/jour",
+    status: "active",
+    duration: 7
+  },
+  {
+    id: 2,
+    patient: "Pierre Martin",
+    date: "2024-01-14",
+    medications: "Amoxicilline 1g, Ibuprofène 400mg",
+    posology: "Amox: 1 comprimé 2 fois/jour, Ibu: 1 si douleur",
+    status: "completed",
+    duration: 10
+  },
+  {
+    id: 3,
+    patient: "Sophie Lambert",
+    date: "2024-01-10",
+    medications: "Vitamine D 1000 UI",
+    posology: "1 gélule par jour",
+    status: "expired",
+    duration: 30
+  }
+];
+
+// Éléments DOM
+const prescriptionModal = document.getElementById('prescriptionModal');
+const deleteModal = document.getElementById('deleteModal');
+const prescriptionForm = document.getElementById('prescriptionForm');
+const searchInput = document.getElementById('searchInput');
+const statusFilter = document.getElementById('statusFilter');
+const patientFilter = document.getElementById('patientFilter');
+
+// Fonctions de gestion des prescriptions
+function viewPrescription(id) {
+  const prescription = prescriptions.find(p => p.id === id);
+  if (prescription) {
+    alert(`Détails de la prescription #${id}\n\n` +
+          `Patient: ${prescription.patient}\n` +
+          `Date: ${prescription.date}\n` +
+          `Médicaments: ${prescription.medications}\n` +
+          `Posologie: ${prescription.posology}\n` +
+          `Durée: ${prescription.duration} jours\n` +
+          `Statut: ${getStatusText(prescription.status)}`);
+  }
+}
+
+function editPrescription(id) {
+  const prescription = prescriptions.find(p => p.id === id);
+  if (prescription) {
+    document.getElementById('modalTitle').textContent = 'Modifier la Prescription';
+    document.getElementById('prescriptionId').value = prescription.id;
+    document.getElementById('patientSelect').value = getPatientIdByName(prescription.patient);
+    document.getElementById('prescriptionDate').value = prescription.date;
+    document.getElementById('medications').value = prescription.medications;
+    document.getElementById('posology').value = prescription.posology;
+    document.getElementById('duration').value = prescription.duration;
+    document.getElementById('status').value = prescription.status;
+    
+    prescriptionModal.style.display = 'block';
+    currentPrescriptionId = id;
+  }
+}
+
+function deletePrescription(id) {
+  currentPrescriptionId = id;
+  deleteModal.style.display = 'block';
+}
+
+function addPrescription() {
+  document.getElementById('modalTitle').textContent = 'Nouvelle Prescription';
+  prescriptionForm.reset();
+  document.getElementById('prescriptionId').value = '';
+  document.getElementById('prescriptionDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('status').value = 'active';
+  
+  prescriptionModal.style.display = 'block';
+  currentPrescriptionId = null;
+}
+
+// Fonctions utilitaires
+function getStatusText(status) {
+  const statusMap = {
+    'active': 'Active',
+    'completed': 'Terminée',
+    'expired': 'Expirée'
+  };
+  return statusMap[status] || status;
+}
+
+function getPatientIdByName(name) {
+  const patientMap = {
+    'Marie Dupont': '1',
+    'Pierre Martin': '2',
+    'Sophie Lambert': '3'
+  };
+  return patientMap[name] || '';
+}
+
+function filterPrescriptions() {
+  const searchTerm = searchInput.value.toLowerCase();
+  const statusValue = statusFilter.value;
+  const patientValue = patientFilter.value;
+  
+  const rows = document.querySelectorAll('#prescriptionsTable tr');
+  
+  rows.forEach(row => {
+    const id = row.getAttribute('data-id');
+    const prescription = prescriptions.find(p => p.id === parseInt(id));
+    
+    if (!prescription) return;
+    
+    let show = true;
+    
+    // Filtre par recherche
+    if (searchTerm) {
+      const text = row.textContent.toLowerCase();
+      if (!text.includes(searchTerm)) {
+        show = false;
+      }
+    }
+    
+    // Filtre par statut
+    if (statusValue && prescription.status !== statusValue) {
+      show = false;
+    }
+    
+    // Filtre par patient
+    if (patientValue && getPatientIdByName(prescription.patient) !== patientValue) {
+      show = false;
+    }
+    
+    row.style.display = show ? '' : 'none';
+  });
+}
+
+// Gestion des événements
+document.getElementById('addPrescriptionBtn').addEventListener('click', addPrescription);
+
+// Fermeture des modals
+document.querySelectorAll('.close').forEach(closeBtn => {
+  closeBtn.addEventListener('click', function() {
+    prescriptionModal.style.display = 'none';
+    deleteModal.style.display = 'none';
+  });
+});
+
+// Annulation
+document.getElementById('cancelBtn').addEventListener('click', function() {
+  prescriptionModal.style.display = 'none';
+});
+
+document.getElementById('cancelDeleteBtn').addEventListener('click', function() {
+  deleteModal.style.display = 'none';
+});
+
+// Confirmation de suppression
+document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+  if (currentPrescriptionId) {
+    // Ici, vous feriez un appel API pour supprimer la prescription
+    prescriptions = prescriptions.filter(p => p.id !== currentPrescriptionId);
+    
+    // Mettre à jour l'interface
+    const row = document.querySelector(`#prescriptionsTable tr[data-id="${currentPrescriptionId}"]`);
+    if (row) {
+      row.remove();
+    }
+    
+    alert(`Prescription #${currentPrescriptionId} supprimée avec succès!`);
+    deleteModal.style.display = 'none';
+    currentPrescriptionId = null;
+  }
+});
+
+// Soumission du formulaire
+prescriptionForm.addEventListener('submit', function(e) {
+  e.preventDefault();
+  
+  const id = document.getElementById('prescriptionId').value;
+  const patientId = document.getElementById('patientSelect').value;
+  const patientName = document.getElementById('patientSelect').options[document.getElementById('patientSelect').selectedIndex].text;
+  const date = document.getElementById('prescriptionDate').value;
+  const medications = document.getElementById('medications').value;
+  const posology = document.getElementById('posology').value;
+  const duration = document.getElementById('duration').value;
+  const status = document.getElementById('status').value;
+  
+  const prescriptionData = {
+    id: id ? parseInt(id) : prescriptions.length > 0 ? Math.max(...prescriptions.map(p => p.id)) + 1 : 1,
+    patient: patientName,
+    date: date,
+    medications: medications,
+    posology: posology,
+    duration: parseInt(duration),
+    status: status
+  };
+  
+  if (id) {
+    // Modification
+    const index = prescriptions.findIndex(p => p.id === parseInt(id));
+    if (index !== -1) {
+      prescriptions[index] = prescriptionData;
+      
+      // Mettre à jour la ligne du tableau
+      const row = document.querySelector(`#prescriptionsTable tr[data-id="${id}"]`);
+      if (row) {
+        row.cells[0].textContent = patientName;
+        row.cells[1].textContent = date;
+        row.cells[2].textContent = medications;
+        row.cells[3].textContent = posology;
+        row.cells[4].innerHTML = `<span class="status-badge ${status}">${getStatusText(status)}</span>`;
+      }
+      
+      alert(`Prescription #${id} modifiée avec succès!`);
+    }
+  } else {
+    // Ajout
+    prescriptions.push(prescriptionData);
+    
+    // Ajouter une nouvelle ligne au tableau
+    const newRow = document.createElement('tr');
+    newRow.setAttribute('data-id', prescriptionData.id);
+    newRow.innerHTML = `
+      <td>${patientName}</td>
+      <td>${date}</td>
+      <td>${medications}</td>
+      <td>${posology}</td>
+      <td><span class="status-badge ${status}">${getStatusText(status)}</span></td>
+      <td>
+        <button class="btn secondary" onclick="viewPrescription(${prescriptionData.id})">
+          <i class="fas fa-eye"></i>
+        </button>
+        <button class="btn secondary" onclick="editPrescription(${prescriptionData.id})">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn danger" onclick="deletePrescription(${prescriptionData.id})">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    `;
+    
+    document.getElementById('prescriptionsTable').appendChild(newRow);
+    alert(`Nouvelle prescription créée avec succès!`);
+  }
+  
+  prescriptionModal.style.display = 'none';
+});
+
+// Filtrage en temps réel
+searchInput.addEventListener('input', filterPrescriptions);
+statusFilter.addEventListener('change', filterPrescriptions);
+patientFilter.addEventListener('change', filterPrescriptions);
+
+// Fermer les modals en cliquant à l'extérieur
+window.addEventListener('click', function(e) {
+  if (e.target === prescriptionModal) {
+    prescriptionModal.style.display = 'none';
+  }
+  if (e.target === deleteModal) {
+    deleteModal.style.display = 'none';
+  }
+});
+
+// Chargement initial
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('Page prescriptions chargée');
+});
+</script>
+{% endblock %}

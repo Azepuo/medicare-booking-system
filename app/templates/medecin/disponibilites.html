@@ -7,43 +7,31 @@
 {% block content %}
 <div class="header-row">
   <h1 class="h1">Gestion des Disponibilités</h1>
-  <button class="btn" onclick="showAddForm()">
-    <i class="fas fa-plus"></i> Ajouter
+  <button class="btn" id="addDispoBtn">
+    <i class="fas fa-plus"></i> Nouvelle Disponibilité
   </button>
 </div>
 
-<!-- Formulaire d'ajout -->
-<div class="card" id="addForm" style="display: none; margin-bottom: 20px;">
-  <h3>Nouvelle Disponibilité</h3>
-  <div class="form-row">
-    <div class="form-group">
-      <label class="form-label">Jour</label>
-      <select class="input" id="jourSelect">
-        <option value="lundi">Lundi</option>
-        <option value="mardi">Mardi</option>
-        <option value="mercredi">Mercredi</option>
-        <option value="jeudi">Jeudi</option>
-        <option value="vendredi">Vendredi</option>
-        <option value="samedi">Samedi</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label class="form-label">De</label>
-      <input type="time" class="input" id="heureDebut" />
-    </div>
-    <div class="form-group">
-      <label class="form-label">À</label>
-      <input type="time" class="input" id="heureFin" />
-    </div>
-    <div class="form-group" style="align-self: flex-end;">
-      <button class="btn" onclick="addDisponibilite()">
-        <i class="fas fa-save"></i> Enregistrer
-      </button>
-    </div>
+<!-- Barre de recherche et filtres -->
+<div class="filters-row">
+  <div class="search-container">
+    <i class="fas fa-search"></i>
+    <input type="text" id="searchInput" placeholder="Rechercher une disponibilité...">
+  </div>
+  <div class="filter-group">
+    <select id="jourFilter">
+      <option value="">Tous les jours</option>
+      <option value="lundi">Lundi</option>
+      <option value="mardi">Mardi</option>
+      <option value="mercredi">Mercredi</option>
+      <option value="jeudi">Jeudi</option>
+      <option value="vendredi">Vendredi</option>
+      <option value="samedi">Samedi</option>
+      <option value="dimanche">Dimanche</option>
+    </select>
   </div>
 </div>
 
-<!-- Liste des disponibilités -->
 <div class="card">
   <table class="table">
     <thead>
@@ -51,52 +39,81 @@
         <th>Jour</th>
         <th>Heure Début</th>
         <th>Heure Fin</th>
-        <th>Créneau</th>
+        <th>Durée</th>
+        <th>Type</th>
         <th>Actions</th>
       </tr>
     </thead>
-    <tbody>
-      <tr>
+    <tbody id="dispoTable">
+      <tr data-id="1" data-jour="lundi">
         <td>Lundi</td>
         <td>08:30</td>
         <td>12:00</td>
         <td>3h30</td>
+        <td><span class="status-badge active">Active</span></td>
         <td>
-          <button class="btn secondary" onclick="editDisponibilite(1)">
-            <i class="fas fa-edit"></i> Modifier
+          <button class="btn secondary" onclick="viewDispo(1)">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="btn secondary" onclick="editDispo(1)">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn danger" onclick="deleteDispo(1)">
+            <i class="fas fa-trash"></i>
           </button>
         </td>
       </tr>
-      <tr>
+      <tr data-id="2" data-jour="lundi">
         <td>Lundi</td>
         <td>14:00</td>
         <td>18:00</td>
         <td>4h00</td>
+        <td><span class="status-badge active">Active</span></td>
         <td>
-          <button class="btn secondary" onclick="editDisponibilite(2)">
-            <i class="fas fa-edit"></i> Modifier
+          <button class="btn secondary" onclick="viewDispo(2)">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="btn secondary" onclick="editDispo(2)">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn danger" onclick="deleteDispo(2)">
+            <i class="fas fa-trash"></i>
           </button>
         </td>
       </tr>
-      <tr>
+      <tr data-id="3" data-jour="mardi">
         <td>Mardi</td>
         <td>09:00</td>
         <td>17:00</td>
         <td>8h00</td>
+        <td><span class="status-badge active">Active</span></td>
         <td>
-          <button class="btn secondary" onclick="editDisponibilite(3)">
-            <i class="fas fa-edit"></i> Modifier
+          <button class="btn secondary" onclick="viewDispo(3)">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="btn secondary" onclick="editDispo(3)">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn danger" onclick="deleteDispo(3)">
+            <i class="fas fa-trash"></i>
           </button>
         </td>
       </tr>
-      <tr>
+      <tr data-id="4" data-jour="mercredi">
         <td>Mercredi</td>
         <td>08:00</td>
         <td>12:30</td>
         <td>4h30</td>
+        <td><span class="status-badge inactive">Inactive</span></td>
         <td>
-          <button class="btn secondary" onclick="editDisponibilite(4)">
-            <i class="fas fa-edit"></i> Modifier
+          <button class="btn secondary" onclick="viewDispo(4)">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="btn secondary" onclick="editDispo(4)">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn danger" onclick="deleteDispo(4)">
+            <i class="fas fa-trash"></i>
           </button>
         </td>
       </tr>
@@ -108,50 +125,422 @@
 <div class="grid" style="margin-top: 20px;">
   <div class="card">
     <h3>Heures/Semaine</h3>
-    <p>35h</p>
+    <p id="totalHeures">35h</p>
   </div>
   <div class="card">
     <h3>Jours Travaillés</h3>
-    <p>5</p>
+    <p id="joursTravailles">5</p>
   </div>
   <div class="card">
-    <h3>Prochains RDV</h3>
-    <p>12</p>
+    <h3>Disponibilités Actives</h3>
+    <p id="dispoActives">3</p>
   </div>
 </div>
+
+<!-- Modal d'ajout/modification de disponibilité -->
+<div id="dispoModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="modalTitle">Nouvelle Disponibilité</h2>
+      <span class="close">&times;</span>
+    </div>
+    <div class="modal-body">
+      <form id="dispoForm">
+        <input type="hidden" id="dispoId">
+        
+        <div class="form-group">
+          <label for="jourSelect">Jour</label>
+          <select id="jourSelect" required>
+            <option value="">Sélectionner un jour</option>
+            <option value="lundi">Lundi</option>
+            <option value="mardi">Mardi</option>
+            <option value="mercredi">Mercredi</option>
+            <option value="jeudi">Jeudi</option>
+            <option value="vendredi">Vendredi</option>
+            <option value="samedi">Samedi</option>
+            <option value="dimanche">Dimanche</option>
+          </select>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="heureDebut">Heure de début</label>
+            <input type="time" id="heureDebut" required>
+          </div>
+          <div class="form-group">
+            <label for="heureFin">Heure de fin</label>
+            <input type="time" id="heureFin" required>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="typeDispo">Type de disponibilité</label>
+          <select id="typeDispo">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="urgence">Urgences seulement</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="notes">Notes (optionnel)</label>
+          <textarea id="notes" placeholder="Notes supplémentaires..."></textarea>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn secondary" id="cancelBtn">Annuler</button>
+          <button type="submit" class="btn" id="saveBtn">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+<div id="deleteModal" class="modal">
+  <div class="modal-content small">
+    <div class="modal-header">
+      <h2>Confirmer la suppression</h2>
+      <span class="close">&times;</span>
+    </div>
+    <div class="modal-body">
+      <p>Êtes-vous sûr de vouloir supprimer cette disponibilité ?</p>
+      <div class="form-actions">
+        <button type="button" class="btn secondary" id="cancelDeleteBtn">Annuler</button>
+        <button type="button" class="btn danger" id="confirmDeleteBtn">Supprimer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block styles %}
+
 {% endblock %}
 
 {% block scripts %}
 <script>
-function showAddForm() {
-  document.getElementById('addForm').style.display = 'block';
+// Variables globales
+let currentDispoId = null;
+let disponibilites = [
+  {
+    id: 1,
+    jour: "lundi",
+    heureDebut: "08:30",
+    heureFin: "12:00",
+    type: "active",
+    notes: ""
+  },
+  {
+    id: 2,
+    jour: "lundi",
+    heureDebut: "14:00",
+    heureFin: "18:00",
+    type: "active",
+    notes: ""
+  },
+  {
+    id: 3,
+    jour: "mardi",
+    heureDebut: "09:00",
+    heureFin: "17:00",
+    type: "active",
+    notes: "Journée complète"
+  },
+  {
+    id: 4,
+    jour: "mercredi",
+    heureDebut: "08:00",
+    heureFin: "12:30",
+    type: "inactive",
+    notes: "Matinale seulement"
+  }
+];
+
+// Éléments DOM
+const dispoModal = document.getElementById('dispoModal');
+const deleteModal = document.getElementById('deleteModal');
+const dispoForm = document.getElementById('dispoForm');
+const searchInput = document.getElementById('searchInput');
+const jourFilter = document.getElementById('jourFilter');
+
+// Fonctions de gestion des disponibilités
+function viewDispo(id) {
+  const dispo = disponibilites.find(d => d.id === id);
+  if (dispo) {
+    alert(`Détails de la disponibilité #${id}\n\n` +
+          `Jour: ${capitalizeFirst(dispo.jour)}\n` +
+          `Horaire: ${dispo.heureDebut} - ${dispo.heureFin}\n` +
+          `Type: ${getTypeText(dispo.type)}\n` +
+          `Notes: ${dispo.notes || 'Aucune'}`);
+  }
 }
 
-function addDisponibilite() {
+function editDispo(id) {
+  const dispo = disponibilites.find(d => d.id === id);
+  if (dispo) {
+    document.getElementById('modalTitle').textContent = 'Modifier la Disponibilité';
+    document.getElementById('dispoId').value = dispo.id;
+    document.getElementById('jourSelect').value = dispo.jour;
+    document.getElementById('heureDebut').value = dispo.heureDebut;
+    document.getElementById('heureFin').value = dispo.heureFin;
+    document.getElementById('typeDispo').value = dispo.type;
+    document.getElementById('notes').value = dispo.notes;
+    
+    dispoModal.style.display = 'block';
+    currentDispoId = id;
+  }
+}
+
+function deleteDispo(id) {
+  currentDispoId = id;
+  deleteModal.style.display = 'block';
+}
+
+function addDispo() {
+  document.getElementById('modalTitle').textContent = 'Nouvelle Disponibilité';
+  dispoForm.reset();
+  document.getElementById('dispoId').value = '';
+  document.getElementById('typeDispo').value = 'active';
+  
+  dispoModal.style.display = 'block';
+  currentDispoId = null;
+}
+
+// Fonctions utilitaires
+function capitalizeFirst(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+function getTypeText(type) {
+  const typeMap = {
+    'active': 'Active',
+    'inactive': 'Inactive',
+    'urgence': 'Urgences seulement'
+  };
+  return typeMap[type] || type;
+}
+
+function calculateDuration(debut, fin) {
+  const [debutHeures, debutMinutes] = debut.split(':').map(Number);
+  const [finHeures, finMinutes] = fin.split(':').map(Number);
+  
+  let totalMinutes = (finHeures * 60 + finMinutes) - (debutHeures * 60 + debutMinutes);
+  
+  const heures = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  
+  return `${heures}h${minutes > 0 ? minutes : '00'}`;
+}
+
+function updateStatistics() {
+  const totalDispos = disponibilites.length;
+  const disposActives = disponibilites.filter(d => d.type === 'active').length;
+  const joursUniques = [...new Set(disponibilites.map(d => d.jour))].length;
+  
+  // Calcul du total des heures
+  let totalMinutes = 0;
+  disponibilites.forEach(dispo => {
+    const [debutHeures, debutMinutes] = dispo.heureDebut.split(':').map(Number);
+    const [finHeures, finMinutes] = dispo.heureFin.split(':').map(Number);
+    totalMinutes += (finHeures * 60 + finMinutes) - (debutHeures * 60 + debutMinutes);
+  });
+  
+  const totalHeures = Math.floor(totalMinutes / 60);
+  const totalMinutesRestantes = totalMinutes % 60;
+  
+  document.getElementById('totalHeures').textContent = `${totalHeures}h${totalMinutesRestantes > 0 ? totalMinutesRestantes : '00'}`;
+  document.getElementById('joursTravailles').textContent = joursUniques;
+  document.getElementById('dispoActives').textContent = disposActives;
+}
+
+function filterDispos() {
+  const searchTerm = searchInput.value.toLowerCase();
+  const jourValue = jourFilter.value;
+  
+  const rows = document.querySelectorAll('#dispoTable tr');
+  
+  rows.forEach(row => {
+    const id = row.getAttribute('data-id');
+    const dispo = disponibilites.find(d => d.id === parseInt(id));
+    
+    if (!dispo) return;
+    
+    let show = true;
+    
+    // Filtre par recherche
+    if (searchTerm) {
+      const text = row.textContent.toLowerCase();
+      if (!text.includes(searchTerm)) {
+        show = false;
+      }
+    }
+    
+    // Filtre par jour
+    if (jourValue && dispo.jour !== jourValue) {
+      show = false;
+    }
+    
+    row.style.display = show ? '' : 'none';
+  });
+}
+
+// Gestion des événements
+document.getElementById('addDispoBtn').addEventListener('click', addDispo);
+
+// Fermeture des modals
+document.querySelectorAll('.close').forEach(closeBtn => {
+  closeBtn.addEventListener('click', function() {
+    dispoModal.style.display = 'none';
+    deleteModal.style.display = 'none';
+  });
+});
+
+// Annulation
+document.getElementById('cancelBtn').addEventListener('click', function() {
+  dispoModal.style.display = 'none';
+});
+
+document.getElementById('cancelDeleteBtn').addEventListener('click', function() {
+  deleteModal.style.display = 'none';
+});
+
+// Confirmation de suppression
+document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+  if (currentDispoId) {
+    // Supprimer la disponibilité
+    disponibilites = disponibilites.filter(d => d.id !== currentDispoId);
+    
+    // Mettre à jour l'interface
+    const row = document.querySelector(`#dispoTable tr[data-id="${currentDispoId}"]`);
+    if (row) {
+      row.remove();
+    }
+    
+    alert(`Disponibilité #${currentDispoId} supprimée avec succès!`);
+    deleteModal.style.display = 'none';
+    currentDispoId = null;
+    updateStatistics();
+  }
+});
+
+// Soumission du formulaire
+dispoForm.addEventListener('submit', function(e) {
+  e.preventDefault();
+  
+  const id = document.getElementById('dispoId').value;
   const jour = document.getElementById('jourSelect').value;
-  const debut = document.getElementById('heureDebut').value;
-  const fin = document.getElementById('heureFin').value;
+  const heureDebut = document.getElementById('heureDebut').value;
+  const heureFin = document.getElementById('heureFin').value;
+  const type = document.getElementById('typeDispo').value;
+  const notes = document.getElementById('notes').value;
   
-  if (!debut || !fin) {
-    alert('Veuillez remplir tous les champs');
-    return;
+  const dispoData = {
+    id: id ? parseInt(id) : disponibilites.length > 0 ? Math.max(...disponibilites.map(d => d.id)) + 1 : 1,
+    jour: jour,
+    heureDebut: heureDebut,
+    heureFin: heureFin,
+    type: type,
+    notes: notes
+  };
+  
+  if (id) {
+    // Modification
+    const index = disponibilites.findIndex(d => d.id === parseInt(id));
+    if (index !== -1) {
+      disponibilites[index] = dispoData;
+      
+      // Mettre à jour la ligne du tableau
+      const row = document.querySelector(`#dispoTable tr[data-id="${id}"]`);
+      if (row) {
+        row.dataset.jour = jour;
+        row.cells[0].textContent = capitalizeFirst(jour);
+        row.cells[1].textContent = heureDebut;
+        row.cells[2].textContent = heureFin;
+        row.cells[3].textContent = calculateDuration(heureDebut, heureFin);
+        row.cells[4].innerHTML = `<span class="status-badge ${type}">${getTypeText(type)}</span>`;
+      }
+      
+      alert(`Disponibilité #${id} modifiée avec succès!`);
+    }
+  } else {
+    // Ajout
+    disponibilites.push(dispoData);
+    
+    // Ajouter une nouvelle ligne au tableau
+    const newRow = document.createElement('tr');
+    newRow.setAttribute('data-id', dispoData.id);
+    newRow.setAttribute('data-jour', jour);
+    newRow.innerHTML = `
+      <td>${capitalizeFirst(jour)}</td>
+      <td>${heureDebut}</td>
+      <td>${heureFin}</td>
+      <td>${calculateDuration(heureDebut, heureFin)}</td>
+      <td><span class="status-badge ${type}">${getTypeText(type)}</span></td>
+      <td>
+        <button class="btn secondary" onclick="viewDispo(${dispoData.id})">
+          <i class="fas fa-eye"></i>
+        </button>
+        <button class="btn secondary" onclick="editDispo(${dispoData.id})">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn danger" onclick="deleteDispo(${dispoData.id})">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    `;
+    
+    document.getElementById('dispoTable').appendChild(newRow);
+    alert(`Nouvelle disponibilité créée avec succès!`);
   }
   
-  alert(`Nouvelle disponibilité ajoutée: ${jour} de ${debut} à ${fin}`);
-  document.getElementById('addForm').style.display = 'none';
-  // Ici, vous feriez un appel API pour sauvegarder
-}
+  dispoModal.style.display = 'none';
+  updateStatistics();
+});
 
-function editDisponibilite(id) {
-  alert(`Modification de la disponibilité #${id}`);
-  // Ouvrir un formulaire de modification
-}
+// Filtrage en temps réel
+searchInput.addEventListener('input', filterDispos);
+jourFilter.addEventListener('change', filterDispos);
 
-function deleteDisponibilite(id) {
-  if (confirm('Supprimer cette disponibilité ?')) {
-    alert(`Disponibilité #${id} supprimée`);
-    // Ici, vous feriez un appel API pour supprimer
+// Fermer les modals en cliquant à l'extérieur
+window.addEventListener('click', function(e) {
+  if (e.target === dispoModal) {
+    dispoModal.style.display = 'none';
   }
+  if (e.target === deleteModal) {
+    deleteModal.style.display = 'none';
+  }
+});
+
+// Chargement initial
+document.addEventListener('DOMContentLoaded', function() {
+  updateStatistics();
+  console.log('Page disponibilités chargée');
+});
+
+
+// Dans disponibilites.html - Ajouter cette fonction
+function saveDisponibilites() {
+  localStorage.setItem('medecin_disponibilites', JSON.stringify(disponibilites));
+  
+  // Afficher un message de confirmation
+  const alertDiv = document.createElement('div');
+  alertDiv.className = 'alert alert-success';
+  alertDiv.innerHTML = '<i class="fas fa-check-circle"></i> Disponibilités sauvegardées. L\'agenda sera mis à jour automatiquement.';
+  alertDiv.style.marginBottom = '20px';
+  
+  const headerRow = document.querySelector('.header-row');
+  headerRow.parentNode.insertBefore(alertDiv, headerRow.nextSibling);
+  
+  setTimeout(() => {
+    alertDiv.remove();
+  }, 3000);
 }
+
+// Appeler saveDisponibilites() après chaque modification (ajout, modification, suppression)
+// Dans addDispo(), editDispo(), deleteDispo() - ajouter saveDisponibilites() à la fin
+
+
 </script>
 {% endblock %}

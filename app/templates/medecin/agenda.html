@@ -17,56 +17,30 @@
     <button class="btn" onclick="goToToday()">
       <i class="fas fa-calendar-day"></i> Aujourd'hui
     </button>
+    <button class="btn" onclick="syncWithDisponibilites()">
+      <i class="fas fa-sync"></i> Synchroniser
+    </button>
   </div>
+</div>
+
+<!-- Indicateur de synchronisation -->
+<div id="syncStatus" class="alert alert-success" style="display: none; margin-bottom: 20px;">
+  <i class="fas fa-check-circle"></i> Agenda synchronisé avec vos disponibilités
 </div>
 
 <!-- Sélecteur de date -->
 <div class="card" style="margin-bottom: 20px;">
-  <div style="text-align: center; font-size: 18px; font-weight: bold;">
+  <div style="text-align: center; font-size: 18px; font-weight: bold;" id="weekDisplay">
     Semaine du 15 janvier 2024
+  </div>
+  <div style="text-align: center; color: var(--muted); margin-top: 5px;" id="dispoSummary">
+    Basé sur vos disponibilités définies
   </div>
 </div>
 
 <!-- Grille de l'agenda -->
-<div class="agenda-grid">
-  <!-- En-têtes des jours -->
-  <div class="agenda-header">Heure</div>
-  <div class="agenda-header">Lun 15</div>
-  <div class="agenda-header">Mar 16</div>
-  <div class="agenda-header">Mer 17</div>
-  <div class="agenda-header">Jeu 18</div>
-  <div class="agenda-header">Ven 19</div>
-  <div class="agenda-header">Sam 20</div>
-
-  <!-- Créneaux horaires -->
-  {% for hour in range(8, 19) %}
-    <div class="agenda-time">{{ hour }}:00</div>
-    {% for day in range(1, 7) %}
-      <div class="agenda-slot" data-hour="{{ hour }}" data-day="{{ day }}">
-        {% if hour == 9 and day == 1 %}
-          <div class="agenda-event" style="background: var(--blue-100); border-left: 3px solid var(--blue-500);">
-            <strong>Marie Dupont</strong>
-            <div class="small">Consultation</div>
-          </div>
-        {% elif hour == 10 and day == 1 %}
-          <div class="agenda-event" style="background: #e6f7ff; border-left: 3px solid #1890ff;">
-            <strong>Pierre Martin</strong>
-            <div class="small">Suivi</div>
-          </div>
-        {% elif hour == 14 and day == 2 %}
-          <div class="agenda-event" style="background: #f6ffed; border-left: 3px solid #52c41a;">
-            <strong>Sophie Lambert</strong>
-            <div class="small">Vaccination</div>
-          </div>
-        {% elif hour == 11 and day == 3 %}
-          <div class="agenda-event" style="background: #fff7e6; border-left: 3px solid #fa8c16;">
-            <strong>Réunion</strong>
-            <div class="small">Staff médical</div>
-          </div>
-        {% endif %}
-      </div>
-    {% endfor %}
-  {% endfor %}
+<div class="agenda-grid" id="agendaGrid">
+  <!-- L'agenda sera généré dynamiquement par JavaScript -->
 </div>
 
 <!-- Légende -->
@@ -89,6 +63,14 @@
       <div style="width: 12px; height: 12px; background: #fa8c16; border-radius: 2px;"></div>
       <span>Réunions</span>
     </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <div style="width: 12px; height: 12px; background: #f0f0f0; border-radius: 2px; border: 1px dashed #ccc;"></div>
+      <span>Disponible</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <div style="width: 12px; height: 12px; background: #ffccc7; border-radius: 2px;"></div>
+      <span>Indisponible</span>
+    </div>
   </div>
 </div>
 
@@ -96,47 +78,522 @@
 <div class="grid" style="margin-top: 20px;">
   <div class="card">
     <h3>RDV Cette Semaine</h3>
-    <p>24</p>
+    <p id="statsRDV">0</p>
   </div>
   <div class="card">
-    <h3>Heures de Consultations</h3>
-    <p>18h</p>
+    <h3>Heures Disponibles</h3>
+    <p id="statsHeuresDispo">0h</p>
   </div>
   <div class="card">
     <h3>Taux de Remplissage</h3>
-    <p>85%</p>
+    <p id="statsRemplissage">0%</p>
+  </div>
+  <div class="card">
+    <h3>Créneaux Libres</h3>
+    <p id="statsCreneauxLibres">0</p>
   </div>
 </div>
+
+<!-- Modal pour ajouter un RDV -->
+<div id="rdvModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Nouveau Rendez-vous</h2>
+      <span class="close">&times;</span>
+    </div>
+    <div class="modal-body">
+      <form id="rdvForm">
+        <input type="hidden" id="selectedDay">
+        <input type="hidden" id="selectedTime">
+        
+        <div class="form-group">
+          <label for="rdvPatient">Patient</label>
+          <select id="rdvPatient" required>
+            <option value="">Sélectionner un patient</option>
+            <option value="1">Marie Dupont</option>
+            <option value="2">Pierre Martin</option>
+            <option value="3">Sophie Lambert</option>
+            <option value="4">Thomas Moreau</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="rdvDate">Date et heure</label>
+          <input type="text" id="rdvDate" readonly style="background: #f5f5f5;">
+        </div>
+        
+        <div class="form-group">
+          <label for="rdvMotif">Motif</label>
+          <select id="rdvMotif">
+            <option value="consultation">Consultation générale</option>
+            <option value="suivi">Suivi traitement</option>
+            <option value="vaccination">Vaccination</option>
+            <option value="urgence">Urgence</option>
+            <option value="bilan">Bilan de santé</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="rdvDuree">Durée</label>
+          <select id="rdvDuree">
+            <option value="15">15 minutes</option>
+            <option value="30" selected>30 minutes</option>
+            <option value="45">45 minutes</option>
+            <option value="60">60 minutes</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="rdvNotes">Notes (optionnel)</label>
+          <textarea id="rdvNotes" placeholder="Notes supplémentaires..."></textarea>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn secondary" id="cancelBtn">Annuler</button>
+          <button type="submit" class="btn" id="saveBtn">Créer le RDV</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
+// Variables globales
+let currentWeek = 0; // 0 = semaine actuelle, -1 = précédente, +1 = suivante
+let disponibilites = [];
+let rendezvous = [];
+let currentDate = new Date();
+
+// Éléments DOM
+const agendaGrid = document.getElementById('agendaGrid');
+const rdvModal = document.getElementById('rdvModal');
+const rdvForm = document.getElementById('rdvForm');
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+  loadDisponibilites();
+  loadRendezVous();
+  generateAgenda();
+  updateStatistics();
+});
+
+// Charger les disponibilités depuis le localStorage
+function loadDisponibilites() {
+  const savedDispos = localStorage.getItem('medecin_disponibilites');
+  if (savedDispos) {
+    disponibilites = JSON.parse(savedDispos);
+  } else {
+    // Données par défaut
+    disponibilites = [
+      { id: 1, jour: "lundi", heureDebut: "08:30", heureFin: "12:00", type: "active" },
+      { id: 2, jour: "lundi", heureDebut: "14:00", heureFin: "18:00", type: "active" },
+      { id: 3, jour: "mardi", heureDebut: "09:00", heureFin: "17:00", type: "active" },
+      { id: 4, jour: "mercredi", heureDebut: "08:00", heureFin: "12:30", type: "active" },
+      { id: 5, jour: "jeudi", heureDebut: "09:00", heureFin: "12:00", type: "active" },
+      { id: 6, jour: "jeudi", heureDebut: "14:00", heureFin: "18:00", type: "active" },
+      { id: 7, jour: "vendredi", heureDebut: "08:30", heureFin: "17:30", type: "active" }
+    ];
+  }
+}
+
+// Charger les rendez-vous depuis le localStorage
+function loadRendezVous() {
+  const savedRDV = localStorage.getItem('medecin_rendezvous');
+  if (savedRDV) {
+    rendezvous = JSON.parse(savedRDV);
+  } else {
+    // Données par défaut
+    rendezvous = [
+      {
+        id: 1,
+        patient: "Marie Dupont",
+        patientId: "1",
+        date: getDateForDay('lundi', 9),
+        heure: "09:00",
+        duree: 30,
+        motif: "consultation",
+        notes: ""
+      },
+      {
+        id: 2,
+        patient: "Pierre Martin",
+        patientId: "2",
+        date: getDateForDay('lundi', 10),
+        heure: "10:00",
+        duree: 45,
+        motif: "suivi",
+        notes: "Suivi traitement"
+      },
+      {
+        id: 3,
+        patient: "Sophie Lambert",
+        patientId: "3",
+        date: getDateForDay('mardi', 14),
+        heure: "14:00",
+        duree: 15,
+        motif: "vaccination",
+        notes: "Vaccin annuel"
+      }
+    ];
+  }
+}
+
+// Générer l'agenda basé sur les disponibilités
+function generateAgenda() {
+  const startDate = getWeekStartDate();
+  const days = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+  
+  // Mettre à jour l'affichage de la semaine
+  updateWeekDisplay(startDate);
+  
+  // Générer l'en-tête
+  let html = '<div class="agenda-header">Heure</div>';
+  
+  // En-têtes des jours
+  days.forEach((day, index) => {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + index);
+    const dayName = getFrenchDayName(date.getDay());
+    const dayNumber = date.getDate();
+    html += `<div class="agenda-header">${dayName} ${dayNumber}</div>`;
+  });
+  
+  // Créneaux horaires (8h-19h)
+  for (let hour = 8; hour < 19; hour++) {
+    html += `<div class="agenda-time">${hour}:00</div>`;
+    
+    for (let dayIndex = 0; dayIndex < 6; dayIndex++) {
+      const day = days[dayIndex];
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + dayIndex);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
+      const isAvailable = isTimeSlotAvailable(day, timeSlot);
+      const rdv = getRendezVousAt(dateStr, timeSlot);
+      
+      let slotClass = 'agenda-slot';
+      let slotContent = '';
+      
+      if (rdv) {
+        // Créneau avec RDV
+        const eventColor = getEventColor(rdv.motif);
+        slotClass += ' agenda-slot-occupied';
+        slotContent = `
+          <div class="agenda-event" style="background: ${eventColor.background}; border-left: 3px solid ${eventColor.border};">
+            <strong>${rdv.patient}</strong>
+            <div class="small">${getMotifText(rdv.motif)}</div>
+            <div class="small">${rdv.heure} - ${calculateEndTime(rdv.heure, rdv.duree)}</div>
+          </div>
+        `;
+      } else if (isAvailable) {
+        // Créneau disponible
+        slotClass += ' agenda-slot-available';
+        slotContent = `<div class="agenda-available">Disponible</div>`;
+      } else {
+        // Créneau indisponible
+        slotClass += ' agenda-slot-unavailable';
+        slotContent = `<div class="agenda-unavailable">Indisponible</div>`;
+      }
+      
+      html += `
+        <div class="${slotClass}" 
+             data-day="${day}" 
+             data-date="${dateStr}"
+             data-time="${timeSlot}"
+             onclick="slotClick('${day}', '${dateStr}', '${timeSlot}', ${isAvailable})">
+          ${slotContent}
+        </div>
+      `;
+    }
+  }
+  
+  agendaGrid.innerHTML = html;
+}
+
+// Vérifier si un créneau est disponible
+function isTimeSlotAvailable(day, time) {
+  for (const dispo of disponibilites) {
+    if (dispo.jour === day && dispo.type === 'active') {
+      const start = timeToMinutes(dispo.heureDebut);
+      const end = timeToMinutes(dispo.heureFin);
+      const current = timeToMinutes(time);
+      
+      if (current >= start && current < end) {
+        // Vérifier qu'il n'y a pas de RDV qui chevauche
+        const dateStr = getDateForDay(day, parseInt(time.split(':')[0]));
+        if (!hasOverlappingRDV(dateStr, time)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+// Vérifier les chevauchements de RDV
+function hasOverlappingRDV(date, time) {
+  const timeMinutes = timeToMinutes(time);
+  
+  for (const rdv of rendezvous) {
+    if (rdv.date === date) {
+      const rdvStart = timeToMinutes(rdv.heure);
+      const rdvEnd = rdvStart + rdv.duree;
+      
+      if (timeMinutes >= rdvStart && timeMinutes < rdvEnd) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Obtenir le RDV à une date et heure donnée
+function getRendezVousAt(date, time) {
+  const timeMinutes = timeToMinutes(time);
+  
+  for (const rdv of rendezvous) {
+    if (rdv.date === date) {
+      const rdvStart = timeToMinutes(rdv.heure);
+      const rdvEnd = rdvStart + rdv.duree;
+      
+      if (timeMinutes >= rdvStart && timeMinutes < rdvEnd) {
+        return rdv;
+      }
+    }
+  }
+  return null;
+}
+
+// Gestion du clic sur un créneau
+function slotClick(day, date, time, isAvailable) {
+  if (!isAvailable) {
+    return;
+  }
+  
+  const dateObj = new Date(date);
+  const dateDisplay = dateObj.toLocaleDateString('fr-FR', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+  
+  document.getElementById('selectedDay').value = date;
+  document.getElementById('selectedTime').value = time;
+  document.getElementById('rdvDate').value = `${dateDisplay} à ${time}`;
+  
+  rdvModal.style.display = 'block';
+}
+
+// Synchroniser avec les disponibilités
+function syncWithDisponibilites() {
+  loadDisponibilites(); // Recharger les dernières disponibilités
+  generateAgenda();
+  updateStatistics();
+  
+  // Afficher le message de synchronisation
+  const syncStatus = document.getElementById('syncStatus');
+  syncStatus.style.display = 'block';
+  setTimeout(() => {
+    syncStatus.style.display = 'none';
+  }, 3000);
+}
+
+// Navigation entre les semaines
 function previousWeek() {
-  alert('Semaine précédente');
-  // Logique pour charger la semaine précédente
+  currentWeek--;
+  generateAgenda();
+  updateStatistics();
 }
 
 function nextWeek() {
-  alert('Semaine suivante');
-  // Logique pour charger la semaine suivante
+  currentWeek++;
+  generateAgenda();
+  updateStatistics();
 }
 
 function goToToday() {
-  alert('Retour à aujourd\'hui');
-  // Logique pour revenir à la semaine actuelle
+  currentWeek = 0;
+  currentDate = new Date();
+  generateAgenda();
+  updateStatistics();
 }
 
-// Gestion des clics sur les créneaux
-document.querySelectorAll('.agenda-slot').forEach(slot => {
-  slot.addEventListener('click', function() {
-    const hour = this.dataset.hour;
-    const day = this.dataset.day;
-    const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-    
-    if (confirm(`Créer un rendez-vous le ${days[day-1]} à ${hour}:00 ?`)) {
-      // Ouvrir un formulaire de création de RDV
-    }
+// Mettre à jour les statistiques
+function updateStatistics() {
+  const startDate = getWeekStartDate();
+  const days = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+  
+  let totalRDV = 0;
+  let totalHeuresDispo = 0;
+  let totalCreneauxLibres = 0;
+  
+  // Compter les RDV de la semaine
+  const weekDates = days.map((day, index) => {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + index);
+    return date.toISOString().split('T')[0];
   });
+  
+  totalRDV = rendezvous.filter(rdv => weekDates.includes(rdv.date)).length;
+  
+  // Calculer les heures disponibles et créneaux libres
+  days.forEach(day => {
+    const dayDispos = disponibilites.filter(d => d.jour === day && d.type === 'active');
+    dayDispos.forEach(dispo => {
+      const start = timeToMinutes(dispo.heureDebut);
+      const end = timeToMinutes(dispo.heureFin);
+      totalHeuresDispo += (end - start) / 60;
+      
+      // Compter les créneaux de 30 minutes libres
+      for (let time = start; time < end; time += 30) {
+        const timeStr = minutesToTime(time);
+        const dateStr = getDateForDay(day, Math.floor(time / 60));
+        if (!hasOverlappingRDV(dateStr, timeStr)) {
+          totalCreneauxLibres++;
+        }
+      }
+    });
+  });
+  
+  // Calculer le taux de remplissage
+  const totalHeuresRDV = totalRDV * 0.5; // Estimation 30min par RDV
+  const tauxRemplissage = totalHeuresDispo > 0 ? Math.round((totalHeuresRDV / totalHeuresDispo) * 100) : 0;
+  
+  document.getElementById('statsRDV').textContent = totalRDV;
+  document.getElementById('statsHeuresDispo').textContent = Math.round(totalHeuresDispo) + 'h';
+  document.getElementById('statsRemplissage').textContent = tauxRemplissage + '%';
+  document.getElementById('statsCreneauxLibres').textContent = totalCreneauxLibres;
+}
+
+// Fonctions utilitaires
+function getWeekStartDate() {
+  const date = new Date(currentDate);
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1) + (currentWeek * 7);
+  return new Date(date.setDate(diff));
+}
+
+function updateWeekDisplay(startDate) {
+  const endDate = new Date(startDate);
+  endDate.setDate(startDate.getDate() + 5); // Jusqu'au samedi
+  
+  const startStr = startDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  const endStr = endDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  
+  document.getElementById('weekDisplay').textContent = `Semaine du ${startStr} au ${endStr}`;
+}
+
+function getFrenchDayName(dayIndex) {
+  const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+  return days[dayIndex];
+}
+
+function timeToMinutes(time) {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+function minutesToTime(minutes) {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+}
+
+function calculateEndTime(startTime, duration) {
+  const startMinutes = timeToMinutes(startTime);
+  const endMinutes = startMinutes + duration;
+  return minutesToTime(endMinutes);
+}
+
+function getDateForDay(day, hour) {
+  const days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+  const startDate = getWeekStartDate();
+  const dayIndex = days.indexOf(day);
+  
+  if (dayIndex !== -1) {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + dayIndex - 1);
+    return date.toISOString().split('T')[0];
+  }
+  return '';
+}
+
+function getEventColor(motif) {
+  const colors = {
+    'consultation': { background: 'var(--blue-100)', border: 'var(--blue-500)' },
+    'suivi': { background: '#e6f7ff', border: '#1890ff' },
+    'vaccination': { background: '#f6ffed', border: '#52c41a' },
+    'urgence': { background: '#fff2f0', border: '#ff4d4f' },
+    'bilan': { background: '#fff7e6', border: '#fa8c16' }
+  };
+  return colors[motif] || { background: '#f0f0f0', border: '#666' };
+}
+
+function getMotifText(motif) {
+  const motifs = {
+    'consultation': 'Consultation',
+    'suivi': 'Suivi',
+    'vaccination': 'Vaccination',
+    'urgence': 'Urgence',
+    'bilan': 'Bilan'
+  };
+  return motifs[motif] || motif;
+}
+
+// Gestion du formulaire de RDV
+rdvForm.addEventListener('submit', function(e) {
+  e.preventDefault();
+  
+  const date = document.getElementById('selectedDay').value;
+  const time = document.getElementById('selectedTime').value;
+  const patientId = document.getElementById('rdvPatient').value;
+  const motif = document.getElementById('rdvMotif').value;
+  const duree = parseInt(document.getElementById('rdvDuree').value);
+  const notes = document.getElementById('rdvNotes').value;
+  
+  const patientName = document.getElementById('rdvPatient').options[document.getElementById('rdvPatient').selectedIndex].text;
+  
+  const newRDV = {
+    id: rendezvous.length > 0 ? Math.max(...rendezvous.map(r => r.id)) + 1 : 1,
+    patient: patientName,
+    patientId: patientId,
+    date: date,
+    heure: time,
+    duree: duree,
+    motif: motif,
+    notes: notes
+  };
+  
+  rendezvous.push(newRDV);
+  localStorage.setItem('medecin_rendezvous', JSON.stringify(rendezvous));
+  
+  alert(`Rendez-vous créé pour ${patientName} le ${date} à ${time}`);
+  rdvModal.style.display = 'none';
+  generateAgenda();
+  updateStatistics();
+});
+
+// Fermeture des modals
+document.querySelectorAll('.close').forEach(closeBtn => {
+  closeBtn.addEventListener('click', function() {
+    rdvModal.style.display = 'none';
+  });
+});
+
+document.getElementById('cancelBtn').addEventListener('click', function() {
+  rdvModal.style.display = 'none';
+});
+
+// Fermer le modal en cliquant à l'extérieur
+window.addEventListener('click', function(e) {
+  if (e.target === rdvModal) {
+    rdvModal.style.display = 'none';
+  }
 });
 </script>
 
@@ -178,8 +635,27 @@ document.querySelectorAll('.agenda-slot').forEach(slot => {
   transition: background 0.2s;
 }
 
-.agenda-slot:hover {
-  background: #fafafa;
+.agenda-slot-available {
+  background: #f8fff8;
+  border-left: 3px solid #52c41a;
+}
+
+.agenda-slot-available:hover {
+  background: #f0fff0;
+}
+
+.agenda-slot-unavailable {
+  background: #fffafa;
+  border-left: 3px solid #ffccc7;
+  cursor: not-allowed;
+}
+
+.agenda-slot-occupied {
+  cursor: default;
+}
+
+.agenda-slot-occupied:hover {
+  background: white;
 }
 
 .agenda-event {
@@ -187,6 +663,135 @@ document.querySelectorAll('.agenda-slot').forEach(slot => {
   border-radius: 4px;
   font-size: 12px;
   margin-bottom: 2px;
+  height: 100%;
+}
+
+.agenda-available {
+  padding: 8px;
+  text-align: center;
+  color: #52c41a;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.agenda-unavailable {
+  padding: 8px;
+  text-align: center;
+  color: #ff7875;
+  font-size: 11px;
+  font-style: italic;
+}
+
+.alert {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.alert-success {
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+  color: #52c41a;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+  background-color: #fff;
+  margin: 5% auto;
+  padding: 0;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  animation: modalopen 0.3s;
+}
+
+@keyframes modalopen {
+  from {opacity: 0; transform: translateY(-50px);}
+  to {opacity: 1; transform: translateY(0);}
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.close {
+  color: #aaa;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close:hover {
+  color: #000;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.form-group textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .agenda-grid {
+    grid-template-columns: 60px repeat(6, 1fr);
+    font-size: 12px;
+  }
+  
+  .agenda-header,
+  .agenda-time {
+    padding: 8px 4px;
+  }
 }
 </style>
 {% endblock %}

@@ -7,13 +7,32 @@
 {% block content %}
 <div class="header-row">
   <h1 class="h1">Rendez-vous du Jour</h1>
-  <div>
-    <button class="btn secondary" onclick="filterRDV('all')">
-      <i class="fas fa-list"></i> Tous
-    </button>
-    <button class="btn" onclick="refreshRDV()">
-      <i class="fas fa-sync-alt"></i> Actualiser
-    </button>
+  <button class="btn" id="addRdvBtn">
+    <i class="fas fa-plus"></i> Nouveau RDV
+  </button>
+</div>
+
+<!-- Barre de recherche et filtres -->
+<div class="filters-row">
+  <div class="search-container">
+    <i class="fas fa-search"></i>
+    <input type="text" id="searchInput" placeholder="Rechercher un rendez-vous...">
+  </div>
+  <div class="filter-group">
+    <select id="statusFilter">
+      <option value="">Tous les statuts</option>
+      <option value="confirmed">Confirmé</option>
+      <option value="pending">En attente</option>
+      <option value="cancelled">Annulé</option>
+      <option value="completed">Terminé</option>
+    </select>
+    <select id="patientFilter">
+      <option value="">Tous les patients</option>
+      <option value="1">Marie Dupont</option>
+      <option value="2">Pierre Martin</option>
+      <option value="3">Sophie Lambert</option>
+      <option value="4">Thomas Moreau</option>
+    </select>
   </div>
 </div>
 
@@ -32,6 +51,9 @@
     <button class="btn secondary" onclick="filterRDV('cancelled')">
       <i class="fas fa-times-circle"></i> Annulés
     </button>
+    <button class="btn secondary" onclick="filterRDV('completed')">
+      <i class="fas fa-check"></i> Terminés
+    </button>
   </div>
 </div>
 
@@ -49,7 +71,7 @@
     </thead>
     <tbody id="rdvTable">
       <!-- RDV 1 -->
-      <tr data-status="confirmed" data-id="1">
+      <tr data-id="1" data-status="confirmed" data-patient="1">
         <td>09:00</td>
         <td>
           <strong>Marie Dupont</strong>
@@ -57,28 +79,30 @@
         </td>
         <td>Consultation générale</td>
         <td>
-          <div class="small">📞 01 23 45 67 89</div>
-          <div class="small">✉️ marie.dupont@email.com</div>
+          <div class="small"> 01 23 45 67 89</div>
+       
         </td>
         <td>
-          <span class="badge badge-success">
-            <i class="fas fa-check-circle"></i> Confirmé
-          </span>
+          <span class="status-badge confirmed">Confirmé</span>
         </td>
         <td>
-          <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-            <button class="btn" onclick="startConsultation(1)">
-              <i class="fas fa-play"></i> Démarrer
-            </button>
-            <button class="btn secondary" onclick="cancelRDV(1)">
-              <i class="fas fa-times"></i> Annuler
-            </button>
-          </div>
+          <button class="btn secondary" onclick="viewRDV(1)">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="btn secondary" onclick="editRDV(1)">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn danger" onclick="deleteRDV(1)">
+            <i class="fas fa-trash"></i>
+          </button>
+          <button class="btn" onclick="startConsultation(1)">
+            <i class="fas fa-play"></i>
+          </button>
         </td>
       </tr>
 
       <!-- RDV 2 -->
-      <tr data-status="confirmed" data-id="2">
+      <tr data-id="2" data-status="confirmed" data-patient="2">
         <td>10:30</td>
         <td>
           <strong>Pierre Martin</strong>
@@ -86,28 +110,30 @@
         </td>
         <td>Suivi traitement</td>
         <td>
-          <div class="small">📞 01 34 56 78 90</div>
-          <div class="small">✉️ pierre.martin@email.com</div>
+          <div class="small"> 01 34 56 78 90</div>
+          
         </td>
         <td>
-          <span class="badge badge-success">
-            <i class="fas fa-check-circle"></i> Confirmé
-          </span>
+          <span class="status-badge confirmed">Confirmé</span>
         </td>
         <td>
-          <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-            <button class="btn" onclick="startConsultation(2)">
-              <i class="fas fa-play"></i> Démarrer
-            </button>
-            <button class="btn secondary" onclick="cancelRDV(2)">
-              <i class="fas fa-times"></i> Annuler
-            </button>
-          </div>
+          <button class="btn secondary" onclick="viewRDV(2)">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="btn secondary" onclick="editRDV(2)">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn danger" onclick="deleteRDV(2)">
+            <i class="fas fa-trash"></i>
+          </button>
+          <button class="btn" onclick="startConsultation(2)">
+            <i class="fas fa-play"></i>
+          </button>
         </td>
       </tr>
 
       <!-- RDV 3 - En attente de confirmation -->
-      <tr data-status="pending" data-id="3">
+      <tr data-id="3" data-status="pending" data-patient="3">
         <td>11:15</td>
         <td>
           <strong>Sophie Lambert</strong>
@@ -115,52 +141,56 @@
         </td>
         <td>Vaccination</td>
         <td>
-          <div class="small">📞 01 45 67 89 01</div>
-          <div class="small">✉️ sophie.lambert@email.com</div>
+          <div class="small"> 01 45 67 89 01</div>
+          
         </td>
         <td>
-          <span class="badge badge-warning">
-            <i class="fas fa-clock"></i> En attente
-          </span>
+          <span class="status-badge pending">En attente</span>
         </td>
         <td>
-          <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-            <button class="btn" onclick="confirmRDV(3)">
-              <i class="fas fa-check"></i> Confirmer
-            </button>
-            <button class="btn secondary" onclick="cancelRDV(3)">
-              <i class="fas fa-times"></i> Refuser
-            </button>
-          </div>
+          <button class="btn secondary" onclick="viewRDV(3)">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="btn secondary" onclick="editRDV(3)">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn danger" onclick="deleteRDV(3)">
+            <i class="fas fa-trash"></i>
+          </button>
+          <button class="btn" onclick="confirmRDV(3)">
+            <i class="fas fa-check"></i>
+          </button>
         </td>
       </tr>
 
-      <!-- RDV 6 - Nouveau en attente -->
-      <tr data-status="pending" data-id="6">
-        <td>17:30</td>
+      <!-- RDV 4 - Terminé -->
+      <tr data-id="4" data-status="completed" data-patient="4">
+        <td>08:00</td>
         <td>
           <strong>Thomas Moreau</strong>
           <div class="small">34 ans</div>
         </td>
         <td>Première consultation</td>
         <td>
-          <div class="small">📞 01 78 90 12 34</div>
-          <div class="small">✉️ thomas.moreau@email.com</div>
+          <div class="small"> 01 78 90 12 34</div>
+         
         </td>
         <td>
-          <span class="badge badge-warning">
-            <i class="fas fa-clock"></i> En attente
-          </span>
+          <span class="status-badge completed">Terminé</span>
         </td>
         <td>
-          <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-            <button class="btn" onclick="confirmRDV(6)">
-              <i class="fas fa-check"></i> Confirmer
-            </button>
-            <button class="btn secondary" onclick="cancelRDV(6)">
-              <i class="fas fa-times"></i> Refuser
-            </button>
-          </div>
+          <button class="btn secondary" onclick="viewRDV(4)">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="btn secondary" onclick="editRDV(4)">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn danger" onclick="deleteRDV(4)">
+            <i class="fas fa-trash"></i>
+          </button>
+          <button class="btn secondary" onclick="viewConsultation(4)">
+            <i class="fas fa-file-medical"></i>
+          </button>
         </td>
       </tr>
     </tbody>
@@ -168,7 +198,6 @@
 </div>
 
 <!-- Statistiques du jour -->
-<!-- Statistiques du jour - Version Dynamique -->
 <div class="grid" style="margin-top: 20px;">
   <div class="card">
     <h3>Total RDV</h3>
@@ -186,37 +215,246 @@
     <div class="small" id="pendingPercent">0%</div>
   </div>
   <div class="card">
-    <h3>Annulés</h3>
-    <p id="cancelledRDV" class="stat-number">0</p>
-    <div class="small" id="cancelledPercent">0%</div>
+    <h3>Terminés</h3>
+    <p id="completedRDV" class="stat-number">0</p>
+    <div class="small" id="completedPercent">0%</div>
   </div>
 </div>
-<!-- Modal de confirmation -->
-<div id="confirmationModal" class="modal" style="display: none;">
+
+<!-- Modal d'ajout/modification de RDV -->
+<div id="rdvModal" class="modal">
   <div class="modal-content">
     <div class="modal-header">
-      <h3 id="modalTitle">Confirmation</h3>
-      <button class="modal-close" onclick="closeModal()">&times;</button>
+      <h2 id="modalTitle">Nouveau Rendez-vous</h2>
+      <span class="close">&times;</span>
     </div>
-    <div id="modalBody">
-      <p>Êtes-vous sûr de vouloir effectuer cette action ?</p>
-    </div>
-    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
-      <button class="btn secondary" onclick="closeModal()">Annuler</button>
-      <button class="btn" id="modalConfirmBtn">Confirmer</button>
+    <div class="modal-body">
+      <form id="rdvForm">
+        <input type="hidden" id="rdvId">
+        
+        <div class="form-group">
+          <label for="patientSelect">Patient</label>
+          <select id="patientSelect" required>
+            <option value="">Sélectionner un patient</option>
+            <option value="1">Marie Dupont</option>
+            <option value="2">Pierre Martin</option>
+            <option value="3">Sophie Lambert</option>
+            <option value="4">Thomas Moreau</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="rdvDate">Date</label>
+          <input type="date" id="rdvDate" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="rdvTime">Heure</label>
+          <input type="time" id="rdvTime" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="motif">Motif de la consultation</label>
+          <textarea id="motif" placeholder="Décrire le motif de la consultation" required></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="duration">Durée estimée (minutes)</label>
+          <select id="duration">
+            <option value="15">15 minutes</option>
+            <option value="30">30 minutes</option>
+            <option value="45">45 minutes</option>
+            <option value="60">60 minutes</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="status">Statut</label>
+          <select id="status">
+            <option value="pending">En attente</option>
+            <option value="confirmed">Confirmé</option>
+            <option value="cancelled">Annulé</option>
+            <option value="completed">Terminé</option>
+          </select>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn secondary" id="cancelBtn">Annuler</button>
+          <button type="submit" class="btn" id="saveBtn">Enregistrer</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
+
+<!-- Modal de confirmation de suppression -->
+<div id="deleteModal" class="modal">
+  <div class="modal-content small">
+    <div class="modal-header">
+      <h2>Confirmer la suppression</h2>
+      <span class="close">&times;</span>
+    </div>
+    <div class="modal-body">
+      <p>Êtes-vous sûr de vouloir supprimer ce rendez-vous ?</p>
+      <div class="form-actions">
+        <button type="button" class="btn secondary" id="cancelDeleteBtn">Annuler</button>
+        <button type="button" class="btn danger" id="confirmDeleteBtn">Supprimer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block styles %}
+
 {% endblock %}
 
 {% block scripts %}
 <script>
-let currentAction = null;
-let currentRDVId = null;
+// Variables globales
+let currentRdvId = null;
+let rdvs = [
+  {
+    id: 1,
+    patient: "Marie Dupont",
+    patientId: "1",
+    date: new Date().toISOString().split('T')[0],
+    time: "09:00",
+    motif: "Consultation générale",
+    duration: 30,
+    status: "confirmed",
+    contact: {
+      phone: "01 23 45 67 89",
+      email: "marie.dupont@email.com"
+    },
+    age: "45 ans"
+  },
+  {
+    id: 2,
+    patient: "Pierre Martin",
+    patientId: "2",
+    date: new Date().toISOString().split('T')[0],
+    time: "10:30",
+    motif: "Suivi traitement",
+    duration: 45,
+    status: "confirmed",
+    contact: {
+      phone: "01 34 56 78 90",
+      email: "pierre.martin@email.com"
+    },
+    age: "52 ans"
+  },
+  {
+    id: 3,
+    patient: "Sophie Lambert",
+    patientId: "3",
+    date: new Date().toISOString().split('T')[0],
+    time: "11:15",
+    motif: "Vaccination",
+    duration: 15,
+    status: "pending",
+    contact: {
+      phone: "01 45 67 89 01",
+      email: "sophie.lambert@email.com"
+    },
+    age: "38 ans"
+  },
+  {
+    id: 4,
+    patient: "Thomas Moreau",
+    patientId: "4",
+    date: new Date().toISOString().split('T')[0],
+    time: "08:00",
+    motif: "Première consultation",
+    duration: 60,
+    status: "completed",
+    contact: {
+      phone: "01 78 90 12 34",
+      email: "thomas.moreau@email.com"
+    },
+    age: "34 ans"
+  }
+];
 
-function refreshRDV() {
-  alert('Liste des rendez-vous actualisée !');
-  updateStatistics();
+// Éléments DOM
+const rdvModal = document.getElementById('rdvModal');
+const deleteModal = document.getElementById('deleteModal');
+const rdvForm = document.getElementById('rdvForm');
+const searchInput = document.getElementById('searchInput');
+const statusFilter = document.getElementById('statusFilter');
+const patientFilter = document.getElementById('patientFilter');
+
+// Fonctions de gestion des RDV
+function viewRDV(id) {
+  const rdv = rdvs.find(r => r.id === id);
+  if (rdv) {
+    alert(`Détails du rendez-vous #${id}\n\n` +
+          `Patient: ${rdv.patient}\n` +
+          `Date: ${rdv.date} à ${rdv.time}\n` +
+          `Motif: ${rdv.motif}\n` +
+          `Durée: ${rdv.duration} minutes\n` +
+          `Statut: ${getStatusText(rdv.status)}\n` +
+          `Contact: ${rdv.contact.phone} / ${rdv.contact.email}`);
+  }
+}
+
+function editRDV(id) {
+  const rdv = rdvs.find(r => r.id === id);
+  if (rdv) {
+    document.getElementById('modalTitle').textContent = 'Modifier le Rendez-vous';
+    document.getElementById('rdvId').value = rdv.id;
+    document.getElementById('patientSelect').value = rdv.patientId;
+    document.getElementById('rdvDate').value = rdv.date;
+    document.getElementById('rdvTime').value = rdv.time;
+    document.getElementById('motif').value = rdv.motif;
+    document.getElementById('duration').value = rdv.duration;
+    document.getElementById('status').value = rdv.status;
+    
+    rdvModal.style.display = 'block';
+    currentRdvId = id;
+  }
+}
+
+function deleteRDV(id) {
+  currentRdvId = id;
+  deleteModal.style.display = 'block';
+}
+
+function addRDV() {
+  document.getElementById('modalTitle').textContent = 'Nouveau Rendez-vous';
+  rdvForm.reset();
+  document.getElementById('rdvId').value = '';
+  document.getElementById('rdvDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('rdvTime').value = '09:00';
+  document.getElementById('status').value = 'pending';
+  
+  rdvModal.style.display = 'block';
+  currentRdvId = null;
+}
+
+// Fonctions existantes adaptées
+function confirmRDV(id) {
+  const rdv = rdvs.find(r => r.id === id);
+  if (rdv && confirm(`Confirmer le rendez-vous avec ${rdv.patient} ?`)) {
+    rdv.status = 'confirmed';
+    updateRDVDisplay(id);
+    updateStatistics();
+    alert(`Rendez-vous #${id} confirmé !`);
+  }
+}
+
+function startConsultation(id) {
+  if (confirm('Démarrer la consultation pour ce rendez-vous ?')) {
+    alert(`Consultation #${id} démarrée !`);
+    // Redirection vers la page de consultation
+    // window.location.href = `/medecin/consultation/${id}`;
+  }
+}
+
+function viewConsultation(id) {
+  alert(`Ouverture du dossier de consultation #${id}`);
+  // window.location.href = `/medecin/consultation/${id}/view`;
 }
 
 function filterRDV(status) {
@@ -230,192 +468,351 @@ function filterRDV(status) {
   });
 }
 
-function confirmRDV(rdvId) {
-  currentRDVId = rdvId;
-  currentAction = 'confirm';
-  
-  const patientName = document.querySelector(`tr[data-id="${rdvId}"] strong`).textContent;
-  document.getElementById('modalTitle').textContent = 'Confirmer le rendez-vous';
-  document.getElementById('modalBody').innerHTML = `
-    <p>Confirmer le rendez-vous de <strong>${patientName}</strong> ?</p>
-    <p>Le patient recevra une notification de confirmation.</p>
-  `;
-  document.getElementById('modalConfirmBtn').innerHTML = '<i class="fas fa-check"></i> Confirmer';
-  document.getElementById('confirmationModal').style.display = 'flex';
+// Fonctions utilitaires
+function getStatusText(status) {
+  const statusMap = {
+    'confirmed': 'Confirmé',
+    'pending': 'En attente',
+    'cancelled': 'Annulé',
+    'completed': 'Terminé'
+  };
+  return statusMap[status] || status;
 }
 
-function cancelRDV(rdvId) {
-  currentRDVId = rdvId;
-  const status = document.querySelector(`tr[data-id="${rdvId}"]`).dataset.status;
-  currentAction = status === 'pending' ? 'refuse' : 'cancel';
-  
-  const patientName = document.querySelector(`tr[data-id="${rdvId}"] strong`).textContent;
-  const actionText = status === 'pending' ? 'Refuser' : 'Annuler';
-  
-  document.getElementById('modalTitle').textContent = `${actionText} le rendez-vous`;
-  document.getElementById('modalBody').innerHTML = `
-    <p>${actionText} le rendez-vous de <strong>${patientName}</strong> ?</p>
-    <div class="form-group">
-      <label class="form-label">Raison (optionnel) :</label>
-      <textarea id="cancelReason" class="input" placeholder="Ex: Créneau indisponible, patient a reporté..." rows="3" style="width: 100%;"></textarea>
-    </div>
-  `;
-  document.getElementById('modalConfirmBtn').innerHTML = `<i class="fas fa-times"></i> ${actionText}`;
-  document.getElementById('confirmationModal').style.display = 'flex';
+function getPatientIdByName(name) {
+  const patientMap = {
+    'Marie Dupont': '1',
+    'Pierre Martin': '2',
+    'Sophie Lambert': '3',
+    'Thomas Moreau': '4'
+  };
+  return patientMap[name] || '';
 }
 
-function startConsultation(rdvId) {
-  if (confirm('Démarrer la consultation pour ce rendez-vous ?')) {
-    alert(`Consultation #${rdvId} démarrée !`);
-    // Redirection vers la page de consultation
-    // window.location.href = `/medecin/consultation/${rdvId}`;
-  }
+function getPatientNameById(id) {
+  const patientMap = {
+    '1': 'Marie Dupont',
+    '2': 'Pierre Martin',
+    '3': 'Sophie Lambert',
+    '4': 'Thomas Moreau'
+  };
+  return patientMap[id] || '';
 }
 
-function rescheduleRDV(rdvId) {
-  const patientName = document.querySelector(`tr[data-id="${rdvId}"] strong`).textContent;
-  const newDate = prompt(`Reprogrammer le rendez-vous avec ${patientName} (nouvelle date) :`, '2024-01-16 10:00');
-  if (newDate) {
-    alert(`Rendez-vous reprogrammé au ${newDate}`);
-    // Ici, vous feriez un appel API pour reprogrammer
-  }
+function getPatientContactById(id) {
+  const contactMap = {
+    '1': { phone: '01 23 45 67 89', email: 'marie.dupont@email.com' },
+    '2': { phone: '01 34 56 78 90', email: 'pierre.martin@email.com' },
+    '3': { phone: '01 45 67 89 01', email: 'sophie.lambert@email.com' },
+    '4': { phone: '01 78 90 12 34', email: 'thomas.moreau@email.com' }
+  };
+  return contactMap[id] || { phone: '', email: '' };
 }
 
-function deleteRDV(rdvId) {
-  if (confirm('Supprimer définitivement ce rendez-vous annulé ?')) {
-    alert(`Rendez-vous #${rdvId} supprimé`);
-    // Ici, vous feriez un appel API pour supprimer
-  }
+function getPatientAgeById(id) {
+  const ageMap = {
+    '1': '45 ans',
+    '2': '52 ans',
+    '3': '38 ans',
+    '4': '34 ans'
+  };
+  return ageMap[id] || '';
 }
 
-function executeAction() {
-  const reason = document.getElementById('cancelReason') ? document.getElementById('cancelReason').value : '';
+function filterRDVs() {
+  const searchTerm = searchInput.value.toLowerCase();
+  const statusValue = statusFilter.value;
+  const patientValue = patientFilter.value;
   
-  switch(currentAction) {
-    case 'confirm':
-      alert(`Rendez-vous #${currentRDVId} confirmé !`);
-      updateRDVStatus(currentRDVId, 'confirmed');
-      break;
-    case 'cancel':
-      alert(`Rendez-vous #${currentRDVId} annulé${reason ? ` : ${reason}` : ''}`);
-      updateRDVStatus(currentRDVId, 'cancelled');
-      break;
-    case 'refuse':
-      alert(`Rendez-vous #${currentRDVId} refusé${reason ? ` : ${reason}` : ''}`);
-      updateRDVStatus(currentRDVId, 'cancelled');
-      break;
-  }
+  const rows = document.querySelectorAll('#rdvTable tr');
   
-  closeModal();
-  updateStatistics();
+  rows.forEach(row => {
+    const id = row.getAttribute('data-id');
+    const rdv = rdvs.find(r => r.id === parseInt(id));
+    
+    if (!rdv) return;
+    
+    let show = true;
+    
+    // Filtre par recherche
+    if (searchTerm) {
+      const text = row.textContent.toLowerCase();
+      if (!text.includes(searchTerm)) {
+        show = false;
+      }
+    }
+    
+    // Filtre par statut
+    if (statusValue && rdv.status !== statusValue) {
+      show = false;
+    }
+    
+    // Filtre par patient
+    if (patientValue && rdv.patientId !== patientValue) {
+      show = false;
+    }
+    
+    row.style.display = show ? '' : 'none';
+  });
 }
 
-function updateRDVStatus(rdvId, newStatus) {
-  const row = document.querySelector(`tr[data-id="${rdvId}"]`);
-  const statusCell = row.querySelector('td:nth-child(5)');
-  const actionsCell = row.querySelector('td:nth-child(6)');
+function updateRDVDisplay(id) {
+  const rdv = rdvs.find(r => r.id === id);
+  const row = document.querySelector(`#rdvTable tr[data-id="${id}"]`);
   
-  row.dataset.status = newStatus;
-  
-  if (newStatus === 'confirmed') {
-    statusCell.innerHTML = '<span class="badge badge-success"><i class="fas fa-check-circle"></i> Confirmé</span>';
-    actionsCell.innerHTML = `
-      <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-        <button class="btn" onclick="startConsultation(${rdvId})">
-          <i class="fas fa-play"></i> Démarrer
+  if (rdv && row) {
+    row.dataset.status = rdv.status;
+    row.dataset.patient = rdv.patientId;
+    
+    row.cells[0].textContent = rdv.time;
+    row.cells[1].innerHTML = `<strong>${rdv.patient}</strong><div class="small">${rdv.age}</div>`;
+    row.cells[2].textContent = rdv.motif;
+    row.cells[3].innerHTML = `<div class="small">📞 ${rdv.contact.phone}</div><div class="small">✉️ ${rdv.contact.email}</div>`;
+    row.cells[4].innerHTML = `<span class="status-badge ${rdv.status}">${getStatusText(rdv.status)}</span>`;
+    
+    // Mettre à jour les actions selon le statut
+    let actionButtons = '';
+    if (rdv.status === 'completed') {
+      actionButtons = `
+        <button class="btn secondary" onclick="viewRDV(${id})">
+          <i class="fas fa-eye"></i>
         </button>
-        <button class="btn secondary" onclick="cancelRDV(${rdvId})">
-          <i class="fas fa-times"></i> Annuler
+        <button class="btn secondary" onclick="editRDV(${id})">
+          <i class="fas fa-edit"></i>
         </button>
-      </div>
-    `;
-  } else if (newStatus === 'cancelled') {
-    statusCell.innerHTML = '<span class="badge badge-error"><i class="fas fa-times-circle"></i> Annulé</span>';
-    actionsCell.innerHTML = `
-      <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-        <button class="btn secondary" onclick="rescheduleRDV(${rdvId})">
-          <i class="fas fa-calendar-plus"></i> Reprogrammer
+        <button class="btn danger" onclick="deleteRDV(${id})">
+          <i class="fas fa-trash"></i>
         </button>
-        <button class="btn secondary" onclick="deleteRDV(${rdvId})">
-          <i class="fas fa-trash"></i> Supprimer
+        <button class="btn secondary" onclick="viewConsultation(${id})">
+          <i class="fas fa-file-medical"></i>
         </button>
-      </div>
-    `;
+      `;
+    } else if (rdv.status === 'pending') {
+      actionButtons = `
+        <button class="btn secondary" onclick="viewRDV(${id})">
+          <i class="fas fa-eye"></i>
+        </button>
+        <button class="btn secondary" onclick="editRDV(${id})">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn danger" onclick="deleteRDV(${id})">
+          <i class="fas fa-trash"></i>
+        </button>
+        <button class="btn" onclick="confirmRDV(${id})">
+          <i class="fas fa-check"></i>
+        </button>
+      `;
+    } else {
+      actionButtons = `
+        <button class="btn secondary" onclick="viewRDV(${id})">
+          <i class="fas fa-eye"></i>
+        </button>
+        <button class="btn secondary" onclick="editRDV(${id})">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn danger" onclick="deleteRDV(${id})">
+          <i class="fas fa-trash"></i>
+        </button>
+        <button class="btn" onclick="startConsultation(${id})">
+          <i class="fas fa-play"></i>
+        </button>
+      `;
+    }
+    
+    row.cells[5].innerHTML = actionButtons;
   }
 }
 
 function updateStatistics() {
-  const total = document.querySelectorAll('#rdvTable tr').length;
-  const confirmed = document.querySelectorAll('#rdvTable tr[data-status="confirmed"]').length;
-  const pending = document.querySelectorAll('#rdvTable tr[data-status="pending"]').length;
-  const cancelled = document.querySelectorAll('#rdvTable tr[data-status="cancelled"]').length;
+  const total = rdvs.length;
+  const confirmed = rdvs.filter(r => r.status === 'confirmed').length;
+  const pending = rdvs.filter(r => r.status === 'pending').length;
+  const completed = rdvs.filter(r => r.status === 'completed').length;
+  const cancelled = rdvs.filter(r => r.status === 'cancelled').length;
   
   document.getElementById('totalRDV').textContent = total;
   document.getElementById('confirmedRDV').textContent = confirmed;
   document.getElementById('pendingRDV').textContent = pending;
-  document.getElementById('cancelledRDV').textContent = cancelled;
+  document.getElementById('completedRDV').textContent = completed;
+  
+  document.getElementById('confirmedPercent').textContent = total > 0 ? Math.round((confirmed / total) * 100) + '%' : '0%';
+  document.getElementById('pendingPercent').textContent = total > 0 ? Math.round((pending / total) * 100) + '%' : '0%';
+  document.getElementById('completedPercent').textContent = total > 0 ? Math.round((completed / total) * 100) + '%' : '0%';
 }
 
-function closeModal() {
-  document.getElementById('confirmationModal').style.display = 'none';
-  currentAction = null;
-  currentRDVId = null;
-}
+// Gestion des événements
+document.getElementById('addRdvBtn').addEventListener('click', addRDV);
 
-// Initialisation
-document.addEventListener('DOMContentLoaded', function() {
-  updateStatistics();
-  document.getElementById('modalConfirmBtn').addEventListener('click', executeAction);
+// Fermeture des modals
+document.querySelectorAll('.close').forEach(closeBtn => {
+  closeBtn.addEventListener('click', function() {
+    rdvModal.style.display = 'none';
+    deleteModal.style.display = 'none';
+  });
 });
 
-// Styles pour le modal
-const modalStyle = `
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
+// Annulation
+document.getElementById('cancelBtn').addEventListener('click', function() {
+  rdvModal.style.display = 'none';
+});
 
-.modal-content {
-  background: white;
-  padding: 24px;
-  border-radius: 16px;
-  width: 90%;
-  max-width: 500px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
+document.getElementById('cancelDeleteBtn').addEventListener('click', function() {
+  deleteModal.style.display = 'none';
+});
 
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  border-bottom: 1px solid #f1f6fb;
-  padding-bottom: 15px;
-}
+// Confirmation de suppression
+document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+  if (currentRdvId) {
+    // Supprimer le RDV
+    rdvs = rdvs.filter(r => r.id !== currentRdvId);
+    
+    // Mettre à jour l'interface
+    const row = document.querySelector(`#rdvTable tr[data-id="${currentRdvId}"]`);
+    if (row) {
+      row.remove();
+    }
+    
+    alert(`Rendez-vous #${currentRdvId} supprimé avec succès!`);
+    deleteModal.style.display = 'none';
+    currentRdvId = null;
+    updateStatistics();
+  }
+});
 
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: var(--muted);
-}
+// Soumission du formulaire
+rdvForm.addEventListener('submit', function(e) {
+  e.preventDefault();
+  
+  const id = document.getElementById('rdvId').value;
+  const patientId = document.getElementById('patientSelect').value;
+  const patientName = getPatientNameById(patientId);
+  const date = document.getElementById('rdvDate').value;
+  const time = document.getElementById('rdvTime').value;
+  const motif = document.getElementById('motif').value;
+  const duration = document.getElementById('duration').value;
+  const status = document.getElementById('status').value;
+  
+  const rdvData = {
+    id: id ? parseInt(id) : rdvs.length > 0 ? Math.max(...rdvs.map(r => r.id)) + 1 : 1,
+    patient: patientName,
+    patientId: patientId,
+    date: date,
+    time: time,
+    motif: motif,
+    duration: parseInt(duration),
+    status: status,
+    contact: getPatientContactById(patientId),
+    age: getPatientAgeById(patientId)
+  };
+  
+  if (id) {
+    // Modification
+    const index = rdvs.findIndex(r => r.id === parseInt(id));
+    if (index !== -1) {
+      rdvs[index] = rdvData;
+      updateRDVDisplay(parseInt(id));
+      alert(`Rendez-vous #${id} modifié avec succès!`);
+    }
+  } else {
+    // Ajout
+    rdvs.push(rdvData);
+    
+    // Ajouter une nouvelle ligne au tableau
+    const newRow = document.createElement('tr');
+    newRow.setAttribute('data-id', rdvData.id);
+    newRow.setAttribute('data-status', rdvData.status);
+    newRow.setAttribute('data-patient', rdvData.patientId);
+    
+    let actionButtons = '';
+    if (rdvData.status === 'completed') {
+      actionButtons = `
+        <button class="btn secondary" onclick="viewRDV(${rdvData.id})">
+          <i class="fas fa-eye"></i>
+        </button>
+        <button class="btn secondary" onclick="editRDV(${rdvData.id})">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn danger" onclick="deleteRDV(${rdvData.id})">
+          <i class="fas fa-trash"></i>
+        </button>
+        <button class="btn secondary" onclick="viewConsultation(${rdvData.id})">
+          <i class="fas fa-file-medical"></i>
+        </button>
+      `;
+    } else if (rdvData.status === 'pending') {
+      actionButtons = `
+        <button class="btn secondary" onclick="viewRDV(${rdvData.id})">
+          <i class="fas fa-eye"></i>
+        </button>
+        <button class="btn secondary" onclick="editRDV(${rdvData.id})">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn danger" onclick="deleteRDV(${rdvData.id})">
+          <i class="fas fa-trash"></i>
+        </button>
+        <button class="btn" onclick="confirmRDV(${rdvData.id})">
+          <i class="fas fa-check"></i>
+        </button>
+      `;
+    } else {
+      actionButtons = `
+        <button class="btn secondary" onclick="viewRDV(${rdvData.id})">
+          <i class="fas fa-eye"></i>
+        </button>
+        <button class="btn secondary" onclick="editRDV(${rdvData.id})">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn danger" onclick="deleteRDV(${rdvData.id})">
+          <i class="fas fa-trash"></i>
+        </button>
+        <button class="btn" onclick="startConsultation(${rdvData.id})">
+          <i class="fas fa-play"></i>
+        </button>
+      `;
+    }
+    
+    newRow.innerHTML = `
+      <td>${time}</td>
+      <td>
+        <strong>${patientName}</strong>
+        <div class="small">${getPatientAgeById(patientId)}</div>
+      </td>
+      <td>${motif}</td>
+      <td>
+        <div class="small">📞 ${getPatientContactById(patientId).phone}</div>
+        <div class="small">✉️ ${getPatientContactById(patientId).email}</div>
+      </td>
+      <td><span class="status-badge ${status}">${getStatusText(status)}</span></td>
+      <td>${actionButtons}</td>
+    `;
+    
+    document.getElementById('rdvTable').appendChild(newRow);
+    alert(`Nouveau rendez-vous créé avec succès!`);
+  }
+  
+  rdvModal.style.display = 'none';
+  updateStatistics();
+});
 
-.modal-close:hover {
-  color: var(--text);
-}
-`;
+// Filtrage en temps réel
+searchInput.addEventListener('input', filterRDVs);
+statusFilter.addEventListener('change', filterRDVs);
+patientFilter.addEventListener('change', filterRDVs);
 
-const styleSheet = document.createElement('style');
-styleSheet.textContent = modalStyle;
-document.head.appendChild(styleSheet);
+// Fermer les modals en cliquant à l'extérieur
+window.addEventListener('click', function(e) {
+  if (e.target === rdvModal) {
+    rdvModal.style.display = 'none';
+  }
+  if (e.target === deleteModal) {
+    deleteModal.style.display = 'none';
+  }
+});
+
+// Chargement initial
+document.addEventListener('DOMContentLoaded', function() {
+  updateStatistics();
+  console.log('Page RDV du jour chargée');
+});
 </script>
 {% endblock %}
