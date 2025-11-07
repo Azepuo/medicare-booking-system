@@ -1,60 +1,42 @@
-#!/usr/bin/env python3
-"""
-Script d'initialisation complète de la base de données
-"""
+# scripts/setup_database.py
 
 import sys
 import os
 
-# Ajouter le répertoire racine au chemin Python
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.insert(0, parent_dir)
+# Ajout du dossier parent (racine du projet) au path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-try:
-    from database.connection import test_connection
-    from database.migrations.migration_manager import run_all_migrations
-    from database.seeders.seeder_manager import run_all_seeders
-    print("✅ Modules importés avec succès!")
-except ImportError as e:
-    print(f" Erreur d'import: {e}")
-    print(f" Current dir: {current_dir}")
-    print(f" Parent dir: {parent_dir}")
-    print(f" Python path: {sys.path}")
-    sys.exit(1)
+from database.connection import create_connection
+from database.migrations import create_tables
+from database.seeders import insert_data
 
-def main():
-    print(" Initialisation de la base de données Medicare...")
-    print("=" * 50)
-    
-    # 1. Test de connexion
-    print("1. Test de connexion à la base de données...")
-    if not test_connection():
-        print(" Arrêt: Impossible de se connecter à la base de données")
-        return False
-    
-    # 2. Exécution des migrations
-    print("\n2. Application des migrations...")
-    if not run_all_migrations():
-        print(" Arrêt: Erreur lors des migrations")
-        return False
-    
-    # 3. Exécution des seeders
-    print("\n3. Insertion des données de test...")
-    if not run_all_seeders():
-        print(" Arrêt: Erreur lors de l'insertion des données")
-        return False
-    
-    print("\n" + "=" * 50)
-    print(" Base de données initialisée avec succès!")
-    print(" Données disponibles:")
-    print("   - 10 spécialités médicales")
-    print("   - 7 médecins")
-    print("   - 8 patients") 
-    print("   - 8 rendez-vous de test")
-    print("\n L'application est prête à être utilisée!")
-    
-    return True
+
+def setup_database():
+    """Supprime toutes les anciennes tables, recrée la base, et insère les données de test"""
+    conn = create_connection()
+
+    if conn is None:
+        print(" Erreur : impossible de se connecter à la base de données.")
+        return
+
+    cursor = conn.cursor()
+
+    print("\n Suppression des anciennes tables...")
+    create_tables.down(cursor)
+    conn.commit()
+
+    print("\n Création des nouvelles tables...")
+    create_tables.up(cursor)
+    conn.commit()
+
+    print("\n Insertion des données de test...")
+    insert_data.seed_all(cursor)
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+    print("\n Base de données initialisée avec succès !")
+
 
 if __name__ == "__main__":
-    main()
+    setup_database()
