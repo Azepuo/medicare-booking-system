@@ -24,6 +24,33 @@ def admin_rendez_vous():
 @app.route('/admin/account')
 def admin_account():
     return render_template('admin/account.html')
+@app.route('/admin/update_admin')
+def admin_update_admin():
+    return render_template('admin/update_info_admin.html')
+@app.route('/admin/patient_add')
+def admin_patient_add():
+    return render_template('admin/patient_add.html')
+@app.route('/admin/medecin_add')
+def admin_medecin_add():
+    return render_template('admin/medecin_add.html')
+@app.route('/admin/facture_add')
+def admin_facture_add():
+    return render_template('admin/facture_add.html')
+@app.route('/admin/rdv_add')
+def admin_rdv_add():
+    return render_template('admin/rdv_add.html')
+@app.route('/admin/patient_edit')
+def admin_patient_edit():
+    return render_template('admin/patient_edit.html')
+@app.route('/admin/medecin_edit')
+def admin_medecin_edit():
+    return render_template('admin/medecin_edit.html')
+@app.route('/admin/rdv_edit')
+def admin_rdv_edit():
+    return render_template('admin/rdv_edit.html')
+@app.route('/admin/facturation_edit')
+def admin_facturation_edit():
+    return render_template('admin/facturation_edit.html')
 #---zainab-----#
 @app.route('/')
 def accueil():

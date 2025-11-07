@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
     <meta charset="UTF-8">
     <title>Mon Compte - Admin</title>
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/account.css') }}">
 </head>
-
 <body>
 
     <!-- MENU LATERAL -->
@@ -29,7 +27,6 @@
 
     <!-- CONTENU -->
     <main class="content">
-
         <h2>Mon Compte</h2>
 
         <div class="profile-card">
@@ -41,32 +38,40 @@
             </div>
 
             <div class="right">
+                <form action="/admin/account/update" method="POST">
 
-                <div class="info-group">
-                    <label>Département :</label>
-                    <span>Administration Centrale</span>
-                </div>
+                    <div class="info-group">
+                        <label for="name">Nom Complet :</label>
+                        <input type="text" id="name" name="name" value="Zainab ERROSSAFI" required>
+                    </div>
 
-                <div class="info-group">
-                    <label>Email :</label>
-                    <span>admin.clinique@medicareplus.ma</span>
-                </div>
+                    <div class="info-group">
+                        <label for="department">Département :</label>
+                        <input type="text" id="department" name="department" value="Administration Centrale" required>
+                    </div>
 
-                <div class="info-group">
-                    <label>Numéro Téléphone :</label>
-                    <span>+212 6 11 22 33 44</span>
-                </div>
+                    <div class="info-group">
+                        <label for="email">Email :</label>
+                        <input type="email" id="email" name="email" value="admin.clinique@medicareplus.ma" required>
+                    </div>
 
-                <div class="info-group">
-                    <label>Adresse :</label>
-                    <span>Av. Hassan II, Casablanca, Maroc</span>
-                </div>
-                <a href="/admin/update_admin">
-                    <button class="btn-modifier">Modifier les informations</button>
-                </a>
+                    <div class="info-group">
+                        <label for="phone">Numéro Téléphone :</label>
+                        <input type="tel" id="phone" name="phone" value="+212 6 11 22 33 44" required>
+                    </div>
+
+                    <div class="info-group">
+                        <label for="address">Adresse :</label>
+                        <input type="text" id="address" name="address" value="Av. Hassan II, Casablanca, Maroc" required>
+                    </div>
+
+                    <button type="submit" class="btn-modifier">Enregistrer les modifications</button>
+                </form>
             </div>
-        </div>
-    </main>
-</body>
 
+        </div>
+
+    </main>
+
+</body>
 </html>
