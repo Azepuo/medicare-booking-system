@@ -102,3 +102,5 @@ section{
     text-overflow: ellipsis; /* Met "..." si le texte est trop long */
     white-space: nowrap; /* Empêche le texte de se casser sur plusieurs lignes */
 }
+
+

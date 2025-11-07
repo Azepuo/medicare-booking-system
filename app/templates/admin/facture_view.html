@@ -9,6 +9,7 @@
     <!-- Styles menu -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/test.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/medecins.css') }}">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 
     <style>
         body {
@@ -89,15 +90,16 @@
 
     <!-- HEADER MENU ADMIN -->
     <header class="theheader">
-        <a href="#" class="sitelogo">
-            <h2><span>Med</span>I<span>care</span></h2>
-        </a>
+        <div class="logo">
+            <i class='bx bxs-clinic'></i>
+            <span>Medicare+</span>
+        </div>
         <nav class="nav">
             <a href="/admin/dashboard">Accueil</a>
             <a href="/admin/medecins">Medecins</a>
             <a href="/admin/patients">Patients</a>
             <a href="/admin/rendez_vous">Rendez-vous</a>
-            <a href="/admin/statistiques">Statistiques</a>
+            <a href="/admin/account">Mon compte</a>
         </nav>
         <div class="buttons">
             <a href="#" class="btn">Déconnecter</a>
