@@ -1,361 +1,44 @@
-<!DOCTYPE html>
-<html lang="fr">
+{% extends "base.html" %}
+{% block title %}Rendez-vous{% endblock %}
+{% set active_page = 'mes_rdv' %}
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Rendez-vous</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
-    <link rel="stylesheet" href="css/patient.css" />
-</head>
-
-<body>
-    <div class="sidebar">
-<div class="logo">
-    <svg width="250" height="50" viewBox="0 0 250 50">
-        <rect x="5" y="5" width="40" height="40" rx="8" fill="#0057ff"/>
-        <polyline points="10,25 15,25 20,20 25,30 30,25 35,25 40,25" 
-                  fill="none" stroke="#FFFFFF" stroke-width="2.5"/>
-        <text x="50" y="20" fill="#262A39" font-size="18" font-weight="bold" font-family="Arial, sans-serif">WeCare</text>
-        <text x="50" y="38" fill="#666666" font-size="12" font-weight="normal" font-family="Arial, sans-serif">Medical Patient Dashboard</text>
-    </svg>
-</div>
-        <div class="nav-menu">
-            <a href="#" class="nav-item active" id="dashboardTab">
-                <i class="fas fa-house-user"></i>
-                <span>Tableau de bord</span>
-            </a>
-            <a href="#" class="nav-item" id="rendezvousTab">
-                <i class="fas fa-calendar-check"></i>
-                <span>Rendez-vous</span>
-            </a>
-            <a href="#" class="nav-item" id="accountTab">
-                <i class="fas fa-user-circle"></i>
-                <span>Profile</span>
-            </a>
-            <a href="#" class="nav-item" id="LogoutTab">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Se déconnecter</span>
-            </a>
-        </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="main-content">
-        <!-- Header -->
-        <div class="header" id="mainHeader">
-            <div class="welcome-section">
-                <h1 class="welcome-title">Tableau de bord</h1>
+{% block content %}
+<div class="content">
+    <div class="container">
+        <div class="heade">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h1>Historique des Rendez-vous</h1>
+                <button class="btn-add-appointment" onclick="showAppointmentForm()">
+                    <i class="fas fa-plus" style="color: white;"></i> Ajouter un Rendez-vous
+                </button>
             </div>
-            <div class="header-right">
-                <div class="notification-bell">
-                    <i class="fas fa-bell"></i>
-                    <div class="notification-indicator"></div>
+
+            <div class="filters">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Rechercher par médecin, spécialité ou date...">
                 </div>
-                <div class="search-bar">
-                    <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Trouver rendez-vous ..." />
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="tous">Tous</button>
+                    <button class="filter-btn" data-filter="confirmé">Confirmés</button>
+                    <button class="filter-btn" data-filter="terminé">Terminés</button>
+                    <button class="filter-btn" data-filter="annulé">Annulés</button>
                 </div>
             </div>
         </div>
-<div class="content" id="dashboardContent" style="display:block;">
-    <!-- Ajoutez ici le contenu de votre tableau de bord -->
-    <h2>Bienvenue sur votre tableau de bord</h2>
-    <p>Contenu à venir...</p>
-</div>
-        <!-- Contenu principal ici -->
-        <div class="content" id="rendezvousContent" style="display:none;">
-            <div class="container">
-                <div class="heade">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                        <h1>Historique des Rendez-vous</h1>
-                        <button class=btn-add-appointment onclick="showAppointmentForm()">
-                            <i class="fas fa-plus" style="color: white;"></i>
-                            Ajouter un Rendez-vous
-                        </button>
-                    </div>
-                    <div class="filters">
-                        <div class="search-box">
-                            <input type="text" id="searchInput"
-                                placeholder="Rechercher par médecin, spécialité ou date...">
-                        </div>
-                        <div class="filter-buttons">
-                            <button class="filter-btn active" data-filter="tous">Tous</button>
-                            <button class="filter-btn" data-filter="confirmé">Confirmés</button>
-                            <button class="filter-btn" data-filter="terminé">Terminés</button>
-                            <button class="filter-btn" data-filter="annulé">Annulés</button>
-                        </div>
-                    </div>
-                </div>
-                <!--add a button ajouter un rendez vous-->
 
-                <div class="stats" id="stats"></div>
+        <div id="stats" class="stats"></div>
+        <div id="appointmentsGrid" class="appointments-grid"></div>
 
-                <div class="appointments-grid" id="appointmentsGrid"></div>
-
-                <div class="empty-state" id="emptyState" style="display: none;">
-                    <div class="empty-state-icon">📅</div>
-                    <h3>Aucun rendez-vous trouvé</h3>
-                    <p>Essayez de modifier vos critères de recherche</p>
-                </div>
-            </div>
-        </div>
-    </div>
-<!--dashboard-->
-<div id="dashboardContent">
-</div>
-
-    <div class="appointment-form-container" id="appointmentFormContainer">
-        <div class="appointment-form">
-            <div class="form-header">
-                <h2 class="form-title">Prendre un Rendez-vous</h2>
-                <button class="close-form" onclick="hideAppointmentForm()">&times;</button>
-            </div>
-            <form id="appointmentForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="patientName">Nom du patient</label>
-                        <input type="text" id="patientName" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="patientAge">Âge</label>
-                        <input type="number" id="patientAge" class="form-control" min="0" max="120" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="doctor">Médecin</label>
-                    <select id="doctor" class="form-control" required>
-                        <option value="">Sélectionnez un médecin</option>
-                        <option value="dr_dupont">Dr. Dupont (Cardiologie)</option>
-                        <option value="dr_martin">Dr. Martin (Dermatologie)</option>
-                        <option value="dr_leroy">Dr. Leroy (Pédiatrie)</option>
-                        <option value="dr_bernard">Dr. Bernard (Neurologie)</option>
-                    </select>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="appointmentDate">Date</label>
-                        <input type="date" id="appointmentDate" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="appointmentTime">Heure</label>
-                        <input type="time" id="appointmentTime" class="form-control" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="reason">Motif de consultation</label>
-                    <textarea id="reason" class="form-control" rows="3"
-                        placeholder="Décrivez brièvement le motif de votre consultation"></textarea>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn-cancel-form" onclick="hideAppointmentForm()">Annuler</button>
-                    <button type="submit" class="btn-submit">Prendre Rendez-vous</button>
-                </div>
-            </form>
-        </div>
-    </div>
-<!-- Page Compte -->
-<div class="content" id="accountContent" style="display:none;">
-    <div class="account-container">
-        <div class="account-header">
-            <h1 class="account-title">
-                <i class="fas fa-user-circle"></i>
-                Mon Compte
-            </h1>
-            <p class="account-subtitle">Gérez vos informations personnelles et vos préférences</p>
-        </div>
-
-        <div class="account-content">
-            <!-- Profil Utilisateur -->
-            <div class="profile-section">
-                <div class="profile-card">
-                    <div class="profile-header">
-                        <div class="profile-avatar">
-                            <div class="avatar-large">JD</div>
-                            <button class="btn-change-avatar">
-                                <i class="fas fa-camera"></i>
-                            </button>
-                        </div>
-                        <div class="profile-info">
-                            <h2 class="profile-name">John Doe</h2>
-                            <p class="profile-email">john.doe@example.com</p>
-                            <p class="profile-role">Patient</p>
-                        </div>
-                    </div>
-                    
-                    <div class="profile-stats">
-                        <div class="profile-stat">
-                            <span class="stat-number">12</span>
-                            <span class="stat-label">Rendez-vous</span>
-                        </div>
-                        <div class="profile-stat">
-                            <span class="stat-number">3</span>
-                            <span class="stat-label">Médecins</span>
-                        </div>
-                        <div class="profile-stat">
-                            <span class="stat-number">2</span>
-                            <span class="stat-label">En attente</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Informations Personnelles -->
-            <div class="personal-info-section">
-                <div class="section-card">
-                    <div class="section-header">
-                        <h3>
-                            <i class="fas fa-user"></i>
-                            Informations Personnelles
-                        </h3>
-                        <button class="btn-edit" onclick="toggleEdit('personalInfo')">
-                            <i class="fas fa-edit"></i> Modifier
-                        </button>
-                    </div>
-                    
-                    <form id="personalInfoForm" class="info-form">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="firstName">Prénom</label>
-                                <input type="text" id="firstName" class="form-control" value="John" readonly>
-                            </div>
-                            <div class="form-group">
-                                <label for="lastName">Nom</label>
-                                <input type="text" id="lastName" class="form-control" value="Doe" readonly>
-                            </div>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="email">Email</label>
-                                <input type="email" id="email" class="form-control" value="john.doe@example.com" readonly>
-                            </div>
-                            <div class="form-group">
-                                <label for="phone">Téléphone</label>
-                                <input type="tel" id="phone" class="form-control" value="+33 1 23 45 67 89" readonly>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="address">Adresse</label>
-                            <input type="text" id="address" class="form-control" value="123 Avenue des Champs-Élysées, 75008 Paris" readonly>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="birthDate">Date de naissance</label>
-                                <input type="date" id="birthDate" class="form-control" value="1985-06-15" readonly>
-                            </div>
-                            <div class="form-group">
-                                <label for="gender">Genre</label>
-                                <select id="gender" class="form-control" disabled>
-                                    <option value="male" selected>Homme</option>
-                                    <option value="female">Femme</option>
-                                    <option value="other">Autre</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="form-actions" id="personalInfoActions" style="display: none;">
-                            <button type="button" class="btn-cancel" onclick="cancelEdit('personalInfo')">Annuler</button>
-                            <button type="submit" class="btn-save">Enregistrer</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Sécurité -->
-            <div class="security-section">
-                <div class="section-card">
-                    <div class="section-header">
-                        <h3>
-                            <i class="fas fa-shield-alt"></i>
-                            Sécurité
-                        </h3>
-                    </div>
-                    
-                    <div class="security-options">
-                        <div class="security-item">
-                            <div class="security-info">
-                                <h4>Mot de passe</h4>
-                                <p>Défini il y a 3 mois</p>
-                            </div>
-                            <button class="btn-change-password" onclick="changePassword()">
-                                Changer
-                            </button>
-                        </div>
-                        
-                        <div class="security-item">
-                            <div class="security-info">
-                                <h4>Authentification à deux facteurs</h4>
-                                <p>Non activée</p>
-                            </div>
-                            <label class="switch">
-                                <input type="checkbox">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Préférences -->
-            <div class="preferences-section">
-                <div class="section-card">
-                    <div class="section-header">
-                        <h3>
-                            <i class="fas fa-cog"></i>
-                            Préférences
-                        </h3>
-                    </div>
-                    
-                    <div class="preferences-options">
-                        <div class="preference-item">
-                            <div class="preference-info">
-                                <h4>Notifications par email</h4>
-                                <p>Recevoir des rappels par email</p>
-                            </div>
-                            <label class="switch">
-                                <input type="checkbox" checked>
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        
-                        <div class="preference-item">
-                            <div class="preference-info">
-                                <h4>Notifications SMS</h4>
-                                <p>Recevoir des rappels par SMS</p>
-                            </div>
-                            <label class="switch">
-                                <input type="checkbox">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        
-                        <div class="preference-item">
-                            <div class="preference-info">
-                                <h4>Langue</h4>
-                                <p>Français</p>
-                            </div>
-                            <select class="form-control small">
-                                <option value="fr" selected>Français</option>
-                                <option value="en">English</option>
-                                <option value="es">Español</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <div class="empty-state-icon">📅</div>
+            <h3>Aucun rendez-vous trouvé</h3>
+            <p>Essayez de modifier vos critères de recherche</p>
         </div>
     </div>
 </div>
-   
-    <script src="js/patient.js"></script>
-</body>
 
-</html>
+{% include "patient/prise_rdv.html" %}
+{% endblock %}
+<script>
+    document.getElementById("welcome-title")
+</script>

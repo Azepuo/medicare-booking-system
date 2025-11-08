@@ -1,27 +1,33 @@
 from flask import Flask, render_template
-
 app = Flask(__name__)
 
+# Route pour la page d'accueil
 @app.route('/')
 def accueil():
     return render_template('patient/accueil.html')
 
-@app.route('/medecin')
-def dashboard_medecin():
-    return "<h1>👨‍⚕️ Dashboard Médecin</h1><p>Espace professionnel en construction...</p><a href='/'>Retour</a>"
+# Route pour le dashboard
+@app.route('/dashboard')
+def dashboard():
+    return render_template('patient/dashboard.html')
 
-@app.route('/prendre-rdv')
-def prendre_rdv():
-    return "<h1>📅 Prendre Rendez-vous</h1><p>Fonctionnalité à venir...</p><a href='/'>Retour à l'accueil</a>"
+# Route pour mes rendez-vous
+@app.route('/mes_rdv')
+def mes_rdv():
+    return render_template('patient/mes_rdv.html')
 
-@app.route('/medecins')
-def liste_medecins():
-    return "<h1>👨‍⚕️ Liste des Médecins</h1><p>Fonctionnalité à venir...</p><a href='/'>Retour à l'accueil</a>"
+# Route pour le profil
+@app.route('/profile')
+def profile():
+    return render_template('patient/profile.html')
 
-@app.route('/mes-rdv')
-def mes_rendez_vous():
-    return "<h1>📋 Mes Rendez-vous</h1><p>Fonctionnalité à venir...</p><a href='/'>Retour à l'accueil</a>"
+@app.route('/logout')
+def logout():
+    return render_template('patient/logout.html')
+@app.route('/prise_rdv')
+def priverdv():
+    return render_template('patient/prise_rdv.html')
 
+# Lancer l'application Flask
 if __name__ == '__main__':
-    print("🚀 Serveur Flask démarré sur http://localhost:5000")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True)
