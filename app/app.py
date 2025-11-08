@@ -53,7 +53,7 @@ def admin_rdv_edit():
 def admin_facturation_edit():
     return render_template('admin/facturation_edit.html')
 #---zainab-----#
-# Routes pour l'interface médecin
+# Routes pour l'interface médecin meraim
 @app.route('/')
 def dashboard():
     return render_template('medecin/dashboard.html')
