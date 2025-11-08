@@ -3,6 +3,56 @@ import os
 
 app = Flask(__name__)
 
+#---zainab-----#
+@app.route('/admin/dashboard')
+def admin_dashboard():
+    return render_template('admin/dashboard.html')
+@app.route('/admin/medecins')
+def admin_medecins():
+    return render_template('admin/medecins.html')
+@app.route('/admin/patients')
+def admin_patients():
+    return render_template('admin/patients.html')
+@app.route('/admin/facturation')
+def admin_facturation():
+    return render_template('admin/facturation.html')
+@app.route('/admin/facture_view')
+def admin_facture_view():
+    return render_template('admin/facture_view.html')
+@app.route('/admin/rendez_vous')
+def admin_rendez_vous():
+    return render_template('admin/rendez_vous.html')
+@app.route('/admin/account')
+def admin_account():
+    return render_template('admin/account.html')
+@app.route('/admin/update_admin')
+def admin_update_admin():
+    return render_template('admin/update_info_admin.html')
+@app.route('/admin/patient_add')
+def admin_patient_add():
+    return render_template('admin/patient_add.html')
+@app.route('/admin/medecin_add')
+def admin_medecin_add():
+    return render_template('admin/medecin_add.html')
+@app.route('/admin/facture_add')
+def admin_facture_add():
+    return render_template('admin/facture_add.html')
+@app.route('/admin/rdv_add')
+def admin_rdv_add():
+    return render_template('admin/rdv_add.html')
+@app.route('/admin/patient_edit')
+def admin_patient_edit():
+    return render_template('admin/patient_edit.html')
+@app.route('/admin/medecin_edit')
+def admin_medecin_edit():
+    return render_template('admin/medecin_edit.html')
+@app.route('/admin/rdv_edit')
+def admin_rdv_edit():
+    return render_template('admin/rdv_edit.html')
+@app.route('/admin/facturation_edit')
+def admin_facturation_edit():
+    return render_template('admin/facturation_edit.html')
+#---zainab-----#
 # Routes pour l'interface médecin
 @app.route('/')
 def dashboard():
