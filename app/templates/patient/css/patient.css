@@ -139,7 +139,7 @@ body {
 .welcome-title {
   font-size: 30px;
   font-weight: 700;
-  background: linear-gradient(90deg, var(--text-primary), var(--primary-color));
+  background: #0057ff;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
