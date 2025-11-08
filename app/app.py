@@ -50,9 +50,9 @@ def serve_static(filename):
     return send_from_directory('static', filename)
 
 if __name__ == '__main__':
-    print("🚀 Serveur Flask démarré sur http://localhost:5000")
-    print("📊 Dashboard: http://localhost:5000/")
-    print("👥 Patients: http://localhost:5000/medecin/patients")
-    print("💬 Chat: http://localhost:5000/medecin/chat")
-    print("👤 Profil: http://localhost:5000/medecin/profil")
+    print(" Serveur Flask démarré sur http://localhost:5000")
+    print(" Dashboard: http://localhost:5000/")
+    print(" Patients: http://localhost:5000/medecin/patients")
+    print(" Chat: http://localhost:5000/medecin/chat")
+    print(" Profil: http://localhost:5000/medecin/profil")
     app.run(debug=True, host='0.0.0.0', port=5000)
