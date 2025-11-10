@@ -1,36 +1,39 @@
-# --- routes_dashboard.py ---
-from flask import Blueprint, jsonify
-from utils.rpc_client import MedecinClient
+from flask import Blueprint, render_template
 
-bp = Blueprint("medecin", __name__, url_prefix="/api/medecin")
+medecin = Blueprint("medecin", __name__, url_prefix="/medecin")
 
-# Ton client RPC (vers ton microservice Médecin / RDV)
-rpc = MedecinClient("localhost", 8001)  # adapte host/port
+@medecin.route("/dashboard")
+def dashboard():
+    return render_template("medecin/dashboard.html")
 
-@bp.route("/statistiques/summary", methods=["GET"])
-def statistiques_summary():
-    """
-    Résumé pour le tableau de bord du médecin :
-    - total_rdv : total des rendez-vous
-    - rdv_today : rendez-vous du jour
-    - taux_annulation : pourcentage d’annulations
-    - last_days : liste d’évolution journalière [{day, count}, ...]
-    """
-    medecin_id = 1  # à remplacer par session utilisateur authentifiée
+@medecin.route("/patients")
+def patients():
+    return render_template("medecin/patients.html")
 
-    # Exemple d’appel RPC (à adapter à ton service réel)
-    stats = rpc.call("get_dashboard_stats", {"medecin_id": medecin_id})
+@medecin.route("/chat")
+def chat():
+    return render_template("medecin/chat.html")
 
-    # Exemple de retour attendu par le frontend :
-    # {
-    #   "total_rdv": 120,
-    #   "rdv_today": 6,
-    #   "taux_annulation": 8,
-    #   "last_days": [
-    #       {"day": "Lun", "count": 4},
-    #       {"day": "Mar", "count": 7},
-    #       ...
-    #   ]
-    # }
+@medecin.route("/profil")
+def profil():
+    return render_template("medecin/profil.html")
 
-    return jsonify(stats)
+@medecin.route("/disponibilites")
+def disponibilites():
+    return render_template("medecin/disponibilites.html")
+
+@medecin.route("/statistiques")
+def statistiques():
+    return render_template("medecin/statistiques.html")
+
+@medecin.route("/rdv_du_jour")
+def rdv_du_jour():
+    return render_template("medecin/rdv_du_jour.html")
+
+@medecin.route("/agenda")
+def agenda():
+    return render_template("medecin/agenda.html")
+
+@medecin.route("/avis")
+def avis():
+    return render_template("medecin/avis.html")
