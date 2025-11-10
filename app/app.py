@@ -9,10 +9,7 @@ app = Flask(__name__)
 # Route d'accueil
 @app.route('/')
 def index():
-    return render_template('index.html')
-
-# Configuration
-app.config['SECRET_KEY'] = 'une_cle_secrete_tres_sure_et_longue'
+ return render_template('index.html')
 
 # Enregistrement des Blueprints
 app.register_blueprint(auth)
