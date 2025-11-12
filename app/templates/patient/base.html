@@ -19,19 +19,19 @@
             </svg>
         </div>
         <div class="nav-menu">
-            <a href="{{ url_for('dashboard') }}" class="nav-item" id="dashboardTab">
+            <a href="{{ url_for('patient.dashboard') }}" class="nav-item" id="dashboardTab">
                 <i class="fas fa-house-user"></i>
                 <span>Tableau de bord</span>
             </a>
-            <a href="{{ url_for('mes_rdv') }}" class="nav-item" id="rendezvousTab">
+            <a href="{{ url_for('patient.mes_rdv') }}" class="nav-item" id="rendezvousTab">
                 <i class="fas fa-calendar-check"></i>
                 <span>Rendez-vous</span>
             </a>
-            <a href="{{ url_for('profile') }}" class="nav-item" id="accountTab">
+            <a href="{{ url_for('patient.profile') }}" class="nav-item" id="accountTab">
                 <i class="fas fa-user-circle"></i>
                 <span>Profile</span>
             </a>
-            <a href="{{ url_for('logout') }}" class="nav-item" id="LogoutTab">
+            <a href="{{ url_for('patient.logout') }}" class="nav-item" id="LogoutTab">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Se déconnecter</span>
             </a>

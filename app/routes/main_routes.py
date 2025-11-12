@@ -5,12 +5,10 @@ main = Blueprint('main', __name__)
 
 @main.route('/')
 def index():
-    return render_template('main/index.html')
+    # Home page mapped to existing template
+    return render_template('acceuil/index.html')
 
-@main.route('/services')
-def services():
-    return render_template('main/services.html')
-
-@main.route('/about')
-def about():
-    return render_template('main/about.html')
+@main.route('/home')
+def home():
+    # Optional second landing page if needed
+    return render_template('acceuil/accueil.html')

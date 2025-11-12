@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'patient/base.html' %}
 
 {% block title %}Page d'Accueil{% endblock %}
 
@@ -6,6 +6,6 @@
     <div class="content">
         <h1>Bienvenue sur WeCare</h1>
         <p>Gérez vos rendez-vous médicaux en toute simplicité.</p>
-        <a href="/mes_rdv" class="btn">Voir mes rendez-vous</a>
+        <a href="{{ url_for('patient.mes_rdv') }}" class="btn">Voir mes rendez-vous</a>
     </div>
 {% endblock %}
