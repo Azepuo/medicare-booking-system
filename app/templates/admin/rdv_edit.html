@@ -1,81 +1,187 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
-    <title>Rendez-vous - Admin</title>
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/account.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Boxicons -->
+    <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
+    <!-- CSS principal du dashboard -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+    <title>HealthAdmin - Patients</title>
 </head>
+
 <body>
 
-    <!-- MENU LATERAL -->
-    <aside class="sidebar">
-        <div class="logo">
-            <i class='bx bxs-clinic'></i>
-            <span>Medicare+</span>
-        </div>
-        <ul class="side-menu">
-            <li><a href="/admin/dashboard"><i class='bx bxs-dashboard'></i> Dashboard</a></li>
-            <li><a href="/admin/medecins"><i class='bx bxs-user-pin'></i> Médecins</a></li>
-            <li><a href="/admin/patients"><i class='bx bx-user'></i> Patients</a></li>
-            <li class="active"><a href="/admin/rendez_vous"><i class='bx bxs-calendar'></i> Rendez-vous</a></li>
-            <li><a href="/admin/facturation"><i class='bx bxs-receipt'></i> Facturation</a></li>
-            <li><a href="/admin/account"><i class='bx bxs-cog'></i> Mon Compte</a></li>
-            <li><a href="#"><i class='bx bxs-log-out-circle'></i> Déconnexion</a></li>
+    <!-- SIDEBAR -->
+    <section id="sidebar">
+        <a href="#" class="brand">
+            <i class='bx bxs-smile'></i>
+            <span class="text">HealthAdmin</span>
+        </a>
+        <ul class="side-menu top">
+            <li>
+                <a href="/admin/dashboard">
+                    <i class='bx bxs-dashboard'></i>
+                    <span class="text">Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="/admin/medecins">
+                    <i class='bx bxs-user-pin'></i>
+                    <span class="text">Médecin</span>
+                </a>
+            </li>
+            <li class="active">
+                <a href="/admin/patients">
+                    <i class='bx bx-user'></i>
+                    <span class="text">Patients</span>
+                </a>
+            </li>
+            <li>
+                <a href="/admin/rendez_vous">
+                    <i class='bx bxs-calendar'></i>
+                    <span class="text">Rendez-vous</span>
+                </a>
+            </li>
+            <li>
+                <a href="/admin/facturation">
+                    <i class='bx bxs-receipt'></i>
+                    <span class="text">Facturation</span>
+                </a>
+            </li>
         </ul>
-    </aside>
+        <ul class="side-menu">
+            <li>
+                <a href="/admin/account">
+                    <i class='bx bxs-id-card'></i>
+                    <span class="text">Mon compte</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="logout">
+                    <i class='bx bxs-log-out-circle'></i>
+                    <span class="text">Déconnexion</span>
+                </a>
+            </li>
+        </ul>
+    </section>
+    <!-- SIDEBAR -->
 
-    <!-- CONTENU -->
-    <main class="content">
-        <h2>Rendez-vous</h2>
+    <!-- CONTENT -->
+    <section id="content">
+        <!-- NAVBAR -->
+        <nav>
+            <i class='bx bx-menu'></i>
+            <a href="#" class="nav-link">Categories</a>
+            <form action="#">
+                <div class="form-input">
+                    <input type="search" placeholder="Search...">
+                    <button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
+                </div>
+            </form>
+            <input type="checkbox" id="switch-mode" hidden>
+            <label for="switch-mode" class="switch-mode"></label>
+            <a href="#" class="notification">
+                <i class='bx bxs-bell'></i>
+                <span class="num">8</span>
+            </a>
+            <a href="#" class="profile">
+                <img src="{{ url_for('static', filename='img/zainab_pic.jpeg') }}">
+            </a>
+        </nav>
+        <!-- NAVBAR -->
 
-        <div class="profile-card">
-
-            <div class="left">
-                <img src="https://i.imgur.com/QpU7vYT.png" alt="Rendez-vous">
-                <h3>Nouveau Rendez-vous</h3>
-                <p>Informations du rendez-vous</p>
+        <!-- MAIN -->
+        <main>
+            <div class="head-title">
+                <div class="left">
+                    <h1>Modifier un rendez-vous</h1>
+                    <ul class="breadcrumb">
+                        <li><a href="/admin/dashboard">Dashboard</a></li>
+                        <li><i class='bx bx-chevron-right'></i></li>
+                        <li><a href="/admin/rendez_vous">Rendez-vous</a></li>
+                        <li><i class='bx bx-chevron-right'></i></li>
+                        <li><a class="active" href="#">Modifier</a></li>
+                    </ul>
+                </div>
             </div>
 
-            <div class="right">
-                <form action="/admin/rendez_vous/update" method="POST">
+            <div class="form-wrapper">
+                <div class="form-card form-card-medium">
+                    <h2 style="font-size:16px;font-weight:600;margin-bottom:14px;">Informations du rendez-vous</h2>
 
-                    <div class="info-group">
-                        <label for="patient">Patient :</label>
-                        <input type="text" id="patient" name="patient" value="John Doe" required>
-                    </div>
+                    <form action="#" method="post">
+                        <div class="form-grid">
 
-                    <div class="info-group">
-                        <label for="medecin">Médecin :</label>
-                        <input type="text" id="medecin" name="medecin" value="Dr. Jane Doe" required>
-                    </div>
+                            <!-- Patient -->
+                            <div class="field">
+                                <label for="patient">Patient</label>
+                                <select id="patient" name="patient">
+                                    <option selected>-- Sélectionner un patient --</option>
+                                    <option value="1">Zainab Errossafi</option>
+                                    <option value="2">Ahmed Moumen</option>
+                                    <option value="3">Sara Berrada</option>
+                                </select>
+                            </div>
 
-                    <div class="info-group">
-                        <label for="date">Date :</label>
-                        <input type="date" id="date" name="date" value="2025-11-07" required>
-                    </div>
+                            <!-- Médecin -->
+                            <div class="field">
+                                <label for="medecin">Médecin</label>
+                                <select id="medecin" name="medecin">
+                                    <option selected>-- Sélectionner un médecin --</option>
+                                    <option value="1">Dr. Amine El Idrissi</option>
+                                    <option value="2">Dr. Salma Khenata</option>
+                                </select>
+                            </div>
 
-                    <div class="info-group">
-                        <label for="heure">Heure :</label>
-                        <input type="time" id="heure" name="heure" value="10:30" required>
-                    </div>
+                            <!-- Date -->
+                            <div class="field">
+                                <label for="date_rdv">Date</label>
+                                <input type="date" id="date_rdv" name="date_rdv" value="2025-10-22">
+                            </div>
 
-                    <div class="info-group">
-                        <label for="status">Statut :</label>
-                        <select id="status" name="status" required>
-                            <option value="prévu" selected>Prévu</option>
-                            <option value="terminé">Terminé</option>
-                            <option value="annulé">Annulé</option>
-                        </select>
-                    </div>
+                            <!-- Heure -->
+                            <div class="field">
+                                <label for="heure_rdv">Heure</label>
+                                <input type="time" id="heure_rdv" name="heure_rdv" value="10:00">
+                            </div>
 
-                    <button type="submit" class="btn-modifier">Enregistrer les modifications</button>
-                </form>
+                            <!-- Statut -->
+                            <div class="field">
+                                <label for="statut">Statut</label>
+                                <select id="statut" name="statut">
+                                    <option value="en_attente" selected>En attente</option>
+                                    <option value="confirme">Confirmé</option>
+                                    <option value="annule">Annulé</option>
+                                </select>
+                            </div>
+
+                            <!-- Motif -->
+                            <div class="field field-full">
+                                <label for="motif">Motif / Notes</label>
+                                <textarea id="motif" name="motif"
+                                    rows="3">Douleurs abdominales depuis quelques jours.</textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <a href="/admin/rendez_vous" class="btn-secondary">Annuler</a>
+                            <button type="submit" class="btn-primary">Enregistrer les modifications</button>
+                        </div>
+
+                    </form>
+                </div>
             </div>
+        </main>
 
-        </div>
+        <!-- MAIN -->
+    </section>
+    <!-- CONTENT -->
 
-    </main>
-
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 </body>
+
 </html>
