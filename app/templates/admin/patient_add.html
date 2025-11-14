@@ -3,74 +3,205 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Mon Compte - Admin</title>
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/account.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+    <title>HealthAdmin - Médecin</title>
 </head>
 
 <body>
 
-    <!-- MENU LATERAL -->
-    <aside class="sidebar">
-        <div class="logo">
-            <i class='bx bxs-clinic'></i>
-            <span>Medicare+</span>
-        </div>
-        <ul class="side-menu">
-            <li><a href="/admin/dashboard"><i class='bx bxs-dashboard'></i> Dashboard</a></li>
-            <li><a href="/admin/medecins"><i class='bx bxs-user-pin'></i>Médecins</a></li>
-            <li><a href="/admin/patients"><i class='bx bx-user'></i> Patients</a></li>
-            <li><a href="/admin/rendez_vous"><i class='bx bxs-calendar'></i> Rendez-vous</a></li>
-            <li><a href="/admin/facturation"><i class='bx bxs-receipt'></i> Facturation</a></li>
-            <li class="active"><a href="/admin/account"><i class='bx bxs-cog'></i> Mon Compte</a></li>
-            <li><a href="#"><i class='bx bxs-log-out-circle'></i> Déconnexion</a></li>
+    <!-- SIDEBAR -->
+    <section id="sidebar">
+        <a href="#" class="brand">
+            <i class='bx bxs-smile'></i>
+            <span class="text">HealthAdmin</span>
+        </a>
+        <ul class="side-menu top">
+            <li>
+                <a href="/admin/dashboard">
+                    <i class='bx bxs-dashboard'></i>
+                    <span class="text">Dashboard</span>
+                </a>
+            </li>
+            <li class="active">
+                <a href="/admin/medecins">
+                    <i class='bx bxs-user-pin'></i>
+                    <span class="text">Médecin</span>
+                </a>
+            </li>
+            <li>
+                <a href="/admin/patients">
+                    <i class='bx bx-user'></i>
+                    <span class="text">Patients</span>
+                </a>
+            </li>
+            <li>
+                <a href="/admin/rendez_vous">
+                    <i class='bx bxs-calendar'></i>
+                    <span class="text">Rendez-vous</span>
+                </a>
+            </li>
+            <li>
+                <a href="/admin/facturation">
+                    <i class='bx bxs-receipt'></i>
+                    <span class="text">Facturation</span>
+                </a>
+            </li>
         </ul>
-    </aside>
+        <ul class="side-menu">
+            <li>
+                <a href="/admin/account">
+                    <i class='bx bxs-id-card'></i>
+                    <span class="text">Mon compte</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="logout">
+                    <i class='bx bxs-log-out-circle'></i>
+                    <span class="text">Déconnexion</span>
+                </a>
+            </li>
+        </ul>
+    </section>
+    <!-- SIDEBAR -->
 
-    <!-- CONTENU -->
-    <main class="content">
-        <h2>Ajouter un patient</h2>
+    <!-- CONTENT -->
+    <section id="content">
+        <!-- NAVBAR -->
+        <nav>
+            <i class='bx bx-menu'></i>
+            <a href="#" class="nav-link">Categories</a>
+            <form action="#">
+                <div class="form-input">
+                    <input type="search" placeholder="Search...">
+                    <button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
+                </div>
+            </form>
+            <input type="checkbox" id="switch-mode" hidden>
+            <label for="switch-mode" class="switch-mode"></label>
+            <a href="#" class="notification">
+                <i class='bx bxs-bell'></i>
+                <span class="num">8</span>
+            </a>
+            <a href="#" class="profile">
+                <img src="{{ url_for('static', filename='img/zainab_pic.jpeg') }}">
+            </a>
+        </nav>
+        <!-- NAVBAR -->
 
-        <div class="profile-card">
-
-            <div class="left">
-                <img src="https://i.imgur.com/QpU7vYT.png" alt="Patient">
-                <h3>Ajouter un Nouveau Patient</h3>
+        <!-- MAIN -->
+        <main>
+            <div class="head-title">
+                <div class="left">
+                    <h1>
+                        {% if patient %}
+                        Modifier un patient
+                        {% else %}
+                        Ajouter un patient
+                        {% endif %}
+                    </h1>
+                    <ul class="breadcrumb">
+                        <li><a href="/admin/dashboard">Dashboard</a></li>
+                        <li><i class='bx bx-chevron-right'></i></li>
+                        <li><a href="/admin/patients">Patients</a></li>
+                        <li><i class='bx bx-chevron-right'></i></li>
+                        <li><a class="active" href="#">
+                                {% if patient %}Modifier{% else %}Ajouter{% endif %}
+                            </a></li>
+                    </ul>
+                </div>
             </div>
 
-            <div class="right">
-                <form action="/admin/patients/add" method="POST">
+            <div class="form-wrapper">
+                <div class="form-card form-card-medium">
+                    <form method="POST" action="{{ form_action }}">
 
-                    <div class="info-group">
-                        <label for="full_name">Nom Complet :</label>
-                        <input type="text" id="full_name" name="full_name" placeholder="Nom complet du patient"
-                            required>
-                    </div>
+                        <div class="form-grid">
 
-                    <div class="info-group">
-                        <label for="email">Email :</label>
-                        <input type="email" id="email" name="email" placeholder="Email du patient" required>
-                    </div>
+                            <!-- Nom complet -->
+                            <div class="field">
+                                <label for="nom_complet">Nom complet</label>
+                                <input type="text" id="nom_complet" name="nom_complet"
+                                    value="{{ patient.nom_complet if patient else '' }}" required>
+                            </div>
 
-                    <div class="info-group">
-                        <label for="phone">Téléphone :</label>
-                        <input type="tel" id="phone" name="phone" placeholder="Numéro de téléphone" required>
-                    </div>
+                            <!-- Email -->
+                            <div class="field">
+                                <label for="email">Email</label>
+                                <input type="email" id="email" name="email"
+                                    value="{{ patient.email if patient else '' }}" required>
+                            </div>
 
-                    <div class="info-group">
-                        <label for="date_inscription">Date d'inscription :</label>
-                        <input type="date" id="date_inscription" name="date_inscription" required>
-                    </div>
+                            <!-- Téléphone -->
+                            <div class="field">
+                                <label for="telephone">Téléphone</label>
+                                <input type="text" id="telephone" name="telephone"
+                                    value="{{ patient.telephone if patient else '' }}">
+                            </div>
 
-                    <button type="submit" class="btn-modifier">Ajouter le Patient</button>
-                </form>
+                            <!-- Date de naissance -->
+                            <div class="field">
+                                <label for="date_naissance">Date de naissance</label>
+                                <input type="date" id="date_naissance" name="date_naissance"
+                                    value="{{ patient.date_naissance if patient else '' }}">
+                            </div>
+
+                            <!-- Sexe -->
+                            <div class="field">
+                                <label for="sexe">Sexe</label>
+                                <select id="sexe" name="sexe">
+                                    <option value="H" {% if patient and patient.sexe=='H' %}selected{% endif %}>Homme
+                                    </option>
+                                    <option value="F" {% if patient and patient.sexe=='F' %}selected{% endif %}>Femme
+                                    </option>
+                                    <option value="Autre" {% if patient and patient.sexe=='Autre' %}selected{% endif %}>
+                                        Autre</option>
+                                </select>
+                            </div>
+
+                            <!-- CIN -->
+                            <!-- <div class="field">
+                                <label for="cin">CIN</label>
+                                <input type="text" id="cin" name="cin" value="{{ patient.cin if patient else '' }}">
+                            </div> -->
+
+                            <!-- Adresse -->
+                            <!-- <div class="field field-full">
+                                <label for="adresse">Adresse</label>
+                                <textarea id="adresse" name="adresse"
+                                    rows="3">{{ patient.adresse if patient else '' }}</textarea>
+                            </div> -->
+
+                            <!-- Date inscription -->
+                            <div class="field">
+                                <label for="date_inscription">Date d'inscription</label>
+                                <input type="date" id="date_inscription" name="date_inscription"
+                                    value="{{ patient.date_inscription if patient else '' }}">
+                            </div>
+
+                        </div>
+
+                        <!-- Boutons -->
+                        <div class="form-actions">
+                            <a href="/admin/patients" class="btn-secondary">Annuler</a>
+                            <button type="submit" class="btn-primary">
+                                {% if patient %}Enregistrer{% else %}Ajouter le patient{% endif %}
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
             </div>
+        </main>
 
-        </div>
+        <!-- MAIN -->
+    </section>
+    <!-- CONTENT -->
 
-
-    </main>
-
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 </body>
 
 </html>

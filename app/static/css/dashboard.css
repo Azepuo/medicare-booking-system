@@ -672,3 +672,135 @@ dialog {
 .btn-icon:hover {
 	background: var(--light-blue);
 }
+/*crud
+/* ---- Formulaire dans le dashboard ---- */
+
+.form-wrapper {
+	margin-top: 24px;
+	display: flex;
+	justify-content: center;
+}
+
+.form-card {
+	background: #ffffff;              /* vrai blanc pour bien détacher du fond */
+	border-radius: 18px;
+	padding: 22px 24px 26px;
+	width: 100%;
+	max-width: 900px;
+	box-shadow: 0 12px 30px rgba(0,0,0,0.04);
+}
+
+/* optionnel si tu veux une version un peu plus étroite encore */
+.form-card-medium {
+	max-width: 800px;
+}
+
+/* grille des champs : 2 colonnes par défaut */
+.form-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(220px, 1fr));
+	grid-column-gap: 20px;
+	grid-row-gap: 14px;
+}
+
+/* champ qui prend toute la ligne (textarea) */
+.field-full {
+	grid-column: 1 / -1;
+}
+
+/* champ qui prend une demi ligne (au cas où) */
+.field-half {
+	max-width: 260px;
+}
+
+.field {
+	display: flex;
+	flex-direction: column;
+}
+
+/* labels plus visibles */
+.field label {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--dark);
+	margin-bottom: 4px;
+}
+
+/* style des inputs/select/textarea */
+.field input,
+.field select,
+.field textarea {
+	border-radius: 10px;
+	border: 1px solid var(--grey);
+	background: #fafafa;
+	padding: 8px 10px;
+	font-size: 14px;
+	font-family: var(--poppins);
+	outline: none;
+	transition: border-color .2s ease, background-color .2s ease, box-shadow .2s ease;
+	min-height: 38px;    /* donc plus petit qu’avant */
+}
+
+/* focus plus propre */
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+	border-color: var(--blue);
+	background: #ffffff;
+	box-shadow: 0 0 0 2px rgba(60,145,230,.12);
+}
+
+/* textarea un peu plus haut mais pas énorme */
+.field textarea {
+	min-height: 80px;
+	resize: vertical;
+}
+
+/* zone des boutons */
+.form-actions {
+	margin-top: 20px;
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+}
+
+/* si tu n'as pas encore ces styles globaux de boutons, tu peux les (re)mettre */
+.btn-primary,
+.btn-secondary {
+	padding: 9px 18px;
+	border-radius: 999px;
+	border: 1px solid transparent;
+	font-weight: 600;
+	font-size: 14px;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	text-decoration: none;
+}
+
+.btn-primary {
+	background: var(--blue);
+	color: #fff;
+	border-color: var(--blue);
+}
+
+.btn-secondary {
+	background: #ffffff;
+	color: var(--dark);
+	border-color: var(--grey);
+}
+
+/* responsive : 1 colonne en dessous de 900px */
+@media screen and (max-width: 900px) {
+	.form-card {
+		padding: 18px 16px 22px;
+	}
+	.form-grid {
+		grid-template-columns: 1fr;
+	}
+	.field-half {
+		max-width: 100%;
+	}
+}
+
