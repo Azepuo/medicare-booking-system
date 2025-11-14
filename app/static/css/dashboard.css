@@ -626,3 +626,49 @@ dialog {
   transform: translate(-50%, -50%);
   margin: 0;                  /* évite le décalage par défaut */
 }
+/*tst
+/* Bouton "Ajouter un médecin" dans le header du tableau */
+.btn-add-medecin {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 16px;
+	border-radius: 20px;
+	background: var(--blue);
+	color: var(--light);
+	font-size: 14px;
+	font-weight: 500;
+}
+
+.btn-add-medecin i {
+	font-size: 18px;
+}
+
+/* Colonne Action du CRUD */
+.actions {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.btn-icon {
+	display: inline-flex;
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	justify-content: center;
+	align-items: center;
+	background: var(--grey);
+}
+
+.btn-icon.edit i {
+	color: var(--blue);
+}
+
+.btn-icon.delete i {
+	color: var(--red);
+}
+
+.btn-icon:hover {
+	background: var(--light-blue);
+}
