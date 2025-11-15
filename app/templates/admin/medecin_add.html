@@ -146,13 +146,17 @@
                                 <input id="tarif" name="tarif" type="number" min="0" step="0.01"
                                     value="{{ medecin.tarif if medecin else '' }}">
                             </div>
-
                             <div class="field field-full">
                                 <label for="description">Description</label>
                                 <textarea id="description" name="description"
                                     rows="3">{{ medecin.description if medecin else '' }}</textarea>
                             </div>
-
+                            <!-- Date inscription -->
+                            <div class="field">
+                                <label for="date_inscription">Date d'inscription</label>
+                                <input type="date" id="date_inscription" name="date_inscription"
+                                    value="{{ patient.date_inscription if patient else '' }}">
+                            </div>
                             <div class="field field-half">
                                 <label for="statut">Statut</label>
                                 <select id="statut" name="statut">

@@ -26,13 +26,13 @@
                     <span class="text">Dashboard</span>
                 </a>
             </li>
-            <li class="active">
+            <li>
                 <a href="/admin/medecins">
                     <i class='bx bxs-user-pin'></i>
                     <span class="text">Médecin</span>
                 </a>
             </li>
-            <li>
+            <li class="active">
                 <a href="/admin/patients">
                     <i class='bx bx-user'></i>
                     <span class="text">Patients</span>
@@ -127,7 +127,11 @@
                                 <input type="text" id="nom_complet" name="nom_complet"
                                     value="{{ patient.nom_complet if patient else '' }}" required>
                             </div>
-
+                            <!-- CIN -->
+                            <div class="field">
+                                <label for="cin">CIN</label>
+                                <input type="text" id="cin" name="cin" value="{{ patient.cin if patient else '' }}">
+                            </div>
                             <!-- Email -->
                             <div class="field">
                                 <label for="email">Email</label>
@@ -161,12 +165,6 @@
                                         Autre</option>
                                 </select>
                             </div>
-
-                            <!-- CIN -->
-                            <!-- <div class="field">
-                                <label for="cin">CIN</label>
-                                <input type="text" id="cin" name="cin" value="{{ patient.cin if patient else '' }}">
-                            </div> -->
 
                             <!-- Adresse -->
                             <!-- <div class="field field-full">
