@@ -27,7 +27,7 @@
                 </a>
             </li>
             <li class="active">
-                <a href="/admin/medecins">
+                <a href="{{ url_for('medecins_bp.liste_medecins') }}">
                     <i class='bx bxs-user-pin'></i>
                     <span class="text">Médecin</span>
                 </a>
@@ -74,7 +74,7 @@
         <nav>
             <i class='bx bx-menu'></i>
             <a href="#" class="nav-link">Categories</a>
-            <form action="#">
+            <form method="POST" action="{{ url_for('medecins_bp.ajouter_medecin') }}">
                 <div class="form-input">
                     <input type="search" placeholder="Search...">
                     <button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
@@ -109,74 +109,67 @@
 
             <div class="form-wrapper">
                 <div class="form-card form-card-medium">
-                    <form method="POST" action="{{ form_action }}">
+                    <form method="POST" action="{{ url_for('medecins_bp.ajouter_medecin') }}">
                         <div class="form-grid">
                             <div class="field">
                                 <label for="nom_complet">Nom complet</label>
-                                <input id="nom_complet" name="nom_complet" type="text"
-                                    value="{{ medecin.nom_complet if medecin else '' }}" required>
+                                <input id="nom_complet" name="nom_complet" type="text" required>
                             </div>
 
                             <div class="field">
                                 <label for="email">Email</label>
-                                <input id="email" name="email" type="email"
-                                    value="{{ medecin.email if medecin else '' }}" required>
+                                <input id="email" name="email" type="email" required>
                             </div>
 
                             <div class="field">
                                 <label for="telephone">Téléphone</label>
-                                <input id="telephone" name="telephone" type="text"
-                                    value="{{ medecin.telephone if medecin else '' }}">
+                                <input id="telephone" name="telephone" type="text" required>
                             </div>
 
                             <div class="field">
                                 <label for="specialite">Spécialité</label>
-                                <input id="specialite" name="specialite" type="text"
-                                    value="{{ medecin.specialite if medecin else '' }}" required>
+                                <input id="specialite" name="specialite" type="text" required>
                             </div>
 
                             <div class="field">
                                 <label for="experience">Années d’expérience</label>
-                                <input id="experience" name="experience" type="number" min="0"
-                                    value="{{ medecin.experience if medecin else '' }}">
+                                <input id="experience" name="annees_experience" type="number" min="0" required>
                             </div>
 
                             <div class="field">
                                 <label for="tarif">Tarif consultation (DH)</label>
-                                <input id="tarif" name="tarif" type="number" min="0" step="0.01"
-                                    value="{{ medecin.tarif if medecin else '' }}">
+                                <input id="tarif" name="tarif_consultation" type="number" min="0" step="0.01" required>
                             </div>
+
                             <div class="field field-full">
                                 <label for="description">Description</label>
-                                <textarea id="description" name="description"
-                                    rows="3">{{ medecin.description if medecin else '' }}</textarea>
+                                <textarea id="description" name="description" rows="3" required></textarea>
                             </div>
-                            <!-- Date inscription -->
+
                             <div class="field">
                                 <label for="date_inscription">Date d'inscription</label>
-                                <input type="date" id="date_inscription" name="date_inscription"
-                                    value="{{ patient.date_inscription if patient else '' }}">
+                                <input type="date" id="date_inscription" name="date_inscription" required>
                             </div>
-                            <div class="field field-half">
+
+                            <div class="field">
                                 <label for="statut">Statut</label>
-                                <select id="statut" name="statut">
-                                    <option value="actif" {% if medecin and medecin.statut=='actif' %}selected{% endif
-                                        %}>Actif</option>
-                                    <option value="en_conge" {% if medecin and medecin.statut=='en_conge' %}selected{%
-                                        endif %}>En congé</option>
-                                    <option value="inactif" {% if medecin and medecin.statut=='inactif' %}selected{%
-                                        endif %}>Inactif</option>
+                                <select id="statut" name="statut" required>
+                                    <option value="" disabled selected>-- Choisir un statut --</option>
+                                    <option value="Actif">Actif</option>
+                                    <option value="En congé">En congé</option>
+                                    <option value="Inactif">Inactif</option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="form-actions">
-                            <a href="/admin/medecins" class="btn-secondary">Annuler</a>
+                            <a href="{{ url_for('medecins_bp.liste_medecins') }}" class="btn-secondary">Annuler</a>
                             <button type="submit" class="btn-primary">
-                                {{ 'Ajouter le médecin' if not medecin else 'Enregistrer les modifications' }}
+                                Ajouter le médecin
                             </button>
                         </div>
                     </form>
+
                 </div>
             </div>
         </main>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 
 <head>
     <meta charset="UTF-8">
@@ -10,7 +10,7 @@
     <!-- My CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 
-    <title>HealthAdmin</title>
+    <title>HealthAdmin - Modifier médecin</title>
 </head>
 
 <body>
@@ -29,7 +29,7 @@
                 </a>
             </li>
             <li class="active">
-                <a href="/admin/medecins">
+                <a href="{{ url_for('medecins_bp.liste_medecins') }}">
                     <i class='bx bxs-user-pin'></i>
                     <span class="text">Médecin</span>
                 </a>
@@ -102,7 +102,7 @@
                     <ul class="breadcrumb">
                         <li><a href="/admin/dashboard">Dashboard</a></li>
                         <li><i class='bx bx-chevron-right'></i></li>
-                        <li><a href="/admin/medecins">Médecins</a></li>
+                        <li><a href="{{ url_for('medecins_bp.liste_medecins') }}">Médecins</a></li>
                         <li><i class='bx bx-chevron-right'></i></li>
                         <li><a class="active" href="#">Modifier</a></li>
                     </ul>
@@ -113,68 +113,85 @@
                 <div class="form-card form-card-medium">
                     <h2 style="font-size:16px;font-weight:600;margin-bottom:14px;">Informations du médecin</h2>
 
-                    <form action="#" method="post">
+                    <!-- action : route du blueprint pour éditer -->
+                    <form action="{{ url_for('medecins_bp.editer_medecin', medecin_id=medecin.id) }}" method="post">
                         <div class="form-grid">
                             <!-- Nom complet -->
                             <div class="field">
                                 <label for="nom_complet">Nom complet</label>
-                                <input type="text" id="nom_complet" name="nom_complet" value="Dr. Amine El Idrissi">
+                                <input type="text" id="nom_complet" name="nom_complet" value="{{ medecin.nom }}"
+                                    required>
                             </div>
 
                             <!-- Email -->
                             <div class="field">
                                 <label for="email">Email</label>
-                                <input type="email" id="email" name="email" value="dr.amine@example.com">
+                                <input type="email" id="email" name="email" value="{{ medecin.email }}" required>
                             </div>
 
                             <!-- Téléphone -->
                             <div class="field">
                                 <label for="telephone">Téléphone</label>
-                                <input type="text" id="telephone" name="telephone" value="06 11 22 33 44">
+                                <input type="text" id="telephone" name="telephone" value="{{ medecin.telephone }}"
+                                    required>
                             </div>
 
                             <!-- Spécialité -->
                             <div class="field">
                                 <label for="specialite">Spécialité</label>
-                                <input type="text" id="specialite" name="specialite" value="Médecine Générale">
+                                <input type="text" id="specialite" name="specialite" value="{{ medecin.specialite }}"
+                                    required>
                             </div>
 
                             <!-- Années d’expérience -->
                             <div class="field">
                                 <label for="experience">Années d’expérience</label>
-                                <input type="number" id="experience" name="experience" min="0" value="5">
+                                <input type="number" id="experience" name="annees_experience" min="0"
+                                    value="{{ medecin.annees_experience }}" required>
                             </div>
 
                             <!-- Tarif consultation -->
                             <div class="field">
                                 <label for="tarif">Tarif consultation (DH)</label>
-                                <input type="number" id="tarif" name="tarif" min="0" step="0.01" value="350">
+                                <input type="number" id="tarif" name="tarif_consultation" min="0" step="0.01"
+                                    value="{{ medecin.tarif_consultation }}" required>
                             </div>
 
                             <!-- Description -->
                             <div class="field field-full">
                                 <label for="description">Description</label>
-                                <textarea id="description" name="description"
-                                    rows="3">Médecin généraliste, suivi des patients adultes et enfants, consultations de routine et prévention.</textarea>
+                                <textarea id="description" name="description" rows="3"
+                                    required>{{ medecin.description }}</textarea>
                             </div>
+
                             <!-- Date inscription -->
                             <div class="field">
                                 <label for="date_inscription">Date d'inscription</label>
-                                <input type="date" id="date_inscription" name="date_inscription" value="2025-02-10">
+                                <input type="date" id="date_inscription" name="date_inscription"
+                                    value="{{ medecin.date_inscription }}">
+                                {# si besoin, tu peux utiliser le filtre :
+                                value="{{ medecin.date_inscription|date('Y-m-d') }}" #}
                             </div>
+
                             <!-- Statut -->
                             <div class="field">
                                 <label for="statut">Statut</label>
-                                <select id="statut" name="statut">
-                                    <option value="actif" selected>Actif</option>
-                                    <option value="en_conge">En congé</option>
-                                    <option value="inactif">Inactif</option>
+                                <select id="statut" name="statut" required>
+                                    <option value="Actif" {% if medecin.statut=='Actif' %}selected{% endif %}>
+                                        Actif
+                                    </option>
+                                    <option value="En congé" {% if medecin.statut=='En congé' %}selected{% endif %}>
+                                        En congé
+                                    </option>
+                                    <option value="Inactif" {% if medecin.statut=='Inactif' %}selected{% endif %}>
+                                        Inactif
+                                    </option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="form-actions">
-                            <a href="/admin/medecins" class="btn-secondary">Annuler</a>
+                            <a href="{{ url_for('medecins_bp.liste_medecins') }}" class="btn-secondary">Annuler</a>
                             <button type="submit" class="btn-primary">Enregistrer les modifications</button>
                         </div>
                     </form>
