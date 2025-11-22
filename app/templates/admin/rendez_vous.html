@@ -5,9 +5,7 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-	<!-- Boxicons -->
 	<link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
-	<!-- CSS principal du dashboard -->
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 
 	<title>HealthAdmin - Rendez-vous</title>
@@ -72,22 +70,16 @@
 
 	<!-- CONTENT -->
 	<section id="content">
+
 		<!-- NAVBAR -->
 		<nav>
 			<i class='bx bx-menu'></i>
-			<a href="#" class="nav-link">Categories</a>
 			<form action="#">
 				<div class="form-input">
 					<input type="search" placeholder="Search...">
 					<button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
 				</div>
 			</form>
-			<input type="checkbox" id="switch-mode" hidden>
-			<label for="switch-mode" class="switch-mode"></label>
-			<a href="#" class="notification">
-				<i class='bx bxs-bell'></i>
-				<span class="num">8</span>
-			</a>
 			<a href="#" class="profile">
 				<img src="{{ url_for('static', filename='img/zainab_pic.jpeg') }}">
 			</a>
@@ -100,55 +92,22 @@
 				<div class="left">
 					<h1>Gestion des Rendez-vous</h1>
 					<ul class="breadcrumb">
-						<li>
-							<a href="/admin/dashboard">Dashboard</a>
-						</li>
+						<li><a href="/admin/dashboard">Dashboard</a></li>
 						<li><i class='bx bx-chevron-right'></i></li>
-						<li>
-							<a class="active" href="#">Rendez-vous</a>
-						</li>
+						<li><a class="active" href="#">Rendez-vous</a></li>
 					</ul>
 				</div>
-				<a href="#" class="btn-download">
-					<i class='bx bxs-cloud-download'></i>
-					<span class="text">Exporter</span>
+
+				<a href="{{ url_for('rdv_bp.ajouter_rdv') }}" class="btn-add-medecin">
+					<i class='bx bx-plus'></i>
+					<span>Ajouter un rendez-vous</span>
 				</a>
 			</div>
 
-			<!-- Cartes d’info (optionnel, mêmes que dashboard) -->
-			<ul class="box-info">
-				<li>
-					<i class='bx bx-user-voice'></i>
-					<span class="text">
-						<h3>24</h3>
-						<p>Médecins</p>
-					</span>
-				</li>
-				<li>
-					<i class='bx bx-user'></i>
-					<span class="text">
-						<h3>250</h3>
-						<p>Patients</p>
-					</span>
-				</li>
-				<li>
-					<i class='bx bx-calendar-check'></i>
-					<span class="text">
-						<h3>36</h3>
-						<p>Rendez-vous Aujourd’hui</p>
-					</span>
-				</li>
-			</ul>
-
-			<!-- ZONE CRUD RENDEZ-VOUS -->
 			<div class="table-data">
 				<div class="order">
 					<div class="head">
 						<h3>Liste des rendez-vous</h3>
-						<a href="/admin/rdv_add" class="btn-add-medecin">
-							<i class='bx bx-plus'></i>
-							<span>Ajouter un rendez-vous</span>
-						</a>
 					</div>
 
 					<table>
@@ -163,74 +122,42 @@
 							</tr>
 						</thead>
 						<tbody>
-							<!-- Exemple statique -->
-							<tr>
-								<td>Zainab Errossafi</td>
-								<td>Dr. Amine</td>
-								<td>22/10/2025</td>
-								<td>10:00</td>
-								<td style="color:orange;">En attente</td>
-								<td class="actions" style="justify-content:center;">
-									<a href="#"
-										class="btn-icon"
-										title="Confirmer">
-										<i class='bx bx-check-circle'></i>
-									</a>
-									<a href="/admin/rdv_edit" class="btn-icon edit" title="Modifier">
-										<i class='bx bx-edit-alt'></i>
-									</a>
-									<a href="#"
-										class="btn-icon delete"
-										title="Supprimer"
-										onclick="return confirm('Voulez-vous annuler ce rendez-vous ?');">
-										<i class='bx bx-trash'></i>
-									</a>
-								</td>
-							</tr>
 
-							<!-- Version dynamique avec Jinja si tu as une liste rdv -->
-							{#
-							{% for rdv in rendez_vous %}
+							{% for rdv in rdvs %}
 							<tr>
 								<td>{{ rdv.patient_nom }}</td>
 								<td>{{ rdv.medecin_nom }}</td>
-								<td>{{ rdv.date }}</td>
-								<td>{{ rdv.heure }}</td>
-								<td>
-									{% if rdv.statut == 'confirmé' %}
-										<span class="status completed">Confirmé</span>
-									{% elif rdv.statut == 'en_attente' %}
-										<span class="status pending">En attente</span>
-									{% else %}
-										<span class="status process">{{ rdv.statut }}</span>
-									{% endif %}
-								</td>
+								<td>{{ rdv.date_rdv }}</td>
+								<td>{{ rdv.heure_rdv }}</td>
+								<td>{{ rdv.statut }}</td>
 								<td class="actions" style="justify-content:center;">
-									<a href="{{ url_for('rdv_confirm', id=rdv.id) }}" class="btn-icon" title="Confirmer">
-										<i class='bx bx-check-circle'></i>
-									</a>
-									<a href="{{ url_for('rdv_edit', id=rdv.id) }}" class="btn-icon edit" title="Modifier">
+									<a href="{{ url_for('rdv_bp.editer_rdv', rdv_id=rdv.id) }}" class="btn-icon edit">
 										<i class='bx bx-edit-alt'></i>
 									</a>
-									<a href="{{ url_for('rdv_delete', id=rdv.id) }}"
-										class="btn-icon delete"
-										title="Supprimer"
-										onclick="return confirm('Voulez-vous annuler ce rendez-vous ?');">
+									<a href="{{ url_for('rdv_bp.supprimer_rdv', rdv_id=rdv.id) }}"
+										class="btn-icon delete">
 										<i class='bx bx-trash'></i>
 									</a>
 								</td>
 							</tr>
 							{% endfor %}
-							#}
+
+							{% if rdvs|length == 0 %}
+							<tr>
+								<td colspan="6" style="text-align:center; padding:20px;">
+									Aucun rendez-vous trouvé
+								</td>
+							</tr>
+							{% endif %}
+
+
 						</tbody>
 					</table>
 				</div>
 			</div>
 
 		</main>
-		<!-- MAIN -->
 	</section>
-	<!-- CONTENT -->
 
 	<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 </body>

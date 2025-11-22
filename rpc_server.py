@@ -1,8 +1,7 @@
-# rpc_server.py ---Admin---
-
 from xmlrpc.server import SimpleXMLRPCServer
 from database.connection import create_connection
 from decimal import Decimal
+from datetime import timedelta
 
 
 # =====================================================
@@ -20,14 +19,14 @@ def normalize_medecin(row):
         if isinstance(value, Decimal):
             data[key] = float(value)
 
-    # Convertir date_inscription en string
     if "date_inscription" in data and data["date_inscription"] is not None:
         data["date_inscription"] = data["date_inscription"].isoformat()
 
     return data
 
+
 # =====================================================
-# ✅ FONCTIONS MEDECINS POUR RPC
+# ✅ FONCTIONS MEDECINS
 # =====================================================
 
 def liste_medecins():
@@ -115,7 +114,6 @@ def supprimer_medecin(medecin_id):
     return True
 
 
-
 # =====================================================
 # ✅ NORMALISATION PATIENTS
 # =====================================================
@@ -123,20 +121,20 @@ def supprimer_medecin(medecin_id):
 def normalize_patient(row):
     if row is None:
         return None
+
     data = dict(row)
 
-    if "date_naissance" in data and data["date_naissance"] is not None:
+    if data.get("date_naissance"):
         data["date_naissance"] = data["date_naissance"].isoformat()
 
-    if "date_inscription" in data and data["date_inscription"] is not None:
+    if data.get("date_inscription"):
         data["date_inscription"] = data["date_inscription"].isoformat()
 
     return data
 
 
-
 # =====================================================
-# ✅ FONCTIONS PATIENTS POUR RPC
+# ✅ FONCTIONS PATIENTS
 # =====================================================
 
 def liste_patients():
@@ -218,9 +216,166 @@ def supprimer_patient(patient_id):
     return True
 
 
+# from datetime import timedelta
 
 # =====================================================
-# ✅ LANCEMENT DU SERVEUR RPC
+# ✅ NORMALISATION RDV
+# =====================================================
+
+def normalize_rdv(row):
+    if row is None:
+        return None
+
+    data = dict(row)
+
+    # ✅ Convertir la date en string
+    if data.get("date_rdv"):
+        try:
+            data["date_rdv"] = data["date_rdv"].isoformat()
+        except:
+            data["date_rdv"] = str(data["date_rdv"])
+
+    # ✅ Convertir l'heure en string
+    heure = data.get("heure_rdv")
+    if heure is not None:
+
+        # Cas MySQL → TIME = timedelta
+        if isinstance(heure, timedelta):
+            total_seconds = int(heure.total_seconds())
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            data["heure_rdv"] = f"{hours:02d}:{minutes:02d}"
+
+        # Cas datetime.time
+        elif hasattr(heure, "strftime"):
+            data["heure_rdv"] = heure.strftime("%H:%M")
+
+        # fallback
+        else:
+            data["heure_rdv"] = str(heure)
+
+    return data
+
+
+
+# =====================================================
+# ✅ FONCTIONS RDV
+# =====================================================
+
+def liste_rdv():
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    sql = """
+        SELECT r.*,
+               p.nom AS patient_nom,
+               m.nom AS medecin_nom
+        FROM rendezvous r
+        JOIN patients p ON r.patient_id = p.id
+        JOIN medecins m ON r.medecin_id = m.id
+        ORDER BY r.date_rdv DESC, r.heure_rdv ASC
+    """
+    cursor.execute(sql)
+    rows = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return [normalize_rdv(row) for row in rows]
+
+
+
+def get_rdv(rdv_id):
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    sql = """
+        SELECT r.*,
+               p.nom AS patient_nom,
+               m.nom AS medecin_nom
+        FROM rendezvous r
+        JOIN patients p ON r.patient_id = p.id
+        JOIN medecins m ON r.medecin_id = m.id
+        WHERE r.id = %s
+    """
+    cursor.execute(sql, (rdv_id,))
+    row = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return normalize_rdv(row)
+
+
+
+def ajouter_rdv(data):
+    conn = create_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        INSERT INTO rendezvous
+        (patient_id, medecin_id, date_rdv, heure_rdv, statut, notes)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """
+
+    cursor.execute(sql, (
+        data.get("patient_id"),
+        data.get("medecin_id"),
+        data.get("date_rdv"),
+        data.get("heure_rdv"),
+        data.get("statut") or "en_attente",
+        data.get("notes"),
+    ))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return True
+
+
+
+def editer_rdv(rdv_id, data):
+    conn = create_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        UPDATE rendezvous
+        SET patient_id=%s,
+            medecin_id=%s,
+            date_rdv=%s,
+            heure_rdv=%s,
+            statut=%s,
+            notes=%s
+        WHERE id=%s
+    """
+    cursor.execute(sql, (
+        data.get("patient_id"),
+        data.get("medecin_id"),
+        data.get("date_rdv"),
+        data.get("heure_rdv"),
+        data.get("statut"),
+        data.get("notes"),
+        rdv_id
+    ))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return True
+
+
+
+def supprimer_rdv(rdv_id):
+    conn = create_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM rendezvous WHERE id = %s", (rdv_id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return True
+
+# =====================================================
+# ✅ LANCEMENT SERVEUR RPC
 # =====================================================
 
 if __name__ == "__main__":
@@ -240,5 +395,12 @@ if __name__ == "__main__":
     server.register_function(ajouter_patient, "ajouter_patient")
     server.register_function(editer_patient, "editer_patient")
     server.register_function(supprimer_patient, "supprimer_patient")
+
+    # Rendez-vous ✅
+    server.register_function(liste_rdv, "liste_rdv")
+    server.register_function(get_rdv, "get_rdv")
+    server.register_function(ajouter_rdv, "ajouter_rdv")
+    server.register_function(editer_rdv, "editer_rdv")
+    server.register_function(supprimer_rdv, "supprimer_rdv")
 
     server.serve_forever()
