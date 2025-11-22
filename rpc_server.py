@@ -12,16 +12,19 @@ from decimal import Decimal
 def normalize_medecin(row):
     if row is None:
         return None
+
     data = dict(row)
 
+    for key, value in data.items():
+        # Convertir les Decimal en float
+        if isinstance(value, Decimal):
+            data[key] = float(value)
+
+    # Convertir date_inscription en string
     if "date_inscription" in data and data["date_inscription"] is not None:
         data["date_inscription"] = data["date_inscription"].isoformat()
 
-    if "tarif_consultation" in data and isinstance(data["tarif_consultation"], Decimal):
-        data["tarif_consultation"] = float(data["tarif_consultation"])
-
     return data
-
 
 # =====================================================
 # ✅ FONCTIONS MEDECINS POUR RPC
@@ -55,8 +58,8 @@ def ajouter_medecin(data):
         INSERT INTO medecins
         (nom, email, telephone, specialite,
          annees_experience, tarif_consultation,
-         description, statut, date_inscription)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+         description, statut)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     """
     cursor.execute(sql, (
         data.get("nom"),
@@ -67,7 +70,6 @@ def ajouter_medecin(data):
         data.get("tarif_consultation"),
         data.get("description"),
         data.get("statut"),
-        data.get("date_inscription"),
     ))
     conn.commit()
     cursor.close()
@@ -83,7 +85,7 @@ def editer_medecin(medecin_id, data):
         UPDATE medecins
         SET nom=%s, email=%s, telephone=%s, specialite=%s,
             annees_experience=%s, tarif_consultation=%s,
-            description=%s, statut=%s, date_inscription=%s
+            description=%s, statut=%s
         WHERE id=%s
     """
     cursor.execute(sql, (
@@ -95,7 +97,6 @@ def editer_medecin(medecin_id, data):
         data.get("tarif_consultation"),
         data.get("description"),
         data.get("statut"),
-        data.get("date_inscription"),
         medecin_id
     ))
     conn.commit()
@@ -159,16 +160,6 @@ def get_patient(patient_id):
 
 
 def ajouter_patient(data):
-    """
-    data = {
-        "nom": "...",
-        "cin": "...",
-        "email": "...",
-        "telephone": "...",
-        "sexe": "...",
-        "date_naissance": "YYYY-MM-DD"
-    }
-    """
     conn = create_connection()
     cursor = conn.cursor()
 
@@ -177,13 +168,14 @@ def ajouter_patient(data):
         (nom, cin, email, telephone, sexe, date_naissance)
         VALUES (%s, %s, %s, %s, %s, %s)
     """
+
     cursor.execute(sql, (
         data.get("nom"),
         data.get("cin"),
         data.get("email"),
         data.get("telephone"),
         data.get("sexe"),
-        data.get("date_naissance")
+        data.get("date_naissance"),
     ))
     conn.commit()
     cursor.close()
@@ -242,7 +234,7 @@ if __name__ == "__main__":
     server.register_function(editer_medecin, "editer_medecin")
     server.register_function(supprimer_medecin, "supprimer_medecin")
 
-    # ✅ Patients
+    # Patients
     server.register_function(liste_patients, "liste_patients")
     server.register_function(get_patient, "get_patient")
     server.register_function(ajouter_patient, "ajouter_patient")

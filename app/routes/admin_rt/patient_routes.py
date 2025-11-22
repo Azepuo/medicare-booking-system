@@ -58,7 +58,6 @@ def editer_patient(patient_id):
     "telephone": request.form.get("telephone"),
     "sexe": request.form.get("sexe"),
     "date_naissance": request.form.get("date_naissance"),
-    # "date_inscription": request.form.get("date_inscription") or None,
 }
 
 

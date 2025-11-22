@@ -168,29 +168,6 @@
 							</tr>
 						</thead>
 						<tbody>
-							<!-- Exemple statique : à remplacer plus tard par une boucle Jinja si tu veux
-							<tr>
-								<td>Zainab Errossafi</td>
-								<td>Généraliste</td>
-								<td>zainaberrossafi@gmail.com</td>
-								<td>5 ans</td>
-								<td>10-05-2020</td>
-								<td>350 DH</td>
-								<td>Médecin généraliste ...</td>
-								<td>En congé</td>
-								<td class="actions">
-									<a href="/admin/medecin_edit" class="btn-icon edit">
-										<i class='bx bx-edit-alt'></i>
-									</a>
-									<a href="#"
-										class="btn-icon delete"
-										onclick="return confirm('Voulez-vous supprimer ce médecin ?');">
-										<i class='bx bx-trash'></i>
-									</a>
-								</td>
-							</tr> -->
-
-							<!--  Exemple boucle si tu veux la version dynamique : -->
 							{% for m in medecins %}
 							<tr>
 								<td>{{ m.nom }}</td>
@@ -198,7 +175,7 @@
 								<td>{{ m.email }}</td>
 								<td>{{ m.telephone }}</td>
 								<td>{{ m.annees_experience }} ans</td>
-								<td>{{ m.date_inscription }}</td>
+								<td>{{ m.date_inscription[:10] }}</td>
 								<td>{{ m.tarif_consultation }} DH</td>
 								<td>{{ m.description }}</td>
 								<td>{{ m.statut }}</td>

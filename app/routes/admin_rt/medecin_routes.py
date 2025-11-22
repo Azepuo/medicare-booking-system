@@ -31,7 +31,6 @@ def ajouter_medecin():
             "tarif_consultation": request.form.get("tarif_consultation") or None,
             "description": request.form.get("description"),
             "statut": request.form.get("statut"),
-            "date_inscription": request.form.get("date_inscription") or None,
         }
 
         rpc.ajouter_medecin(data)
@@ -63,7 +62,6 @@ def editer_medecin(medecin_id):
             "tarif_consultation": request.form.get("tarif_consultation") or None,
             "description": request.form.get("description"),
             "statut": request.form.get("statut"),
-            "date_inscription": request.form.get("date_inscription") or None,
         }
 
         rpc.editer_medecin(medecin_id, data)
