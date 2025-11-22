@@ -8,7 +8,7 @@
     <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 
-    <title>HealthAdmin - Médecin</title>
+    <title>HealthAdmin - Facture</title>
 </head>
 
 <body>
@@ -20,36 +20,13 @@
             <span class="text">HealthAdmin</span>
         </a>
         <ul class="side-menu top">
-            <li>
-                <a href="/admin/dashboard">
-                    <i class='bx bxs-dashboard'></i>
-                    <span class="text">Dashboard</span>
-                </a>
+            <li><a href="/admin/dashboard"><i class='bx bxs-dashboard'></i><span class="text">Dashboard</span></a></li>
+            <li><a href="/admin/medecins"><i class='bx bxs-user-pin'></i><span class="text">Médecin</span></a></li>
+            <li><a href="/admin/patients"><i class='bx bx-user'></i><span class="text">Patients</span></a></li>
+            <li><a href="/admin/rendez_vous"><i class='bx bxs-calendar'></i><span class="text">Rendez-vous</span></a>
             </li>
-            <li>
-                <a href="/admin/medecins">
-                    <i class='bx bxs-user-pin'></i>
-                    <span class="text">Médecin</span>
-                </a>
-            </li>
-            <li>
-                <a href="/admin/patients">
-                    <i class='bx bx-user'></i>
-                    <span class="text">Patients</span>
-                </a>
-            </li>
-            <li>
-                <a href="/admin/rendez_vous">
-                    <i class='bx bxs-calendar'></i>
-                    <span class="text">Rendez-vous</span>
-                </a>
-            </li>
-            <li class="active">
-                <a href="/admin/facturation">
-                    <i class='bx bxs-receipt'></i>
-                    <span class="text">Facturation</span>
-                </a>
-            </li>
+            <li class="active"><a href="/admin/facturation"><i class='bx bxs-receipt'></i><span
+                        class="text">Facturation</span></a></li>
         </ul>
         <ul class="side-menu">
             <li>
@@ -66,166 +43,172 @@
             </li>
         </ul>
     </section>
-    <!-- SIDEBAR -->
 
     <!-- CONTENT -->
     <section id="content">
-        <!-- NAVBAR -->
         <nav>
             <i class='bx bx-menu'></i>
-            <a href="#" class="nav-link">Categories</a>
-            <form action="#">
-                <div class="form-input">
-                    <input type="search" placeholder="Search...">
-                    <button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
-                </div>
-            </form>
-            <input type="checkbox" id="switch-mode" hidden>
-            <label for="switch-mode" class="switch-mode"></label>
-            <a href="#" class="notification">
-                <i class='bx bxs-bell'></i>
-                <span class="num">8</span>
-            </a>
             <a href="#" class="profile">
                 <img src="{{ url_for('static', filename='img/zainab_pic.jpeg') }}">
             </a>
         </nav>
-        <!-- NAVBAR -->
 
-        <!-- MAIN -->
         <main>
             <div class="head-title">
                 <div class="left">
-                    <h1>
-                        {% if facture %}
-                        Modifier une facture
-                        {% else %}
-                        Ajouter une facture
-                        {% endif %}
-                    </h1>
+                    <h1>Créer une facture</h1>
                     <ul class="breadcrumb">
                         <li><a href="/admin/dashboard">Dashboard</a></li>
                         <li><i class='bx bx-chevron-right'></i></li>
                         <li><a href="/admin/facturation">Facturation</a></li>
                         <li><i class='bx bx-chevron-right'></i></li>
-                        <li>
-                            <a class="active" href="#">
-                                {% if facture %}Modifier{% else %}Ajouter{% endif %}
-                            </a>
-                        </li>
+                        <li><a class="active" href="#">Créer</a></li>
                     </ul>
                 </div>
             </div>
 
             <div class="form-wrapper">
                 <div class="form-card form-card-medium">
-                    <form method="POST" action="{{ form_action }}">
-                        <div class="form-grid">
+                  <form method="POST" action="{{ form_action }}">
 
-                            <!-- Numéro facture -->
-                            <div class="field">
-                                <label for="numero">Numéro de facture</label>
-                                <input type="text" id="numero" name="numero"
-                                    value="{{ facture.numero if facture else '' }}" required>
-                            </div>
+                        <input type="hidden" name="rdv_id" value="{{ rdv.id }}">
+
+                        <div class="form-grid">
 
                             <!-- Patient -->
                             <div class="field">
-                                <label for="patient_id">Patient</label>
-                                <select id="patient_id" name="patient_id" required>
-                                    <option value="">-- Sélectionner un patient --</option>
-                                    {% for p in patients %}
-                                    <option value="{{ p.id }}" {% if facture and facture.patient_id==p.id %}selected{%
-                                        endif %}>
-                                        {{ p.nom_complet }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
+                                <label>Patient</label>
+                                <input type="text" value="{{ rdv.patient_nom }}" readonly>
                             </div>
 
-                            <!-- Date facture -->
+                            <!-- Médecin -->
                             <div class="field">
-                                <label for="date_facture">Date</label>
-                                <input type="date" id="date_facture" name="date_facture"
-                                    value="{{ facture.date_facture if facture else '' }}" required>
+                                <label>Médecin</label>
+                                <input type="text" value="{{ rdv.medecin_nom }}" readonly>
                             </div>
 
-                            <!-- Montant total -->
+                            <!-- Date -->
                             <div class="field">
-                                <label for="montant_total">Montant total (DH)</label>
-                                <input type="number" id="montant_total" name="montant_total" min="0" step="0.01"
-                                    value="{{ facture.montant_total if facture else '' }}" required>
+                                <label>Date du rendez-vous</label>
+                                <input type="date" value="{{ rdv.date_rdv }}" readonly>
                             </div>
 
                             <!-- Statut -->
                             <div class="field">
-                                <label for="statut">Statut</label>
-                                <select id="statut" name="statut">
-                                    <option value="non_payé" {% if facture and facture.statut=='non_payé' %}selected{%
-                                        endif %}>
-                                        Non payé
-                                    </option>
-                                    <option value="payé" {% if facture and facture.statut=='payé' %}selected{% endif %}>
-                                        Payé
-                                    </option>
-                                    <option value="en_attente" {% if facture and facture.statut=='en_attente'
-                                        %}selected{% endif %}>
-                                        En attente
-                                    </option>
+                                <label>Statut</label>
+                                <select name="statut">
+                                    <option value="non_payé">Non payé</option>
+                                    <option value="payé">Payé</option>
+                                    <option value="en_attente">En attente</option>
                                 </select>
                             </div>
 
                             <!-- Moyen de paiement -->
                             <div class="field">
-                                <label for="moyen_paiement">Moyen de paiement</label>
-                                <select id="moyen_paiement" name="moyen_paiement">
-                                    <option value="non_defini" {% if facture and facture.moyen_paiement=='non_defini'
-                                        %}selected{% endif %}>
-                                        Non défini
-                                    </option>
-                                    <option value="especes" {% if facture and facture.moyen_paiement=='especes'
-                                        %}selected{% endif %}>
-                                        Espèces
-                                    </option>
-                                    <option value="carte" {% if facture and facture.moyen_paiement=='carte' %}selected{%
-                                        endif %}>
-                                        Carte bancaire
-                                    </option>
-                                    <option value="virement" {% if facture and facture.moyen_paiement=='virement'
-                                        %}selected{% endif %}>
-                                        Virement
-                                    </option>
+                                <label>Moyen de paiement</label>
+                                <select name="moyen_paiement">
+                                    <option value="non_defini">Non défini</option>
+                                    <option value="especes">Espèces</option>
+                                    <option value="carte">Carte bancaire</option>
+                                    <option value="virement">Virement</option>
                                 </select>
                             </div>
 
-                            <!-- Services -->
+                            <!-- SERVICES -->
                             <div class="field field-full">
-                                <label for="services">Services / Détails</label>
-                                <textarea id="services" name="services"
-                                    rows="3">{{ facture.services if facture else '' }}</textarea>
+                                <label>Ajouter un service</label>
+
+                                <div style="display:flex; gap:10px;">
+                                    <select id="service-select">
+                                        {% for s in services %}
+                                        <option value="{{ s.nom_service }}">{{ s.nom_service }}</option>
+                                        {% endfor %}
+                                    </select>
+
+                                    <input type="number" id="qty" value="1" min="1">
+
+                                    <button type="button" class="btn-primary" onclick="addService()">+ Ajouter</button>
+                                </div>
+                            </div>
+
+                            <!-- SERVICES LIST -->
+                            <div class="field field-full">
+                                <label>Services sélectionnés</label>
+                                <textarea id="services-list" name="services" rows="3" readonly></textarea>
+                            </div>
+
+                            <!-- TOTAL -->
+                            <div class="field">
+                                <label>Montant total (DH)</label>
+                                <input type="number" id="total" name="montant_total" readonly>
                             </div>
 
                         </div>
 
                         <div class="form-actions">
                             <a href="/admin/facturation" class="btn-secondary">Annuler</a>
-                            <button type="submit" class="btn-primary">
-                                {% if facture %}Enregistrer{% else %}Ajouter la facture{% endif %}
-                            </button>
+                            <button type="submit" class="btn-primary">Créer la facture</button>
                         </div>
 
                     </form>
                 </div>
             </div>
         </main>
-
-
-
-        <!-- MAIN -->
     </section>
-    <!-- CONTENT -->
 
-    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <!-- SCRIPT SERVICES -->
+    <script>
+    const priceMap = {
+        {% for s in services %}
+        "{{ s.nom_service }}": {{ s.prix_unitaire }}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    };
+
+    console.log("✅ Script loaded"); // TEST
+
+    function addService() {
+        console.log("✅ Button clicked"); // TEST
+
+        const service = document.getElementById('service-select').value;
+        const qty = parseInt(document.getElementById('qty').value, 10);
+
+        if (!service || qty <= 0) return;
+
+        const list = document.getElementById('services-list');
+
+        if (list.value.trim() === "") {
+            list.value = `${service}:${qty}`;
+        } else {
+            list.value += `, ${service}:${qty}`;
+        }
+
+        calculateTotal();
+    }
+
+    function calculateTotal() {
+        const raw = document.getElementById('services-list').value.trim();
+
+        if (raw === "") {
+            document.getElementById('total').value = 0;
+            return;
+        }
+
+        const entries = raw.split(",");
+        let total = 0;
+
+        entries.forEach(item => {
+            const [name, qty] = item.trim().split(":");
+            if (priceMap[name]) {
+                total += priceMap[name] * parseInt(qty);
+            }
+        });
+
+        document.getElementById('total').value = total;
+    }
+</script>
+
+
+
 </body>
 
 </html>

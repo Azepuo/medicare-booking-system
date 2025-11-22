@@ -470,6 +470,131 @@ def get_disponibilites(medecin_id):
 
 
 # =====================================================
+# ✅ SERVICES
+# =====================================================
+
+def liste_services():
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM services")
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    # ✅ Convert Decimal → float
+    for row in rows:
+        if isinstance(row.get("prix_unitaire"), Decimal):
+            row["prix_unitaire"] = float(row["prix_unitaire"])
+
+    return rows
+
+# =====================================================
+# ✅ NORMALISATION FACTURES
+# =====================================================
+
+def normalize_facture(row):
+    if row is None:
+        return None
+
+    data = dict(row)
+
+    # Convert Decimal → float
+    if isinstance(data.get("montant_total"), Decimal):
+        data["montant_total"] = float(data["montant_total"])
+
+    # Convertir date → string
+    if data.get("date_facture"):
+        data["date_facture"] = data["date_facture"].isoformat()
+
+    return data
+
+
+# =====================================================
+# ✅ FONCTIONS FACTURES
+# =====================================================
+def liste_factures():
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT f.id,
+               f.rdv_id,
+               f.services,
+               f.montant_total,
+               f.statut,
+               f.date_facture,
+               p.nom AS patient_nom
+        FROM factures f
+        JOIN rendezvous r ON f.rdv_id = r.id
+        JOIN patients p ON r.patient_id = p.id
+        ORDER BY f.date_facture DESC
+    """)
+
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return rows
+
+
+
+def get_facture(facture_id):
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT f.*, 
+               r.patient_id,
+               r.medecin_id
+        FROM factures f
+        JOIN rendezvous r ON f.rdv_id = r.id
+        WHERE f.id = %s
+    """, (facture_id,))
+
+    row = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    return normalize_facture(row)
+
+
+def ajouter_facture(data):
+    conn = create_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO factures (rdv_id, statut, moyen_paiement, services, montant_total)
+        VALUES (%s, %s, %s, %s, %s)
+    """, (
+        data.get("rdv_id"),
+        data.get("statut"),
+        data.get("moyen_paiement"),
+        data.get("services"),
+        data.get("montant_total")
+    ))
+
+    conn.commit()
+
+    facture_id = cursor.lastrowid
+
+    cursor.close()
+    conn.close()
+
+    return {"success": True, "facture_id": facture_id}
+
+def supprimer_facture(facture_id):
+    conn = create_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM factures WHERE id = %s", (facture_id,))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return True
+
+
+# =====================================================
 # ✅ LANCEMENT SERVEUR RPC
 # =====================================================
 
@@ -500,5 +625,13 @@ if __name__ == "__main__":
 
     # Disponibilités
     server.register_function(get_disponibilites, "get_disponibilites")
+    # Listes services
+    server.register_function(liste_services, "liste_services")
+    #factures
+    # Factures
+    server.register_function(liste_factures, "liste_factures")
+    server.register_function(get_facture, "get_facture")
+    server.register_function(ajouter_facture, "ajouter_facture")
+    server.register_function(supprimer_facture, "supprimer_facture")
 
     server.serve_forever()

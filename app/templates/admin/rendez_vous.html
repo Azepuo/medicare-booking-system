@@ -34,7 +34,7 @@
 					<span class="text">Médecin</span>
 				</a>
 			</li>
-			<li >
+			<li>
 				<a href="/admin/patients">
 					<i class='bx bx-user'></i>
 					<span class="text">Patients</span>
@@ -75,7 +75,6 @@
 		<!-- NAVBAR -->
 		<nav>
 			<i class='bx bx-menu'></i>
-			<a href="#" class="nav-link">Categories</a>
 			<form action="#">
 				<div class="form-input">
 					<input type="search" placeholder="Search...">
@@ -115,32 +114,6 @@
 				</a>
 			</div>
 
-			<!-- Cartes d’info (tu peux changer les chiffres) -->
-			<ul class="box-info">
-				<li>
-					<i class='bx bx-user-voice'></i>
-					<span class="text">
-						<h3>24</h3>
-						<p>Médecins</p>
-					</span>
-				</li>
-				<li>
-					<i class='bx bx-user'></i>
-					<span class="text">
-						<h3>250</h3>
-						<p>Patients</p>
-					</span>
-				</li>
-				<li>
-					<i class='bx bx-calendar-check'></i>
-					<span class="text">
-						<h3>36</h3>
-						<p>Rendez-vous Aujourd’hui</p>
-					</span>
-				</li>
-			</ul>
-
-			<!-- ZONE CRUD PATIENTS (remplace les rendez-vous + tâches) -->
 			<div class="table-data">
 				<div class="order">
 					<div class="head">
@@ -163,23 +136,46 @@
 								<th style="text-align:center;">Action</th>
 							</tr>
 						</thead>
-						<tbody>{% for rdv in rdvs %}<tr>
+						<tbody>
+							{% for rdv in rdvs %}
+							<tr>
 								<td>{{ rdv.patient_nom }}</td>
 								<td>{{ rdv.medecin_nom }}</td>
 								<td>{{ rdv.date_rdv }}</td>
 								<td>{{ rdv.heure_rdv }}</td>
 								<td>{{ rdv.notes}}</td>
 								<td>{{ rdv.statut }}</td>
-								<td class="actions" style="justify-content:center;"><a
-										href="{{ url_for('rdv_bp.editer_rdv', rdv_id=rdv.id) }}"
-										class="btn-icon edit"><i class='bx bx-edit-alt'></i></a><a
-										href="{{ url_for('rdv_bp.supprimer_rdv', rdv_id=rdv.id) }}"
-										class="btn-icon delete"
-										onclick="return confirm('Voulez-vous supprimer ce rendez-vous ?');"><i
-											class='bx bx-trash'></i></a></td>
-							</tr>{% endfor %}{% if rdvs|length == 0 %}<tr>
-								<td colspan="6" style="text-align:center; padding:20px;">Aucun rendez-vous trouvé</td>
-							</tr>{% endif %}</tbody>
+
+								<td class="actions" style="justify-content:center; gap:8px;">
+
+									<!-- Modifier -->
+									<a href="{{ url_for('rdv_bp.editer_rdv', rdv_id=rdv.id) }}" class="btn-icon edit">
+										<i class='bx bx-edit-alt'></i>
+									</a>
+
+									<!-- Supprimer -->
+									<a href="{{ url_for('rdv_bp.supprimer_rdv', rdv_id=rdv.id) }}"
+									   class="btn-icon delete"
+									   onclick="return confirm('Voulez-vous supprimer ce rendez-vous ?');">
+										<i class='bx bx-trash'></i>
+									</a>
+
+									<!-- ✅ Créer Facture (visible seulement si Terminé) -->
+									{% if rdv.statut == 'terminé' %}
+									<a href="/admin/factures/create/{{ rdv.id }}" class="btn-icon add">
+										<i class='bx bxs-receipt'></i>
+									</a>
+									{% endif %}
+								</td>
+							</tr>
+							{% endfor %}
+
+							{% if rdvs|length == 0 %}
+							<tr>
+								<td colspan="7" style="text-align:center; padding:20px;">Aucun rendez-vous trouvé</td>
+							</tr>
+							{% endif %}
+						</tbody>
 					</table>
 				</div>
 			</div>

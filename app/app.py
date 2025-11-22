@@ -2,6 +2,7 @@ from flask import Flask, render_template
 from app.routes.admin_rt.medecin_routes import medecins_bp  # ⬅️ importe ton blueprint (adapter le chemin si besoin)
 from app.routes.admin_rt.patient_routes import patients_bp  # ⬅️ importe ton blueprint (adapter le chemin si besoin)
 from app.routes.admin_rt.rdv_routes import rdv_bp  # ⬅️ importe ton blueprint (adapter le chemin si besoin)
+from app.routes.admin_rt.factures_routes import facture_bp  # ⬅️ importe ton blueprint (adapter le chemin si besoin)
 
 
 app = Flask(__name__)
@@ -12,18 +13,22 @@ app.secret_key = "un_secret_tres_long_et_complexe"  # nécessaire pour flash()
 @app.route('/admin/dashboard')
 def admin_dashboard():
     return render_template('admin/dashboard.html')
-@app.route('/admin/facturation')
-def admin_facturation():
-    return render_template('admin/facturation.html')
+# @app.route('/admin/facturation')
+# def admin_facturation():
+#     return render_template('admin/facturation.html')
 
 
-@app.route('/admin/facture_view')
-def admin_facture_view():
-    return render_template('admin/facture_view.html')
+# @app.route('/admin/facture_view')
+# def admin_facture_view():
+#     return render_template('admin/facture_view.html')
 
-@app.route('/admin/facture_add')
-def admin_facture_add():
-    return render_template('admin/facture_add.html')
+# @app.route('/admin/facture_add')
+# def admin_facture_add():
+#     return render_template('admin/facture_add.html')
+
+# @app.route('/admin/facturation_edit')
+# def admin_facturation_edit():
+#     return render_template('admin/facturation_edit.html')
 
 @app.route('/admin/account')
 def admin_account():
@@ -33,23 +38,6 @@ def admin_account():
 def admin_update_admin():
     return render_template('admin/update_info_admin.html')
 
-
-# @app.route('/admin/rendez_vous')
-# def admin_rendez_vous():
-#     return render_template('admin/rendez_vous.html')
-
-# @app.route('/admin/rdv_add')
-# def admin_rdv_add():
-#     return render_template('admin/rdv_add.html')
-
-# @app.route('/admin/rdv_edit')
-# def admin_rdv_edit():
-#     return render_template('admin/rdv_edit.html')
-
-
-@app.route('/admin/facturation_edit')
-def admin_facturation_edit():
-    return render_template('admin/facturation_edit.html')
 
 
 # ⚠️ IMPORTANT :
@@ -74,6 +62,9 @@ app.register_blueprint(medecins_bp, url_prefix="/admin/medecins")
 app.register_blueprint(patients_bp, url_prefix="/admin/patients")
 
 app.register_blueprint(rdv_bp, url_prefix="/admin/rendez_vous")
+
+app.register_blueprint(facture_bp, url_prefix="/admin/factures")
+
 
 # --- PARTIE PATIENT (SITE PUBLIC) --- #
 

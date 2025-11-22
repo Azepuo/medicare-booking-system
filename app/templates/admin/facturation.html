@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+
+<!-- jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj -->
+ <!DOCTYPE html>
 <html lang="fr">
 
 <head>
@@ -165,62 +167,15 @@
 							</tr>
 						</thead>
 						<tbody>
-							<!-- Exemple statique -->
-							<tr>
-								<td>F001</td>
-								<td>Zainab ERROSSAFI</td>
-								<td>2025-11-06</td>
-								<td>Consultation, Examens</td>
-								<td>800 DH</td>
-								<td><span class="status pending">Non payé</span></td>
-								<td class="actions">
-									<a href="/admin/facture_view" class="btn-icon" title="Voir">
-										<i class='bx bx-show-alt'></i>
-									</a>
-									<a href="/admin/facturation_edit" class="btn-icon edit" title="Modifier">
-										<i class='bx bx-edit-alt'></i>
-									</a>
-									<a href="#"
-										class="btn-icon delete"
-										title="Supprimer"
-										onclick="return confirm('Voulez-vous supprimer cette facture ?');">
-										<i class='bx bx-trash'></i>
-									</a>
-								</td>
-							</tr>
-
-							<tr>
-								<td>F002</td>
-								<td>Meryem Moumni</td>
-								<td>2025-11-07</td>
-								<td>Consultation</td>
-								<td>350 DH</td>
-								<td><span class="status completed">Payé</span></td>
-								<td class="actions">
-									<a href="/admin/facture_view" class="btn-icon" title="Voir">
-										<i class='bx bx-show-alt'></i>
-									</a>
-									<a href="/admin/facturation_edit" class="btn-icon edit" title="Modifier">
-										<i class='bx bx-edit-alt'></i>
-									</a>
-									<a href="#"
-										class="btn-icon delete"
-										title="Supprimer"
-										onclick="return confirm('Voulez-vous supprimer cette facture ?');">
-										<i class='bx bx-trash'></i>
-									</a>
-								</td>
-							</tr>
-
 							<!-- Version dynamique Jinja -->
-							{#
 							{% for f in factures %}
 							<tr>
-								<td>{{ f.numero }}</td>
+								<td>{{ f.id }}</td>
 								<td>{{ f.patient_nom }}</td>
-								<td>{{ f.date }}</td>
+								<td>{{ f.date_facture }}</td>
 								<td>{{ f.services }}</td>
 								<td>{{ f.montant_total }} DH</td>
+								<td>{{ f.statut }}</td>
 								<td>
 									{% if f.statut == 'payé' %}
 										<span class="status completed">Payé</span>
@@ -231,13 +186,13 @@
 									{% endif %}
 								</td>
 								<td class="actions">
-									<a href="{{ url_for('facture_view', id=f.id) }}" class="btn-icon" title="Voir">
+									<a href="/admin/facture_view/{{ f.id }}" class="btn-icon" title="Voir">
 										<i class='bx bx-show-alt'></i>
 									</a>
-									<a href="{{ url_for('facturation_edit', id=f.id) }}" class="btn-icon edit" title="Modifier">
+									<a href="/admin/facture_edit/{{ f.id }}" class="btn-icon edit" title="Modifier">
 										<i class='bx bx-edit-alt'></i>
 									</a>
-									<a href="{{ url_for('facture_delete', id=f.id) }}"
+									<a href="/admin/facture_delete/{{ f.id }}" 
 										class="btn-icon delete"
 										title="Supprimer"
 										onclick="return confirm('Voulez-vous supprimer cette facture ?');">
@@ -246,7 +201,6 @@
 								</td>
 							</tr>
 							{% endfor %}
-							#}
 						</tbody>
 					</table>
 				</div>
