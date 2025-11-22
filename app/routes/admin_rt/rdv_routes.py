@@ -67,6 +67,8 @@ def ajouter_rdv():
 
 
 # ✅ 3️⃣ MODIFICATION D’UN RDV
+from datetime import datetime, date
+
 @rdv_bp.route("/<int:rdv_id>/edit", methods=["GET", "POST"])
 def editer_rdv(rdv_id):
     rdv = rpc.get_rdv(rdv_id)
@@ -88,38 +90,37 @@ def editer_rdv(rdv_id):
             "notes": request.form.get("notes")
         }
 
-        # ✅ Bloquer dates passées
-        if data["date_rdv"] < str(date.today()):
-            flash("⚠️ Impossible de choisir une date passée.", "error")
-            return redirect(url_for("rdv_bp.editer_rdv", rdv_id=rdv_id))
+        # ✅ Vérifier date vide
+        if not data["date_rdv"]:
+            flash("⚠️ La date est obligatoire.", "error")
+            return redirect(request.url)
 
+        # ✅ Conversion date
+        date_rdv_obj = datetime.strptime(data["date_rdv"], "%Y-%m-%d").date()
+
+        # ✅ Empêcher dates passées
+        if date_rdv_obj < date.today():
+            flash("⚠️ Impossible de choisir une date passée.", "error")
+            return redirect(request.url)
+
+        # ✅ RPC
         result = rpc.editer_rdv(rdv_id, data)
 
-        # ✅ Gestion erreurs RPC
         if isinstance(result, dict) and "error" in result:
-            if result["error"] == "INACTIVE":
-                flash("⚠️ Ce médecin n'est pas actif.", "error")
-            elif result["error"] == "ON_LEAVE":
-                flash("⚠️ Ce médecin est en congé.", "error")
-            elif result["error"] == "NOT_AVAILABLE":
-                flash("⚠️ Le médecin n'est pas disponible à cette date/heure.", "error")
-            elif result["error"] == "ALREADY_BOOKED":
-                flash("⚠️ Ce créneau est déjà réservé.", "error")
-            else:
-                flash("❌ Erreur inconnue.", "error")
-
-            return redirect(url_for("rdv_bp.editer_rdv", rdv_id=rdv_id))
+            flash("❌ Erreur : " + result["error"], "error")
+            return redirect(request.url)
 
         flash("✅ Rendez-vous modifié avec succès.", "success")
         return redirect(url_for("rdv_bp.liste_rdv"))
 
     return render_template(
-        "admin/rdv_add.html",
+        "admin/rdv_edit.html",   # ✅ Le bon template !
         rdv=rdv,
         patients=patients,
         medecins=medecins,
         form_action=url_for("rdv_bp.editer_rdv", rdv_id=rdv_id)
     )
+
 
 
 # ✅ 4️⃣ SUPPRESSION

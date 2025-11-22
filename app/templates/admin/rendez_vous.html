@@ -88,6 +88,7 @@
 
 		<!-- MAIN -->
 		<main>
+
 			<div class="head-title">
 				<div class="left">
 					<h1>Gestion des Rendez-vous</h1>
@@ -104,7 +105,7 @@
 				</a>
 			</div>
 
-			<!-- ✅ STATISTIQUES (comme patients.html) -->
+			<!-- ✅ STATISTIQUES -->
 			<ul class="box-info">
 				<li>
 					<i class='bx bx-user-voice'></i>
@@ -129,7 +130,6 @@
 				</li>
 			</ul>
 
-			<!-- ✅ TABLE DES RENDEZ-VOUS -->
 			<div class="table-data">
 				<div class="order">
 					<div class="head">
@@ -143,6 +143,7 @@
 								<th>Médecin</th>
 								<th>Date</th>
 								<th>Heure</th>
+								<th>Note</th>
 								<th>Statut</th>
 								<th style="text-align:center;">Action</th>
 							</tr>
@@ -155,6 +156,7 @@
 								<td>{{ rdv.medecin_nom }}</td>
 								<td>{{ rdv.date_rdv }}</td>
 								<td>{{ rdv.heure_rdv }}</td>
+								<td>{{ rdv.notes}}</td>
 								<td>{{ rdv.statut }}</td>
 								<td class="actions" style="justify-content:center;">
 									<a href="{{ url_for('rdv_bp.editer_rdv', rdv_id=rdv.id) }}" class="btn-icon edit">
