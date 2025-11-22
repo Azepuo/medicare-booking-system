@@ -15,11 +15,10 @@ def normalize_medecin(row):
     data = dict(row)
 
     for key, value in data.items():
-        # Convertir les Decimal en float
         if isinstance(value, Decimal):
             data[key] = float(value)
 
-    if "date_inscription" in data and data["date_inscription"] is not None:
+    if data.get("date_inscription"):
         data["date_inscription"] = data["date_inscription"].isoformat()
 
     return data
@@ -53,14 +52,13 @@ def ajouter_medecin(data):
     conn = create_connection()
     cursor = conn.cursor()
 
-    sql = """
+    cursor.execute("""
         INSERT INTO medecins
         (nom, email, telephone, specialite,
          annees_experience, tarif_consultation,
          description, statut)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-    """
-    cursor.execute(sql, (
+    """, (
         data.get("nom"),
         data.get("email"),
         data.get("telephone"),
@@ -70,6 +68,7 @@ def ajouter_medecin(data):
         data.get("description"),
         data.get("statut"),
     ))
+
     conn.commit()
     cursor.close()
     conn.close()
@@ -80,14 +79,13 @@ def editer_medecin(medecin_id, data):
     conn = create_connection()
     cursor = conn.cursor()
 
-    sql = """
+    cursor.execute("""
         UPDATE medecins
         SET nom=%s, email=%s, telephone=%s, specialite=%s,
             annees_experience=%s, tarif_consultation=%s,
             description=%s, statut=%s
         WHERE id=%s
-    """
-    cursor.execute(sql, (
+    """, (
         data.get("nom"),
         data.get("email"),
         data.get("telephone"),
@@ -98,6 +96,7 @@ def editer_medecin(medecin_id, data):
         data.get("statut"),
         medecin_id
     ))
+
     conn.commit()
     cursor.close()
     conn.close()
@@ -161,13 +160,11 @@ def ajouter_patient(data):
     conn = create_connection()
     cursor = conn.cursor()
 
-    sql = """
+    cursor.execute("""
         INSERT INTO patients
         (nom, cin, email, telephone, sexe, date_naissance)
         VALUES (%s, %s, %s, %s, %s, %s)
-    """
-
-    cursor.execute(sql, (
+    """, (
         data.get("nom"),
         data.get("cin"),
         data.get("email"),
@@ -175,6 +172,7 @@ def ajouter_patient(data):
         data.get("sexe"),
         data.get("date_naissance"),
     ))
+
     conn.commit()
     cursor.close()
     conn.close()
@@ -185,13 +183,12 @@ def editer_patient(patient_id, data):
     conn = create_connection()
     cursor = conn.cursor()
 
-    sql = """
+    cursor.execute("""
         UPDATE patients
         SET nom=%s, cin=%s, email=%s, telephone=%s, sexe=%s,
             date_naissance=%s
         WHERE id=%s
-    """
-    cursor.execute(sql, (
+    """, (
         data.get("nom"),
         data.get("cin"),
         data.get("email"),
@@ -200,6 +197,7 @@ def editer_patient(patient_id, data):
         data.get("date_naissance"),
         patient_id
     ))
+
     conn.commit()
     cursor.close()
     conn.close()
@@ -216,8 +214,6 @@ def supprimer_patient(patient_id):
     return True
 
 
-# from datetime import timedelta
-
 # =====================================================
 # ✅ NORMALISATION RDV
 # =====================================================
@@ -228,34 +224,22 @@ def normalize_rdv(row):
 
     data = dict(row)
 
-    # ✅ Convertir la date en string
     if data.get("date_rdv"):
-        try:
-            data["date_rdv"] = data["date_rdv"].isoformat()
-        except:
-            data["date_rdv"] = str(data["date_rdv"])
+        data["date_rdv"] = str(data["date_rdv"])
 
-    # ✅ Convertir l'heure en string
     heure = data.get("heure_rdv")
     if heure is not None:
-
-        # Cas MySQL → TIME = timedelta
         if isinstance(heure, timedelta):
             total_seconds = int(heure.total_seconds())
             hours = total_seconds // 3600
             minutes = (total_seconds % 3600) // 60
             data["heure_rdv"] = f"{hours:02d}:{minutes:02d}"
-
-        # Cas datetime.time
         elif hasattr(heure, "strftime"):
             data["heure_rdv"] = heure.strftime("%H:%M")
-
-        # fallback
         else:
             data["heure_rdv"] = str(heure)
 
     return data
-
 
 
 # =====================================================
@@ -266,7 +250,7 @@ def liste_rdv():
     conn = create_connection()
     cursor = conn.cursor(dictionary=True)
 
-    sql = """
+    cursor.execute("""
         SELECT r.*,
                p.nom AS patient_nom,
                m.nom AS medecin_nom
@@ -274,8 +258,8 @@ def liste_rdv():
         JOIN patients p ON r.patient_id = p.id
         JOIN medecins m ON r.medecin_id = m.id
         ORDER BY r.date_rdv DESC, r.heure_rdv ASC
-    """
-    cursor.execute(sql)
+    """)
+
     rows = cursor.fetchall()
 
     cursor.close()
@@ -284,12 +268,11 @@ def liste_rdv():
     return [normalize_rdv(row) for row in rows]
 
 
-
 def get_rdv(rdv_id):
     conn = create_connection()
     cursor = conn.cursor(dictionary=True)
 
-    sql = """
+    cursor.execute("""
         SELECT r.*,
                p.nom AS patient_nom,
                m.nom AS medecin_nom
@@ -297,8 +280,8 @@ def get_rdv(rdv_id):
         JOIN patients p ON r.patient_id = p.id
         JOIN medecins m ON r.medecin_id = m.id
         WHERE r.id = %s
-    """
-    cursor.execute(sql, (rdv_id,))
+    """, (rdv_id,))
+
     row = cursor.fetchone()
 
     cursor.close()
@@ -307,18 +290,91 @@ def get_rdv(rdv_id):
     return normalize_rdv(row)
 
 
+# ✅ Fonction interne de vérification
+def rdv_is_valid(data, ignore_id=None):
+    """Retourne: 'OK', 'INACTIVE', 'NOT_AVAILABLE', 'ALREADY_BOOKED'"""
+
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # ✅ 0) Vérifier statut du médecin
+    cursor.execute("""
+        SELECT statut FROM medecins WHERE id = %s
+    """, (data.get("medecin_id"),))
+
+    med = cursor.fetchone()
+
+    if not med or med["statut"] != "Actif":
+        cursor.close()
+        conn.close()
+        return "INACTIVE"
+
+    # ✅ 1) Vérifier disponibilité
+    cursor.execute("""
+        SELECT * FROM disponibilites_medecin
+        WHERE medecin_id = %s
+        AND date_disponible = %s
+        AND %s BETWEEN heure_debut AND heure_fin
+    """, (
+        data.get("medecin_id"),
+        data.get("date_rdv"),
+        data.get("heure_rdv")
+    ))
+
+    dispo = cursor.fetchone()
+    if not dispo:
+        cursor.close()
+        conn.close()
+        return "NOT_AVAILABLE"
+
+    # ✅ 2) Vérifier conflits
+    sql_conflict = """
+        SELECT * FROM rendezvous
+        WHERE medecin_id = %s
+        AND date_rdv = %s
+        AND heure_rdv = %s
+    """
+    params = [
+        data.get("medecin_id"),
+        data.get("date_rdv"),
+        data.get("heure_rdv")
+    ]
+
+    if ignore_id:
+        sql_conflict += " AND id != %s"
+        params.append(ignore_id)
+
+    cursor.execute(sql_conflict, tuple(params))
+    conflict = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    if conflict:
+        return "ALREADY_BOOKED"
+
+    return "OK"
 
 def ajouter_rdv(data):
+    state = rdv_is_valid(data)
+
+    if state == "INACTIVE":
+        return {"error": "INACTIVE"}
+
+    if state == "NOT_AVAILABLE":
+        return {"error": "NOT_AVAILABLE"}
+
+    if state == "ALREADY_BOOKED":
+        return {"error": "ALREADY_BOOKED"}
+
     conn = create_connection()
     cursor = conn.cursor()
 
-    sql = """
+    cursor.execute("""
         INSERT INTO rendezvous
         (patient_id, medecin_id, date_rdv, heure_rdv, statut, notes)
         VALUES (%s, %s, %s, %s, %s, %s)
-    """
-
-    cursor.execute(sql, (
+    """, (
         data.get("patient_id"),
         data.get("medecin_id"),
         data.get("date_rdv"),
@@ -330,15 +386,26 @@ def ajouter_rdv(data):
     conn.commit()
     cursor.close()
     conn.close()
-    return True
-
+    return {"success": True}
 
 
 def editer_rdv(rdv_id, data):
+    state = rdv_is_valid(data, ignore_id=rdv_id)
+
+    if state == "INACTIVE":
+        return {"error": "INACTIVE"}
+
+    if state == "NOT_AVAILABLE":
+        return {"error": "NOT_AVAILABLE"}
+
+    if state == "ALREADY_BOOKED":
+        return {"error": "ALREADY_BOOKED"}
+
+
     conn = create_connection()
     cursor = conn.cursor()
 
-    sql = """
+    cursor.execute("""
         UPDATE rendezvous
         SET patient_id=%s,
             medecin_id=%s,
@@ -347,8 +414,7 @@ def editer_rdv(rdv_id, data):
             statut=%s,
             notes=%s
         WHERE id=%s
-    """
-    cursor.execute(sql, (
+    """, (
         data.get("patient_id"),
         data.get("medecin_id"),
         data.get("date_rdv"),
@@ -361,8 +427,7 @@ def editer_rdv(rdv_id, data):
     conn.commit()
     cursor.close()
     conn.close()
-    return True
-
+    return {"success": True}
 
 
 def supprimer_rdv(rdv_id):
@@ -373,6 +438,36 @@ def supprimer_rdv(rdv_id):
     cursor.close()
     conn.close()
     return True
+
+
+# =====================================================
+# ✅ DISPONIBILITES
+# =====================================================
+
+def get_disponibilites(medecin_id):
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT date_disponible, heure_debut, heure_fin
+        FROM disponibilites_medecin
+        WHERE medecin_id = %s
+    """, (medecin_id,))
+
+    rows = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return [
+        {
+            "date": str(r["date_disponible"]),
+            "heure_debut": str(r["heure_debut"]),
+            "heure_fin": str(r["heure_fin"])
+        }
+        for r in rows
+    ]
+
 
 # =====================================================
 # ✅ LANCEMENT SERVEUR RPC
@@ -396,11 +491,14 @@ if __name__ == "__main__":
     server.register_function(editer_patient, "editer_patient")
     server.register_function(supprimer_patient, "supprimer_patient")
 
-    # Rendez-vous ✅
+    # RDV
     server.register_function(liste_rdv, "liste_rdv")
     server.register_function(get_rdv, "get_rdv")
     server.register_function(ajouter_rdv, "ajouter_rdv")
     server.register_function(editer_rdv, "editer_rdv")
     server.register_function(supprimer_rdv, "supprimer_rdv")
+
+    # Disponibilités
+    server.register_function(get_disponibilites, "get_disponibilites")
 
     server.serve_forever()
