@@ -137,11 +137,11 @@
                             <div class="field">
                                 <label for="statut">Statut</label>
                                 <select id="statut" name="statut">
-                                    <option value="en_attente" {% if rdv and rdv.statut=='en_attente' %}selected{% endif
+                                    <option value="en_attente" {% if rdv and rdv.statut == 'en_attente' %}selected{% endif
                                         %}>En attente</option>
-                                    <option value="confirme" {% if rdv and rdv.statut=='confirme' %}selected{% endif %}>
-                                        Confirmé</option>
-                                    <option value="annule" {% if rdv and rdv.statut=='annule' %}selected{% endif %}>
+                                    <option value="Terminé" {% if rdv and rdv.statut == 'terminé' %}selected{% endif %}>
+                                        Terminé</option>
+                                    <option value="annule" {% if rdv and rdv.statut == 'annule' %}selected{% endif %}>
                                         Annulé</option>
                                 </select>
                             </div>
