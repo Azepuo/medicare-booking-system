@@ -8,7 +8,7 @@
     <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 
-    <title>HealthAdmin - Médecin</title>
+    <title>HealthAdmin - Patient</title>
 </head>
 
 <body>
@@ -33,7 +33,7 @@
                 </a>
             </li>
             <li class="active">
-                <a href="/admin/patients">
+                     <a href="{{ url_for('patients_bp.liste_patients') }}">
                     <i class='bx bx-user'></i>
                     <span class="text">Patients</span>
                 </a>
@@ -70,6 +70,7 @@
 
     <!-- CONTENT -->
     <section id="content">
+
         <!-- NAVBAR -->
         <nav>
             <i class='bx bx-menu'></i>
@@ -117,21 +118,25 @@
 
             <div class="form-wrapper">
                 <div class="form-card form-card-medium">
-                    <form method="POST" action="{{ form_action }}">
+
+                    <form method="POST" action="{{ url_for('patients_bp.ajouter_patient') }}">
 
                         <div class="form-grid">
 
                             <!-- Nom complet -->
                             <div class="field">
-                                <label for="nom_complet">Nom complet</label>
-                                <input type="text" id="nom_complet" name="nom_complet"
-                                    value="{{ patient.nom_complet if patient else '' }}" required>
+                                <label for="nom">Nom complet</label>
+                                <input type="text" id="nom" name="nom"
+                                    value="{{ patient.nom if patient else '' }}" required>
                             </div>
+
                             <!-- CIN -->
                             <div class="field">
                                 <label for="cin">CIN</label>
-                                <input type="text" id="cin" name="cin" value="{{ patient.cin if patient else '' }}">
+                                <input type="text" id="cin" name="cin"
+                                    value="{{ patient.cin if patient else '' }}">
                             </div>
+
                             <!-- Email -->
                             <div class="field">
                                 <label for="email">Email</label>
@@ -156,50 +161,38 @@
                             <!-- Sexe -->
                             <div class="field">
                                 <label for="sexe">Sexe</label>
-                                <select id="sexe" name="sexe">
-                                    <option value="H" {% if patient and patient.sexe=='H' %}selected{% endif %}>Homme
-                                    </option>
-                                    <option value="F" {% if patient and patient.sexe=='F' %}selected{% endif %}>Femme
-                                    </option>
-                                    <option value="Autre" {% if patient and patient.sexe=='Autre' %}selected{% endif %}>
-                                        Autre</option>
+                                <select id="sexe" name="sexe" class="form-control">
+                                    <option value="Homme" {% if patient and patient.sexe == "Homme" %}selected{% endif %}>Homme</option>
+                                    <option value="Femme" {% if patient and patient.sexe == "Femme" %}selected{% endif %}>Femme</option>
                                 </select>
                             </div>
 
-                            <!-- Adresse -->
-                            <!-- <div class="field field-full">
-                                <label for="adresse">Adresse</label>
-                                <textarea id="adresse" name="adresse"
-                                    rows="3">{{ patient.adresse if patient else '' }}</textarea>
-                            </div> -->
-
-                            <!-- Date inscription -->
-                            <div class="field">
-                                <label for="date_inscription">Date d'inscription</label>
+                            <!-- Date d'inscription -->
+                            <!-- <div class="field">
+                                <label for="date_inscription">Date d&#39;inscription</label>
                                 <input type="date" id="date_inscription" name="date_inscription"
                                     value="{{ patient.date_inscription if patient else '' }}">
-                            </div>
+                            </div> -->
 
                         </div>
 
                         <!-- Boutons -->
-                        <div class="form-actions">
-                            <a href="/admin/patients" class="btn-secondary">Annuler</a>
+                      <div class="form-actions">
+                            <a href="{{ url_for('patients_bp.liste_patients') }}" class="btn-secondary">Annuler</a>
                             <button type="submit" class="btn-primary">
-                                {% if patient %}Enregistrer{% else %}Ajouter le patient{% endif %}
+                                Ajouter le patient
                             </button>
                         </div>
-
                     </form>
                 </div>
             </div>
         </main>
-
         <!-- MAIN -->
     </section>
     <!-- CONTENT -->
 
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
 </body>
 
 </html>

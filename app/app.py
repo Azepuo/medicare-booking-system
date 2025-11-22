@@ -1,5 +1,6 @@
 from flask import Flask, render_template
-from app.routes.medecin_routes import medecins_bp  # ⬅️ importe ton blueprint (adapter le chemin si besoin)
+from app.routes.admin_rt.medecin_routes import medecins_bp  # ⬅️ importe ton blueprint (adapter le chemin si besoin)
+from app.routes.admin_rt.patient_routes import patients_bp  # ⬅️ importe ton blueprint (adapter le chemin si besoin)
 
 app = Flask(__name__)
 app.secret_key = "un_secret_tres_long_et_complexe"  # nécessaire pour flash()
@@ -11,9 +12,6 @@ def admin_dashboard():
     return render_template('admin/dashboard.html')
 
 
-@app.route('/admin/patients')
-def admin_patients():
-    return render_template('admin/patients.html')
 
 
 @app.route('/admin/facturation')
@@ -40,11 +38,17 @@ def admin_account():
 def admin_update_admin():
     return render_template('admin/update_info_admin.html')
 
+# @app.route('/admin/patients')
+# def admin_patients():
+#     return render_template('admin/patients.html')
 
-@app.route('/admin/patient_add')
-def admin_patient_add():
-    return render_template('admin/patient_add.html')
+# @app.route('/admin/patient_add')
+# def admin_patient_add():
+#     return render_template('admin/patient_add.html')
 
+# @app.route('/admin/patient_edit')
+# def admin_patient_edit():
+#     return render_template('admin/patient_edit.html')
 
 @app.route('/admin/facture_add')
 def admin_facture_add():
@@ -56,9 +60,6 @@ def admin_rdv_add():
     return render_template('admin/rdv_add.html')
 
 
-@app.route('/admin/patient_edit')
-def admin_patient_edit():
-    return render_template('admin/patient_edit.html')
 
 
 @app.route('/admin/rdv_edit')
@@ -90,6 +91,7 @@ def admin_facturation_edit():
 # --- ENREGISTREMENT DU BLUEPRINT MEDECINS --- #
 app.register_blueprint(medecins_bp, url_prefix="/admin/medecins")
 
+app.register_blueprint(patients_bp, url_prefix="/admin/patients")
 
 # --- PARTIE PATIENT (SITE PUBLIC) --- #
 
