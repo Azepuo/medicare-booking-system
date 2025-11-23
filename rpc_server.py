@@ -850,6 +850,49 @@ def update_last_login():
     conn.close()
 
     return True
+# =====================================================
+# ✅ Statistiques
+# =====================================================
+
+def get_stats():
+    conn = create_connection()
+    cursor = conn.cursor()
+
+    # ✅ Médecins
+    cursor.execute("SELECT COUNT(*) FROM medecins")
+    total_medecins = cursor.fetchone()[0]
+
+    # ✅ Patients
+    cursor.execute("SELECT COUNT(*) FROM patients")
+    total_patients = cursor.fetchone()[0]
+
+    # ✅ Rendez-vous aujourd'hui
+    cursor.execute("SELECT COUNT(*) FROM rendezvous WHERE date_rdv = CURDATE()")
+    rdv_aujourd_hui = cursor.fetchone()[0]
+
+    # ✅ Factures totales
+    cursor.execute("SELECT COUNT(*) FROM factures")
+    factures_totales = cursor.fetchone()[0]
+
+    # ✅ Factures payées
+    cursor.execute("SELECT COUNT(*) FROM factures WHERE statut = 'payé'")
+    factures_payees = cursor.fetchone()[0]
+
+    # ✅ Factures en attente
+    cursor.execute("SELECT COUNT(*) FROM factures WHERE statut IN ('non_payé', 'en_attente')")
+    factures_en_attente = cursor.fetchone()[0]
+
+    cursor.close()
+    conn.close()
+
+    return {
+        "total_medecins": total_medecins,
+        "total_patients": total_patients,
+        "rdv_aujourd_hui": rdv_aujourd_hui,
+        "factures_totales": factures_totales,
+        "factures_payees": factures_payees,
+        "factures_en_attente": factures_en_attente
+    }
 
 
 # =====================================================
@@ -885,9 +928,8 @@ if __name__ == "__main__":
     server.register_function(get_disponibilites, "get_disponibilites")
     # Listes services
     server.register_function(liste_services, "liste_services")
-    #factures
+
     # Factures
-    # ✅ Factures
     server.register_function(liste_factures, "liste_factures")
     server.register_function(get_facture, "get_facture")
     server.register_function(ajouter_facture, "ajouter_facture")
@@ -899,6 +941,6 @@ if __name__ == "__main__":
     server.register_function(update_admin, "update_admin")
     server.register_function(update_admin_password, "update_admin_password")
     server.register_function(update_last_login, "update_last_login")
-
-    
+    # Statistiques
+    server.register_function(get_stats, "get_stats")
     server.serve_forever()

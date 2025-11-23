@@ -44,6 +44,12 @@ def load_admin():
     
     g.admin = rpc.get_admin()
 
+# Statistiques
+@app.context_processor
+def inject_stats():
+    stats = rpc.get_stats()
+    return dict(stats=stats)
+
 if __name__ == '__main__':
     print("🚀 Serveur Flask démarré sur http://localhost:5000")
     app.run(debug=True, host='0.0.0.0', port=5000)
