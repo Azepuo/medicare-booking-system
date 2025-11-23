@@ -645,6 +645,35 @@ def supprimer_facture(facture_id):
 
     return True
 
+def get_services_facture(facture_id):
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT services
+        FROM factures
+        WHERE id = %s
+    """, (facture_id,))
+
+    row = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if not row or not row["services"]:
+        return []
+
+    # Format : "Consultation:1, Injection:2"
+    services_list = []
+    entries = row["services"].split(",")
+
+    for item in entries:
+        name, qty = item.strip().split(":")
+        services_list.append({
+            "nom": name,
+            "quantite": int(qty),
+        })
+
+    return services_list
 
 
 # =====================================================
@@ -688,5 +717,7 @@ if __name__ == "__main__":
     server.register_function(ajouter_facture, "ajouter_facture")
     server.register_function(editer_facture, "editer_facture")
     server.register_function(supprimer_facture, "supprimer_facture")
+    server.register_function(get_services_facture, "get_services_facture")
+
     
     server.serve_forever()

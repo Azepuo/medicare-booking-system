@@ -113,7 +113,29 @@
 					<span class="text">Exporter</span>
 				</a>
 			</div>
-
+			<ul class="box-info">
+				<li>
+					<i class='bx bx-user-voice'></i>
+					<span class="text">
+						<h3>24</h3>
+						<p>Médecins</p>
+					</span>
+				</li>
+				<li>
+					<i class='bx bx-user'></i>
+					<span class="text">
+						<h3>250</h3>
+						<p>Patients</p>
+					</span>
+				</li>
+				<li>
+					<i class='bx bx-calendar-check'></i>
+					<span class="text">
+						<h3>36</h3>
+						<p>Rendez-vous Aujourd’hui</p>
+					</span>
+				</li>
+			</ul>
 			<div class="table-data">
 				<div class="order">
 					<div class="head">
@@ -155,8 +177,8 @@
 
 									<!-- Supprimer -->
 									<a href="{{ url_for('rdv_bp.supprimer_rdv', rdv_id=rdv.id) }}"
-									   class="btn-icon delete"
-									   onclick="return confirm('Voulez-vous supprimer ce rendez-vous ?');">
+										class="btn-icon delete"
+										onclick="return confirm('Voulez-vous supprimer ce rendez-vous ?');">
 										<i class='bx bx-trash'></i>
 									</a>
 

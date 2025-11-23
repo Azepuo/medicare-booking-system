@@ -147,10 +147,6 @@
 				<div class="order">
 					<div class="head">
 						<h3>Liste des factures</h3>
-						<a href="/admin/facture_add" class="btn-add-medecin">
-							<i class='bx bx-plus'></i>
-							<span>Ajouter une facture</span>
-						</a>
 					</div>
 
 					<table>
@@ -174,14 +170,13 @@
 								<td>{{ f.date_facture }}</td>
 								<td>{{ f.services }}</td>
 								<td>{{ f.montant_total }} DH</td>
-								<td>{{ f.statut }}</td>
 								<td>
 									{% if f.statut == 'payé' %}
 									<span class="status completed">Payé</span>
 									{% elif f.statut == 'non_payé' %}
 									<span class="status pending">Non payé</span>
 									{% else %}
-									<span class="status process">{{ f.statut }}</span>
+									<span class="status process">En attente</span>
 									{% endif %}
 								</td>
 								<td class="actions">

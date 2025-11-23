@@ -44,6 +44,12 @@
 					<span class="text">Rendez-vous</span>
 				</a>
 			</li>
+			<li>
+				<a href="/admin/facturation">
+					<i class='bx bxs-calendar'></i>
+					<span class="text">Facturation</span>
+				</a>
+			</li>
 		</ul>
 		<ul class="side-menu">
 			<li>
@@ -65,12 +71,18 @@
 	<section id="content">
 
 		<!-- NAVBAR -->
-		<nav>
-			<i class='bx bx-menu'></i>
-			<a href="#" class="profile">
-				<img src="{{ url_for('static', filename='img/zainab_pic.jpeg') }}">
-			</a>
-		</nav>
+		 <nav>
+            <i class='bx bx-menu'></i>
+            <form action="#">
+                <div class="form-input">
+                    <input type="search" placeholder="Search...">
+                    <button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
+                </div>
+            </form>
+            <a href="#" class="profile">
+                <img src="{{ url_for('static', filename='img/zainab_pic.jpeg') }}">
+            </a>
+        </nav>
 
 		<!-- MAIN -->
 		<main>

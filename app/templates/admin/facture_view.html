@@ -72,8 +72,8 @@
     <!-- SIDEBAR -->
 
     <!-- CONTENT -->
-
     <section id="content">
+
         <!-- NAVBAR -->
         <nav>
             <i class='bx bx-menu'></i>
@@ -125,8 +125,8 @@
 
                     <!-- INFOS FACTURE -->
                     <div class="invoice-simple-top">
-                        <p><strong>Numéro Facture :</strong> F001</p>
-                        <p><strong>Date :</strong> 2025-11-06</p>
+                        <p><strong>Numéro Facture :</strong> {{ facture.id }}</p>
+                        <p><strong>Date :</strong> {{ facture.date_facture }}</p>
                     </div>
 
                     <hr class="invoice-simple-separator">
@@ -137,23 +137,9 @@
                     </div>
 
                     <div class="invoice-simple-patient">
-                        <p><strong>Nom :</strong> Zainab ERROSSAFI</p>
-                        <p><strong>Email :</strong> zainaberrossafi@gmail.com</p>
-                        <p><strong>Téléphone :</strong> 06 00 11 22 33</p>
-                    </div>
-
-                    <hr class="invoice-simple-separator">
-
-                    <!-- INFOS MEDECIN -->
-                    <div class="invoice-simple-section-title-blue">
-                        Informations Médecin
-                    </div>
-
-                    <div class="invoice-simple-patient">
-                        <p><strong>Nom :</strong> Dr. Amine El Idrissi</p>
-                        <p><strong>Spécialité :</strong> Médecine Générale</p>
-                        <p><strong>Email :</strong> dr.amine@example.com</p>
-                        <p><strong>Numéro professionnel :</strong> 99887766</p>
+                        <p><strong>Nom :</strong> {{ facture.patient_nom }}</p>
+                        <p><strong>Email :</strong> {{ facture.patient_email }}</p>
+                        <p><strong>Téléphone :</strong> {{ facture.patient_telephone }}</p>
                     </div>
 
                     <hr class="invoice-simple-separator">
@@ -169,28 +155,37 @@
                             </tr>
                         </thead>
                         <tbody>
+                            {% for s in services %}
                             <tr>
-                                <td>Consultation</td>
-                                <td>1</td>
-                                <td>350</td>
-                                <td>350</td>
+                                <td>{{ s.nom }}</td>
+                                <td>{{ s.quantite }}</td>
+                                <td>
+                                    {% set service = services_all | selectattr('nom_service', 'equalto', s.nom) | first
+                                    %}
+                                    {{ service.prix_unitaire if service else '?' }}
+                                </td>
+                                <td>
+                                    {% set service = services_all | selectattr('nom_service', 'equalto', s.nom) | first
+                                    %}
+                                    {{ (service.prix_unitaire * s.quantite) if service else '?' }} DH
+                                </td>
                             </tr>
-                            <tr>
-                                <td>Examens de laboratoire</td>
-                                <td>1</td>
-                                <td>450</td>
-                                <td>450</td>
-                            </tr>
+                            {% endfor %}
                         </tbody>
+
                     </table>
 
                     <!-- TOTAL -->
-                    <p class="invoice-simple-total"><strong>Montant Total :</strong> 800 DH</p>
+                    <p class="invoice-simple-total"><strong>Montant Total :</strong> {{ facture.montant_total }} DH</p>
 
                     <!-- STATUT -->
                     <p class="invoice-simple-status">
                         <strong>Statut :</strong>
+                        {% if facture.statut == 'payé' %}
+                        <span class="invoice-status-paid">Payé</span>
+                        {% else %}
                         <span class="invoice-status-unpaid">Non Payé</span>
+                        {% endif %}
                     </p>
 
                     <!-- REMERCIEMENT -->
@@ -200,20 +195,10 @@
                         </p>
                     </div>
 
-                    <!-- BOUTON IMPRIMER -->
-                    <!-- <div class="invoice-simple-print">
-                        <button type="button" class="btn-primary" onclick="window.print()">
-                            Imprimer
-                        </button>
-                    </div> -->
-
                 </div>
             </div>
         </main>
 
-
-
-        <!-- MAIN -->
     </section>
     <!-- CONTENT -->
 

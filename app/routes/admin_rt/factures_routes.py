@@ -95,12 +95,20 @@ def edit_facture(facture_id):
 @facture_bp.route("/details/<int:facture_id>")
 def details_facture(facture_id):
     facture = rpc.get_facture(facture_id)
+    services_facture = rpc.get_services_facture(facture_id)   # ✅ NOUVEAU
+    services_all = rpc.liste_services()                       # ✅ NOUVEAU
 
     if not facture:
         flash("❌ Facture introuvable.", "error")
         return redirect(url_for("facture_bp.liste_factures"))
 
-    return render_template("admin/facture_view.html", facture=facture)
+    return render_template(
+        "admin/facture_view.html",
+        facture=facture,
+        services=services_facture,
+        services_all=services_all
+    )
+
 
 
 
@@ -110,3 +118,5 @@ def supprimer_facture(facture_id):
     rpc.supprimer_facture(facture_id)
     flash("✅ Facture supprimée.", "success")
     return redirect(url_for("facture_bp.liste_factures"))
+
+
