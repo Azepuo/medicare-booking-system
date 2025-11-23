@@ -1,6 +1,5 @@
-
 <!-- jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj -->
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 
 <head>
@@ -49,7 +48,7 @@
 				</a>
 			</li>
 			<li class="active">
-				<a href="/admin/facturation">
+				<a href="/admin/facturation/">
 					<i class='bx bxs-receipt'></i>
 					<span class="text">Facturation</span>
 				</a>
@@ -73,7 +72,7 @@
 	<!-- SIDEBAR -->
 
 	<!-- CONTENT -->
-    
+
 	<section id="content">
 		<!-- NAVBAR -->
 		<nav>
@@ -178,27 +177,32 @@
 								<td>{{ f.statut }}</td>
 								<td>
 									{% if f.statut == 'payé' %}
-										<span class="status completed">Payé</span>
+									<span class="status completed">Payé</span>
 									{% elif f.statut == 'non_payé' %}
-										<span class="status pending">Non payé</span>
+									<span class="status pending">Non payé</span>
 									{% else %}
-										<span class="status process">{{ f.statut }}</span>
+									<span class="status process">{{ f.statut }}</span>
 									{% endif %}
 								</td>
 								<td class="actions">
-									<a href="/admin/facture_view/{{ f.id }}" class="btn-icon" title="Voir">
+									<!-- Voir -->
+									<a href="/admin/facturation/details/{{ f.id }}" class="btn-icon" title="Voir">
 										<i class='bx bx-show-alt'></i>
 									</a>
-									<a href="/admin/facture_edit/{{ f.id }}" class="btn-icon edit" title="Modifier">
+
+									<!-- Modifier -->
+									<a href="/admin/facturation/edit/{{ f.id }}" class="btn-icon edit" title="Modifier">
 										<i class='bx bx-edit-alt'></i>
 									</a>
-									<a href="/admin/facture_delete/{{ f.id }}" 
-										class="btn-icon delete"
+
+									<!-- Supprimer -->
+									<a href="/admin/facturation/delete/{{ f.id }}" class="btn-icon delete"
 										title="Supprimer"
 										onclick="return confirm('Voulez-vous supprimer cette facture ?');">
 										<i class='bx bx-trash'></i>
 									</a>
 								</td>
+
 							</tr>
 							{% endfor %}
 						</tbody>

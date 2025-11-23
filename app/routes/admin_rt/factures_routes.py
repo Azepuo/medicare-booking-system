@@ -2,9 +2,9 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 import xmlrpc.client
 from datetime import date
 
-facture_bp = Blueprint("facture_bp", __name__)
+facture_bp = Blueprint("facture_bp", __name__, url_prefix="/admin/facturation")
 
-# ✅ Connexion au serveur RPC
+# ✅ Connexion RPC
 rpc = xmlrpc.client.ServerProxy("http://localhost:8000", allow_none=True)
 
 
@@ -15,16 +15,19 @@ def liste_factures():
     return render_template("admin/facturation.html", factures=factures)
 
 
-# ✅ 2️⃣ FORMULAIRE POUR CRÉER UNE FACTURE (depuis un RDV)
+# ✅ 2️⃣ AJOUT D'UNE FACTURE
 @facture_bp.route("/create/<int:rdv_id>", methods=["GET", "POST"])
 def create_facture(rdv_id):
+
+    # ✅ POST → Enregistrer
     if request.method == "POST":
         data = {
             "rdv_id": rdv_id,
             "statut": request.form.get("statut"),
             "moyen_paiement": request.form.get("moyen_paiement"),
             "services": request.form.get("services"),
-            "montant_total": request.form.get("montant_total")
+            "montant_total": request.form.get("montant_total"),
+            "date_facture": str(date.today())
         }
 
         result = rpc.ajouter_facture(data)
@@ -36,9 +39,10 @@ def create_facture(rdv_id):
         flash("❌ Erreur lors de la création.", "error")
         return redirect(request.url)
 
-    # GET → afficher formulaire
+    # ✅ GET → Afficher formulaire
     rdv = rpc.get_rdv(rdv_id)
     services = rpc.liste_services()
+
     return render_template(
         "admin/facture_add.html",
         rdv=rdv,
@@ -48,59 +52,60 @@ def create_facture(rdv_id):
 
 
 
-# ✅ 3️⃣ ENREGISTRER LA FACTURE
-@facture_bp.route("/store", methods=["POST"])
-def store_facture():
-    rdv_id = request.form.get("rdv_id")
-    statut = request.form.get("statut")
-    moyen_paiement = request.form.get("moyen_paiement")
+# ✅ 3️⃣ ÉDITION D'UNE FACTURE
+@facture_bp.route("/edit/<int:facture_id>", methods=["GET", "POST"])
+def edit_facture(facture_id):
 
-    service_ids = request.form.getlist("service_id[]")
-    quantites = request.form.getlist("quantite[]")
+    # ✅ POST → Enregistrer modifications
+    if request.method == "POST":
+        data = {
+            "statut": request.form.get("statut"),
+            "moyen_paiement": request.form.get("moyen_paiement"),
+            "services": request.form.get("services"),
+            "montant_total": request.form.get("montant_total")
+        }
 
-    if not service_ids:
-        flash("⚠️ Veuillez ajouter au moins un service.", "error")
-        return redirect(request.referrer)
+        result = rpc.editer_facture(facture_id, data)
 
-    # ✅ 3.1 Créer la facture (retourne facture_id)
-    facture_id = rpc.creer_facture({
-        "rdv_id": rdv_id,
-        "statut": statut,
-        "moyen_paiement": moyen_paiement,
-        "date_facture": str(date.today())
-    })
+        if result.get("success"):
+            flash("✅ Facture modifiée avec succès", "success")
+            return redirect(url_for("facture_bp.liste_factures"))
 
-    # ✅ 3.2 Ajouter les services liés à la facture
-    for i in range(len(service_ids)):
-        rpc.ajouter_service_facture(
-            facture_id,
-            int(service_ids[i]),
-            int(quantites[i])
-        )
+        flash("❌ Erreur lors de la modification.", "error")
+        return redirect(request.url)
 
-    flash("✅ Facture créée avec succès", "success")
-    return redirect(url_for("facture_bp.liste_factures"))
-
-
-# ✅ 4️⃣ AFFICHER LES DÉTAILS D’UNE FACTURE
-@facture_bp.route("/details/<int:facture_id>", methods=["GET"])
-def details_facture(facture_id):
+    # ✅ GET → Charger la facture + services
     facture = rpc.get_facture(facture_id)
-    services = rpc.get_services_facture(facture_id)
+    services = rpc.liste_services()
 
     if not facture:
         flash("❌ Facture introuvable.", "error")
         return redirect(url_for("facture_bp.liste_factures"))
 
     return render_template(
-        "admin/facture_details.html",
+        "admin/facture_edit.html",
         facture=facture,
-        services=services
+        services=services,
+        form_action=url_for("facture_bp.edit_facture", facture_id=facture_id)
     )
 
 
-# ✅ 5️⃣ SUPPRESSION D’UNE FACTURE
-@facture_bp.route("/delete/<int:facture_id>", methods=["GET"])
+
+# ✅ 4️⃣ VISUALISATION
+@facture_bp.route("/details/<int:facture_id>")
+def details_facture(facture_id):
+    facture = rpc.get_facture(facture_id)
+
+    if not facture:
+        flash("❌ Facture introuvable.", "error")
+        return redirect(url_for("facture_bp.liste_factures"))
+
+    return render_template("admin/facture_view.html", facture=facture)
+
+
+
+# ✅ 5️⃣ SUPPRESSION
+@facture_bp.route("/delete/<int:facture_id>")
 def supprimer_facture(facture_id):
     rpc.supprimer_facture(facture_id)
     flash("✅ Facture supprimée.", "success")

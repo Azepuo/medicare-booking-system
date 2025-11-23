@@ -63,7 +63,7 @@ app.register_blueprint(patients_bp, url_prefix="/admin/patients")
 
 app.register_blueprint(rdv_bp, url_prefix="/admin/rendez_vous")
 
-app.register_blueprint(facture_bp, url_prefix="/admin/factures")
+app.register_blueprint(facture_bp)
 
 
 # --- PARTIE PATIENT (SITE PUBLIC) --- #

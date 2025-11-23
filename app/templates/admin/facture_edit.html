@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+    <title>HealthAdmin - Modifier Facture</title>
+</head>
+
+<body>
+
+    <!-- SIDEBAR -->
+    <section id="sidebar">
+        <a href="#" class="brand">
+            <i class='bx bxs-smile'></i>
+            <span class="text">HealthAdmin</span>
+        </a>
+        <ul class="side-menu top">
+            <li><a href="/admin/dashboard"><i class='bx bxs-dashboard'></i><span class="text">Dashboard</span></a></li>
+            <li><a href="/admin/medecins"><i class='bx bxs-user-pin'></i><span class="text">Médecin</span></a></li>
+            <li><a href="/admin/patients"><i class='bx bx-user'></i><span class="text">Patients</span></a></li>
+            <li><a href="/admin/rendez_vous"><i class='bx bxs-calendar'></i><span class="text">Rendez-vous</span></a></li>
+            <li class="active"><a href="/admin/facturation"><i class='bx bxs-receipt'></i><span class="text">Facturation</span></a></li>
+        </ul>
+    </section>
+
+    <!-- CONTENT -->
+    <section id="content">
+
+        <nav>
+            <i class='bx bx-menu'></i>
+            <a href="#" class="profile">
+                <img src="{{ url_for('static', filename='img/zainab_pic.jpeg') }}">
+            </a>
+        </nav>
+
+        <main>
+
+            <div class="head-title">
+                <div class="left">
+                    <h1>Modifier une facture</h1>
+                    <ul class="breadcrumb">
+                        <li><a href="/admin/dashboard">Dashboard</a></li>
+                        <li><i class='bx bx-chevron-right'></i></li>
+                        <li><a href="/admin/facturation">Facturation</a></li>
+                        <li><i class='bx bx-chevron-right'></i></li>
+                        <li><a class="active" href="#">Modifier</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="form-wrapper">
+                <div class="form-card form-card-medium">
+
+                    <form method="POST" action="{{ form_action }}">
+
+                        <input type="hidden" name="facture_id" value="{{ facture.id }}">
+
+                        <div class="form-grid">
+
+                            <!-- Patient -->
+                            <div class="field">
+                                <label>Patient</label>
+                                <input type="text" value="{{ facture.patient_nom }}" readonly>
+                            </div>
+
+                            <!-- Date -->
+                            <div class="field">
+                                <label>Date du rendez-vous</label>
+                                <input type="date" value="{{ facture.date_facture }}" readonly>
+                            </div>
+
+                            <!-- Statut -->
+                            <div class="field">
+                                <label>Statut</label>
+                                <select name="statut">
+                                    <option value="non_payé" {% if facture.statut=='non_payé' %}selected{% endif %}>Non payé</option>
+                                    <option value="payé" {% if facture.statut=='payé' %}selected{% endif %}>Payé</option>
+                                    <option value="en_attente" {% if facture.statut=='en_attente' %}selected{% endif %}>En attente</option>
+                                </select>
+                            </div>
+
+                            <!-- Moyen de paiement -->
+                            <div class="field">
+                                <label>Moyen de paiement</label>
+                                <select name="moyen_paiement">
+                                    <option value="non_defini" {% if facture.moyen_paiement=='non_defini' %}selected{% endif %}>Non défini</option>
+                                    <option value="especes" {% if facture.moyen_paiement=='especes' %}selected{% endif %}>Espèces</option>
+                                    <option value="carte" {% if facture.moyen_paiement=='carte' %}selected{% endif %}>Carte bancaire</option>
+                                    <option value="virement" {% if facture.moyen_paiement=='virement' %}selected{% endif %}>Virement</option>
+                                </select>
+                            </div>
+
+                            <!-- SERVICES -->
+                            <div class="field field-full">
+                                <label>Modifier les services</label>
+
+                                <div style="display:flex; gap:10px;">
+                                    <select id="service-select">
+                                        {% for s in services %}
+                                        <option value="{{ s.nom_service }}">{{ s.nom_service }}</option>
+                                        {% endfor %}
+                                    </select>
+
+                                    <input type="number" id="qty" value="1" min="1">
+
+                                    <button type="button" class="btn-primary" onclick="addService()">+ Ajouter</button>
+                                </div>
+                            </div>
+
+                            <!-- SERVICES LIST -->
+                            <div class="field field-full">
+                                <label>Services sélectionnés</label>
+                                <textarea id="services-list" name="services" rows="3">{{ facture.services }}</textarea>
+                            </div>
+
+                            <!-- TOTAL -->
+                            <div class="field">
+                                <label>Montant total (DH)</label>
+                                <input type="number" id="total" name="montant_total" value="{{ facture.montant_total }}" readonly>
+                            </div>
+
+                        </div>
+
+                        <div class="form-actions">
+                            <a href="/admin/facturation" class="btn-secondary">Annuler</a>
+                            <button type="submit" class="btn-primary">Mettre à jour</button>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+
+        </main>
+    </section>
+
+    <!-- SCRIPT -->
+    <script>
+        const priceMap = {
+            {% for s in services %}
+            "{{ s.nom_service }}": {{ s.prix_unitaire }},
+            {% endfor %}
+        };
+
+        function addService() {
+            const service = document.getElementById('service-select').value;
+            const qty = document.getElementById('qty').value;
+
+            const list = document.getElementById('services-list');
+
+            if (list.value.trim() === "") {
+                list.value = `${service}:${qty}`;
+            } else {
+                list.value += `, ${service}:${qty}`;
+            }
+
+            calculateTotal();
+        }
+
+        function calculateTotal() {
+            const entries = document.getElementById('services-list').value.split(',');
+            let total = 0;
+
+            entries.forEach(item => {
+                const [name, qty] = item.trim().split(':');
+                if (priceMap[name]) {
+                    total += priceMap[name] * parseInt(qty);
+                }
+            });
+
+            document.getElementById('total').value = total;
+        }
+    </script>
+
+</body>
+
+</html>
