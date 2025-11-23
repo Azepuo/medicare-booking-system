@@ -40,7 +40,7 @@ def update_admin_account():
         photo_file.save(photo_path)
 
         # Ce qui sera stocké en BDD (pour url_for('static', filename=...))
-        photo_filename = f"uploads/{filename}"
+        photo_filename = filename
 
     data = {
         "nom_complet": request.form.get("nom_complet"),

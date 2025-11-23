@@ -46,7 +46,7 @@
         <nav>
             <i class='bx bx-menu'></i>
             <a class="profile">
-                <img src="{{ url_for('static', filename=admin_photo) }}">
+                <img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
             </a>
         </nav>
 
@@ -78,8 +78,9 @@
 
                 <!-- ✅ PROFIL -->
                 <section class="account-card">
+
                     <div class="account-avatar">
-                        <img src="{{ url_for('static', filename=admin_photo) }}" alt="Photo admin">
+                        <img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
                     </div>
                     <h2 class="account-name">{{ admin.nom_complet }}</h2>
                     <p class="account-role">Administrateur</p>

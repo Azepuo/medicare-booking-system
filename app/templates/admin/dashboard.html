@@ -93,7 +93,9 @@
 				<span class="num">8</span>
 			</a>
 			<a href="#" class="profile">
-				<img src="{{ url_for('static', filename='img/zainab_pic.jpeg') }}">
+				<img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
+				<!-- <img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
+ -->
 			</a>
 		</nav>
 		<!-- NAVBAR -->
@@ -163,7 +165,8 @@
 						<tbody>
 							<tr>
 								<td>
-									<img src="{{ url_for('static', filename='img/zainab_pic.jpeg') }}">
+									<img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
+
 									<p>Zainab ERROSSAFI</p>
 								</td>
 								<td>Dr. Karim</td>
@@ -172,7 +175,8 @@
 							</tr>
 							<tr>
 								<td>
-									<img src="{{ url_for('static', filename='img/zainab_pic.jpeg') }}">
+									<img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
+
 									<p>Yassine Meskaoui</p>
 								</td>
 								<td>Dr. Amin</td>
@@ -181,7 +185,8 @@
 							</tr>
 							<tr>
 								<td>
-									<img src="{{ url_for('static', filename='img/zainab_pic.jpeg') }}">
+									<img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
+
 									<p>Meryem Moumni</p>
 								</td>
 								<td>Dr. Amina</td>
