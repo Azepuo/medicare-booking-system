@@ -717,6 +717,30 @@ def normalize_admin(row):
     return data
 
 
+# ... tout le code précédent (medecins / patients / rdv / factures) inchangé ...
+
+
+# =====================================================
+# ✅ NORMALISATION ADMIN
+# =====================================================
+
+def normalize_admin(row):
+    if row is None:
+        return None
+    
+    data = dict(row)
+
+    # Convertir les dates en string
+    if data.get("date_creation") and hasattr(data["date_creation"], "isoformat"):
+        data["date_creation"] = data["date_creation"].isoformat()
+
+    if data.get("last_login") and hasattr(data["last_login"], "isoformat"):
+        data["last_login"] = data["last_login"].isoformat()
+
+    # photo est déjà une chaîne → rien à faire
+    return data
+
+
 # =====================================================
 # ✅ FONCTIONS ADMIN
 # =====================================================
@@ -726,7 +750,7 @@ def get_admin():
     cursor = conn.cursor(dictionary=True)
 
     cursor.execute("""
-        SELECT id, nom_complet, email, telephone, username, date_creation, last_login
+        SELECT id, nom_complet, email, telephone, username, date_creation, last_login, photo
         FROM admin
         LIMIT 1
     """)
@@ -742,19 +766,38 @@ def update_admin(data):
     conn = create_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
-        UPDATE admin
-        SET nom_complet = %s,
-            email = %s,
-            telephone = %s,
-            username = %s
-        WHERE id = 1
-    """, (
-        data.get("nom_complet"),
-        data.get("email"),
-        data.get("telephone"),
-        data.get("username")
-    ))
+    # Si une nouvelle photo est fournie → on met à jour aussi `photo`
+    if data.get("photo"):
+        cursor.execute("""
+            UPDATE admin
+            SET nom_complet = %s,
+                email = %s,
+                telephone = %s,
+                username = %s,
+                photo = %s
+            WHERE id = 1
+        """, (
+            data.get("nom_complet"),
+            data.get("email"),
+            data.get("telephone"),
+            data.get("username"),
+            data.get("photo")
+        ))
+    else:
+        # Pas de nouvelle photo → on garde l'ancienne
+        cursor.execute("""
+            UPDATE admin
+            SET nom_complet = %s,
+                email = %s,
+                telephone = %s,
+                username = %s
+            WHERE id = 1
+        """, (
+            data.get("nom_complet"),
+            data.get("email"),
+            data.get("telephone"),
+            data.get("username")
+        ))
 
     conn.commit()
     cursor.close()
@@ -796,7 +839,6 @@ def update_admin_password(current_pwd, new_pwd):
     return {"success": True}
 
 
-
 def update_last_login():
     conn = create_connection()
     cursor = conn.cursor()
@@ -808,6 +850,7 @@ def update_last_login():
     conn.close()
 
     return True
+
 
 # =====================================================
 # ✅ LANCEMENT SERVEUR RPC

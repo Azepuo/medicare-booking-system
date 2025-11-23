@@ -1,5 +1,7 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 import xmlrpc.client
+import os
+from werkzeug.utils import secure_filename
 
 admin_bp = Blueprint("admin_bp", __name__)
 
@@ -19,15 +21,33 @@ def admin_account():
     return render_template("admin/account.html", admin=admin)
 
 
-# ✅ 2) MISE À JOUR DES INFORMATIONS (SAUF MOT DE PASSE)
+# ✅ 2) MISE À JOUR DES INFORMATIONS (AVEC PHOTO, SANS MOT DE PASSE)
 @admin_bp.route("/account", methods=["POST"])
 def update_admin_account():
+
+    # 🔹 Gestion de la photo (optionnelle)
+    photo_file = request.files.get("photo")
+    photo_filename = None
+
+    if photo_file and photo_file.filename:
+        filename = secure_filename(photo_file.filename)
+
+        # chemin : <racine_app>/static/uploads/filename
+        upload_folder = os.path.join(current_app.root_path, "static", "uploads")
+        os.makedirs(upload_folder, exist_ok=True)
+
+        photo_path = os.path.join(upload_folder, filename)
+        photo_file.save(photo_path)
+
+        # Ce qui sera stocké en BDD (pour url_for('static', filename=...))
+        photo_filename = f"uploads/{filename}"
 
     data = {
         "nom_complet": request.form.get("nom_complet"),
         "email": request.form.get("email"),
         "telephone": request.form.get("telephone"),
         "username": request.form.get("username"),
+        "photo": photo_filename  # peut être None si pas de nouvelle photo
     }
 
     result = rpc.update_admin(data)
