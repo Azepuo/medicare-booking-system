@@ -2,6 +2,8 @@ from xmlrpc.server import SimpleXMLRPCServer
 from database.connection import create_connection
 from decimal import Decimal
 from datetime import timedelta
+import bcrypt
+
 
 
 # =====================================================
@@ -695,7 +697,117 @@ def get_services_facture(facture_id):
         })
 
     return services_list
+# =====================================================
+# ✅ NORMALISATION ADMIN
+# =====================================================
 
+def normalize_admin(row):
+    if row is None:
+        return None
+    
+    data = dict(row)
+
+    # Convertir les dates en string
+    if data.get("date_creation") and hasattr(data["date_creation"], "isoformat"):
+        data["date_creation"] = data["date_creation"].isoformat()
+
+    if data.get("last_login") and hasattr(data["last_login"], "isoformat"):
+        data["last_login"] = data["last_login"].isoformat()
+
+    return data
+
+
+# =====================================================
+# ✅ FONCTIONS ADMIN
+# =====================================================
+
+def get_admin():
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT id, nom_complet, email, telephone, username, date_creation, last_login
+        FROM admin
+        LIMIT 1
+    """)
+    row = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return normalize_admin(row)
+
+
+def update_admin(data):
+    conn = create_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE admin
+        SET nom_complet = %s,
+            email = %s,
+            telephone = %s,
+            username = %s
+        WHERE id = 1
+    """, (
+        data.get("nom_complet"),
+        data.get("email"),
+        data.get("telephone"),
+        data.get("username")
+    ))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return {"success": True}
+
+
+def update_admin_password(current_pwd, new_pwd):
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT password FROM admin WHERE id = 1")
+    admin = cursor.fetchone()
+
+    if not admin:
+        cursor.close()
+        conn.close()
+        return {"error": "ADMIN_NOT_FOUND"}
+
+    hashed = admin["password"].encode("utf-8")
+
+    # ✅ Vérifier mot de passe actuel
+    if not bcrypt.checkpw(current_pwd.encode("utf-8"), hashed):
+        cursor.close()
+        conn.close()
+        return {"error": "WRONG_PASSWORD"}
+
+    # ✅ Générer hash du nouveau mot de passe
+    new_hashed = bcrypt.hashpw(new_pwd.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+    # ✅ Mise à jour en BDD
+    cursor.execute("UPDATE admin SET password = %s WHERE id = 1", (new_hashed,))
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return {"success": True}
+
+
+
+def update_last_login():
+    conn = create_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("UPDATE admin SET last_login = NOW() WHERE id = 1")
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return True
 
 # =====================================================
 # ✅ LANCEMENT SERVEUR RPC
@@ -739,6 +851,11 @@ if __name__ == "__main__":
     server.register_function(editer_facture, "editer_facture")
     server.register_function(supprimer_facture, "supprimer_facture")
     server.register_function(get_services_facture, "get_services_facture")
+    # Admin
+    server.register_function(get_admin, "get_admin")
+    server.register_function(update_admin, "update_admin")
+    server.register_function(update_admin_password, "update_admin_password")
+    server.register_function(update_last_login, "update_last_login")
 
     
     server.serve_forever()

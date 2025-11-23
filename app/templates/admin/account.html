@@ -5,99 +5,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- Boxicons -->
     <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
-    <!-- CSS principal du dashboard -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/account.css') }}">
 
-    <title>HealthAdmin - Facturation</title>
+    <title>HealthAdmin - Mon compte</title>
 </head>
 
 <body>
 
     <!-- SIDEBAR -->
     <section id="sidebar">
-        <a href="#" class="brand">
+        <a class="brand">
             <i class='bx bxs-smile'></i>
             <span class="text">HealthAdmin</span>
         </a>
         <ul class="side-menu top">
-            <li>
-                <a href="/admin/dashboard">
-                    <i class='bx bxs-dashboard'></i>
-                    <span class="text">Dashboard</span>
-                </a>
+            <li><a href="/admin/dashboard"><i class='bx bxs-dashboard'></i><span class="text">Dashboard</span></a></li>
+            <li><a href="/admin/medecins"><i class='bx bxs-user-pin'></i><span class="text">Médecin</span></a></li>
+            <li><a href="/admin/patients"><i class='bx bx-user'></i><span class="text">Patients</span></a></li>
+            <li><a href="/admin/rendez_vous"><i class='bx bxs-calendar'></i><span class="text">Rendez-vous</span></a>
             </li>
-            <li>
-                <a href="/admin/medecins">
-                    <i class='bx bxs-user-pin'></i>
-                    <span class="text">Médecin</span>
-                </a>
-            </li>
-            <li>
-                <a href="/admin/patients">
-                    <i class='bx bx-user'></i>
-                    <span class="text">Patients</span>
-                </a>
-            </li>
-            <li>
-                <a href="/admin/rendez_vous">
-                    <i class='bx bxs-calendar'></i>
-                    <span class="text">Rendez-vous</span>
-                </a>
-            </li>
-            <li>
-                <a href="/admin/facturation/">
-                    <i class='bx bxs-receipt'></i>
-                    <span class="text">Facturation</span>
-                </a>
+            <li><a href="/admin/facturation"><i class='bx bxs-receipt'></i><span class="text">Facturation</span></a>
             </li>
         </ul>
         <ul class="side-menu top">
-            <li class="active">
-                <a href="/admin/account">
-                    <i class='bx bxs-id-card'></i>
-                    <span class="text">Mon compte</span>
-                </a>
-            </li>
-            <li>
-                <a href="#" class="logout">
-                    <i class='bx bxs-log-out-circle'></i>
-                    <span class="text">Déconnexion</span>
-                </a>
-            </li>
+            <li class="active"><a href="/admin/account"><i class='bx bxs-id-card'></i><span class="text">Mon
+                        compte</span></a></li>
+            <li><a href="#" class="logout"><i class='bx bxs-log-out-circle'></i><span
+                        class="text">Déconnexion</span></a></li>
         </ul>
     </section>
-    <!-- SIDEBAR -->
 
     <!-- CONTENT -->
-
     <section id="content">
+
         <!-- NAVBAR -->
         <nav>
             <i class='bx bx-menu'></i>
-            <a href="#" class="nav-link">Categories</a>
-            <form action="#">
-                <div class="form-input">
-                    <input type="search" placeholder="Search...">
-                    <button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
-                </div>
-            </form>
-            <input type="checkbox" id="switch-mode" hidden>
-            <label for="switch-mode" class="switch-mode"></label>
-            <a href="#" class="notification">
-                <i class='bx bxs-bell'></i>
-                <span class="num">8</span>
-            </a>
-            <a href="#" class="profile">
+            <a class="profile">
                 <img src="{{ url_for('static', filename='img/zainab_pic.jpeg') }}">
             </a>
         </nav>
-        <!-- NAVBAR -->
 
         <!-- MAIN -->
         <main>
+            <!-- ✅ Messages Flash -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="flash-container">
+                {% for category, message in messages %}
+                <div class="flash-message {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
             <div class="head-title">
                 <div class="left">
                     <h1>Mon compte</h1>
@@ -110,95 +73,96 @@
             </div>
 
             <div class="account-layout">
-                <!-- Carte profil à gauche -->
+
+                <!-- ✅ PROFIL -->
                 <section class="account-card">
                     <div class="account-avatar">
                         <img src="{{ url_for('static', filename='img/zainab_pic.jpeg') }}" alt="Photo admin">
                     </div>
-                    <h2 class="account-name">Zainab Errossafi</h2>
-                    <p class="account-role">Administratrice</p>
+                    <h2 class="account-name">{{ admin.nom_complet }}</h2>
+                    <p class="account-role">Administrateur</p>
 
                     <div class="account-info-list">
-                        <p><span>Email :</span> admin@example.com</p>
-                        <p><span>Téléphone :</span> 06 00 11 22 33</p>
-                        <p><span>Identifiant :</span> admin01</p>
+                        <p><span>Email :</span> {{ admin.email }}</p>
+                        <p><span>Téléphone :</span> {{ admin.telephone }}</p>
+                        <p><span>Identifiant :</span> {{ admin.username }}</p>
                     </div>
 
                     <div class="account-meta">
-                        <p>Compte créé le : <strong>10/02/2025</strong></p>
-                        <p>Dernière connexion : <strong>17/02/2025 · 09:30</strong></p>
+                        <p>Compte créé le : <strong>{{ admin.date_creation }}</strong></p>
                     </div>
                 </section>
 
-                <!-- Formulaire d’édition à droite -->
+                <!-- ✅ FORMULAIRE INFOS -->
                 <section class="account-form-card">
                     <h2 class="account-form-title">Modifier mes informations</h2>
 
-                    <form action="#" method="post">
+                    <form action="{{ url_for('admin_bp.update_admin_account') }}" method="POST">
                         <div class="form-grid">
                             <div class="field">
-                                <label for="full_name">Nom complet</label>
-                                <input type="text" id="full_name" name="full_name" value="Zainab Errossafi">
+                                <label>Nom complet</label>
+                                <input type="text" name="nom_complet" value="{{ admin.nom_complet }}" required>
                             </div>
 
                             <div class="field">
-                                <label for="email">Email</label>
-                                <input type="email" id="email" name="email" value="admin@example.com">
+                                <label>Email</label>
+                                <input type="email" name="email" value="{{ admin.email }}" required>
                             </div>
 
                             <div class="field">
-                                <label for="phone">Téléphone</label>
-                                <input type="text" id="phone" name="phone" value="06 00 11 22 33">
+                                <label>Téléphone</label>
+                                <input type="text" name="telephone" value="{{ admin.telephone }}">
                             </div>
 
                             <div class="field">
-                                <label for="username">Nom d’utilisateur</label>
-                                <input type="text" id="username" name="username" value="admin01">
-                            </div>
-
-                            <div class="field field-full">
-                                <label for="current_password">Mot de passe actuel</label>
-                                <input type="password" id="current_password" name="current_password"
-                                    placeholder="••••••••">
-                            </div>
-
-                            <div class="field">
-                                <label for="new_password">Nouveau mot de passe</label>
-                                <input type="password" id="new_password" name="new_password" placeholder="••••••••">
-                            </div>
-
-                            <div class="field">
-                                <label for="confirm_password">Confirmer le mot de passe</label>
-                                <input type="password" id="confirm_password" name="confirm_password"
-                                    placeholder="••••••••">
-                            </div>
-
-                            <div class="field field-full">
-                                <label>Notifications email</label>
-                                <div class="account-switch-row">
-                                    <input type="checkbox" id="notif_rdv" checked>
-                                    <label for="notif_rdv">Recevoir un email pour chaque nouveau rendez-vous</label>
-                                </div>
-                                <div class="account-switch-row">
-                                    <input type="checkbox" id="notif_factures">
-                                    <label for="notif_factures">Recevoir un email pour chaque nouvelle facture</label>
-                                </div>
+                                <label>Nom d’utilisateur</label>
+                                <input type="text" name="username" value="{{ admin.username }}" required>
                             </div>
                         </div>
 
                         <div class="form-actions">
-                            <button type="button" class="btn-secondary">Annuler</button>
-                            <button type="submit" class="btn-primary">Enregistrer les modifications</button>
+                            <a href="/admin/account" class="btn-secondary">Annuler</a>
+                            <button type="submit" class="btn-primary">Enregistrer</button>
                         </div>
                     </form>
+
+                    <hr style="margin:25px 0;">
+
+                    <!-- ✅ FORMULAIRE MOT DE PASSE -->
+                    <h2 class="account-form-title">Changer le mot de passe</h2>
+
+                    <form action="{{ url_for('admin_bp.update_admin_password') }}" method="POST">
+                        <div class="form-grid">
+
+                            <div class="field field-full">
+                                <label>Mot de passe actuel</label>
+                                <input type="password" name="current_pwd" required>
+                            </div>
+
+                            <div class="field">
+                                <label>Nouveau mot de passe</label>
+                                <input type="password" name="new_pwd" required>
+                            </div>
+
+                            <div class="field">
+                                <label>Confirmer le mot de passe</label>
+                                <input type="password" name="confirm_password" required>
+                            </div>
+
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">Modifier le mot de passe</button>
+                        </div>
+                    </form>
+
                 </section>
+
             </div>
         </main>
-        <!-- MAIN -->
-    </section>
-    <!-- CONTENT -->
 
-    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    </section>
+
 </body>
 
 </html>
