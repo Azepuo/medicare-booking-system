@@ -565,11 +565,19 @@ def get_facture(facture_id):
     cursor = conn.cursor(dictionary=True)
 
     cursor.execute("""
-        SELECT f.*,
-               p.nom AS patient_nom
+        SELECT 
+            f.*,
+            p.nom AS patient_nom,
+            p.email AS patient_email,
+            p.telephone AS patient_telephone,
+            m.nom AS medecin_nom,
+            m.specialite AS medecin_specialite,
+            m.email AS medecin_email,
+            m.telephone AS medecin_telephone
         FROM factures f
         JOIN rendezvous r ON f.rdv_id = r.id
         JOIN patients p ON r.patient_id = p.id
+        JOIN medecins m ON r.medecin_id = m.id
         WHERE f.id = %s
     """, (facture_id,))
 
@@ -578,7 +586,17 @@ def get_facture(facture_id):
     cursor.close()
     conn.close()
 
-    return normalize_facture(row)
+    if row:
+        for key, value in row.items():
+            # ✅ Convertir les dates
+            if hasattr(value, "isoformat"):
+                row[key] = value.isoformat()
+
+            # ✅ Convertir les Decimal en float
+            elif isinstance(value, Decimal):
+                row[key] = float(value)
+
+    return row
 
 
 def ajouter_facture(data):
@@ -662,15 +680,18 @@ def get_services_facture(facture_id):
     if not row or not row["services"]:
         return []
 
-    # Format : "Consultation:1, Injection:2"
+    services_raw = row["services"].split(',')
     services_list = []
-    entries = row["services"].split(",")
 
-    for item in entries:
-        name, qty = item.strip().split(":")
+    for item in services_raw:
+        item = item.strip()
+        if ':' not in item or item == "":
+            continue  # ✅ ignore les entrées invalides
+
+        name, qty = item.split(':')
         services_list.append({
-            "nom": name,
-            "quantite": int(qty),
+            "nom": name.strip(),
+            "quantite": int(qty.strip())
         })
 
     return services_list

@@ -168,7 +168,11 @@
 								<td>{{ f.id }}</td>
 								<td>{{ f.patient_nom }}</td>
 								<td>{{ f.date_facture }}</td>
-								<td>{{ f.services }}</td>
+								<td
+									style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+									{{ f.services }}
+								</td>
+
 								<td>{{ f.montant_total }} DH</td>
 								<td>
 									{% if f.statut == 'payé' %}

@@ -128,6 +128,18 @@
                         <p><strong>Numéro Facture :</strong> {{ facture.id }}</p>
                         <p><strong>Date :</strong> {{ facture.date_facture }}</p>
                     </div>
+                    <hr class="invoice-simple-separator">
+
+                    <div class="invoice-simple-section-title-green">
+                        Informations Médecin
+                    </div>
+
+                    <div class="invoice-simple-patient">
+                        <p><strong>Nom :</strong> {{ facture.medecin_nom }}</p>
+                        <p><strong>Spécialité :</strong> {{ facture.medecin_specialite }}</p>
+                        <p><strong>Email :</strong> {{ facture.medecin_email }}</p>
+                        <p><strong>Téléphone :</strong> {{ facture.medecin_telephone }}</p>
+                    </div>
 
                     <hr class="invoice-simple-separator">
 
