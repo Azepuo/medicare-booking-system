@@ -30,14 +30,25 @@ def normalize_medecin(row):
 # ✅ FONCTIONS MEDECINS
 # =====================================================
 
-def liste_medecins():
+def liste_medecins(search=""):
     conn = create_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM medecins")
+
+    if search:
+        cursor.execute("""
+            SELECT * FROM medecins
+            WHERE nom LIKE %s
+               OR email LIKE %s
+               OR telephone LIKE %s
+        """, (f"%{search}%", f"%{search}%", f"%{search}%"))
+    else:
+        cursor.execute("SELECT * FROM medecins")
+
     rows = cursor.fetchall()
     cursor.close()
     conn.close()
     return [normalize_medecin(row) for row in rows]
+
 
 
 def get_medecin(medecin_id):
@@ -138,10 +149,21 @@ def normalize_patient(row):
 # ✅ FONCTIONS PATIENTS
 # =====================================================
 
-def liste_patients():
+def liste_patients(search=""):
     conn = create_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM patients")
+
+    if search:
+        cursor.execute("""
+            SELECT * FROM patients
+            WHERE nom LIKE %s
+               OR email LIKE %s
+               OR telephone LIKE %s
+               OR cin LIKE %s
+        """, (f"%{search}%", f"%{search}%", f"%{search}%", f"%{search}%"))
+    else:
+        cursor.execute("SELECT * FROM patients")
+
     rows = cursor.fetchall()
     cursor.close()
     conn.close()
@@ -248,19 +270,37 @@ def normalize_rdv(row):
 # ✅ FONCTIONS RDV
 # =====================================================
 
-def liste_rdv():
+def liste_rdv(search=""):
     conn = create_connection()
     cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("""
-        SELECT r.*,
-               p.nom AS patient_nom,
-               m.nom AS medecin_nom
-        FROM rendezvous r
-        JOIN patients p ON r.patient_id = p.id
-        JOIN medecins m ON r.medecin_id = m.id
-        ORDER BY r.date_rdv DESC, r.heure_rdv ASC
-    """)
+    if search:
+        cursor.execute("""
+            SELECT r.*,
+                   p.nom AS patient_nom,
+                   m.nom AS medecin_nom
+            FROM rendezvous r
+            JOIN patients p ON r.patient_id = p.id
+            JOIN medecins m ON r.medecin_id = m.id
+            WHERE p.nom LIKE %s
+               OR m.nom LIKE %s
+               OR r.statut LIKE %s
+            ORDER BY r.date_rdv DESC, r.heure_rdv ASC
+        """, (
+            f"%{search}%",
+            f"%{search}%",
+            f"%{search}%"
+        ))
+    else:
+        cursor.execute("""
+            SELECT r.*,
+                   p.nom AS patient_nom,
+                   m.nom AS medecin_nom
+            FROM rendezvous r
+            JOIN patients p ON r.patient_id = p.id
+            JOIN medecins m ON r.medecin_id = m.id
+            ORDER BY r.date_rdv DESC, r.heure_rdv ASC
+        """)
 
     rows = cursor.fetchall()
 
@@ -536,30 +576,54 @@ def normalize_facture(row):
 # ✅ FONCTIONS FACTURES
 # =====================================================
 
-def liste_factures():
+def liste_factures(search=""):
     conn = create_connection()
     cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("""
-        SELECT f.id,
-               f.services,
-               f.montant_total,
-               f.statut,
-               f.moyen_paiement,
-               f.date_facture,
-               p.nom AS patient_nom
-        FROM factures f
-        JOIN rendezvous r ON f.rdv_id = r.id
-        JOIN patients p ON r.patient_id = p.id
-        ORDER BY f.date_facture DESC
-    """)
+    if search:
+        cursor.execute("""
+            SELECT f.id,
+                   f.services,
+                   f.montant_total,
+                   f.statut,
+                   f.moyen_paiement,
+                   f.date_facture,
+                   p.nom AS patient_nom
+            FROM factures f
+            JOIN rendezvous r ON f.rdv_id = r.id
+            JOIN patients p ON r.patient_id = p.id
+            WHERE p.nom LIKE %s
+               OR f.statut LIKE %s
+               OR f.moyen_paiement LIKE %s
+               OR f.id LIKE %s
+            ORDER BY f.date_facture DESC
+        """, (
+            f"%{search}%",
+            f"%{search}%",
+            f"%{search}%",
+            f"%{search}%"
+        ))
+    else:
+        cursor.execute("""
+            SELECT f.id,
+                   f.services,
+                   f.montant_total,
+                   f.statut,
+                   f.moyen_paiement,
+                   f.date_facture,
+                   p.nom AS patient_nom
+            FROM factures f
+            JOIN rendezvous r ON f.rdv_id = r.id
+            JOIN patients p ON r.patient_id = p.id
+            ORDER BY f.date_facture DESC
+        """)
 
     rows = cursor.fetchall()
-
     cursor.close()
     conn.close()
 
     return [normalize_facture(row) for row in rows]
+
 
 
 def get_facture(facture_id):

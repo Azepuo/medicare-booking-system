@@ -11,8 +11,9 @@ rpc = xmlrpc.client.ServerProxy("http://localhost:8000", allow_none=True)
 # ✅ 1️⃣ LISTE DES FACTURES
 @facture_bp.route("/", methods=["GET"])
 def liste_factures():
-    factures = rpc.liste_factures()
-    return render_template("admin/facturation.html", factures=factures)
+    search = request.args.get("search", "")
+    factures = rpc.liste_factures(search)
+    return render_template("admin/facturation.html", factures=factures, search=search)
 
 
 # ✅ 2️⃣ AJOUT D'UNE FACTURE

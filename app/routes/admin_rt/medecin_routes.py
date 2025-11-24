@@ -12,11 +12,9 @@ rpc = xmlrpc.client.ServerProxy("http://localhost:8000", allow_none=True)
 # ---------- LISTE DES MEDECINS ----------
 @medecins_bp.route("/", methods=["GET"])
 def liste_medecins():
-    # Récupération via RPC
-    medecins = rpc.liste_medecins()
-    # medecins est une liste de dicts renvoyée par le serveur RPC
-    return render_template("admin/medecins.html", medecins=medecins)
-
+    search = request.args.get("search", "")   # ✅ Récupère le texte de recherche
+    medecins = rpc.liste_medecins(search)     # ✅ Envoie le search au RPC
+    return render_template("admin/medecins.html", medecins=medecins, search=search)
 
 # ---------- FORMULAIRE AJOUT ----------
 @medecins_bp.route("/add", methods=["GET", "POST"])

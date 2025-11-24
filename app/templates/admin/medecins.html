@@ -76,9 +76,9 @@
 		<nav>
 			<i class='bx bx-menu'></i>
 			<a href="#" class="nav-link">Categories</a>
-			<form action="#">
+			<form method="GET" class="search-bar">
 				<div class="form-input">
-					<input type="search" placeholder="Search...">
+					<input type="search" name="search" placeholder="Rechercher..." value="{{ search }}">
 					<button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
 				</div>
 			</form>
@@ -111,10 +111,7 @@
 					</ul>
 				</div>
 				<!-- Bouton optionnel, tu peux le laisser ou enlever -->
-				<a href="#" class="btn-download">
-					<i class='bx bxs-cloud-download'></i>
-					<span class="text">Exporter</span>
-				</a>
+
 			</div>
 
 			<!-- Petites cartes d’info (tu peux ajuster les chiffres) -->

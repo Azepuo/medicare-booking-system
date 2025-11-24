@@ -11,8 +11,9 @@ rpc = xmlrpc.client.ServerProxy("http://localhost:8000", allow_none=True)
 # ✅ 1️⃣ LISTE DES RDV
 @rdv_bp.route("/", methods=["GET"])
 def liste_rdv():
-    rdvs = rpc.liste_rdv()
-    return render_template("admin/rendez_vous.html", rdvs=rdvs)
+    search = request.args.get("search", "")
+    rdvs = rpc.liste_rdv(search)
+    return render_template("admin/rendez_vous.html", rdvs=rdvs, search=search)
 
 
 # ✅ 2️⃣ AJOUT D’UN RDV
