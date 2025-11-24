@@ -3,6 +3,8 @@ from database.connection import create_connection
 from decimal import Decimal
 from datetime import timedelta
 import bcrypt
+import datetime
+from datetime import date
 
 
 
@@ -1097,6 +1099,52 @@ def supprimer_tache(tache_id):
         print(f"❌ Erreur supprimer_tache: {e}")
         return {"success": False, "error": str(e)}
 
+def liste_rdv_aujourdhui():
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    query = """
+        SELECT r.*, 
+               p.nom AS patient_nom,
+               m.nom AS medecin_nom
+        FROM rendezvous r
+        JOIN patients p ON r.patient_id = p.id
+        JOIN medecins m ON r.medecin_id = m.id
+        WHERE r.date_rdv = CURDATE()
+        ORDER BY r.heure_rdv ASC
+    """
+
+    cursor.execute(query)
+    rows = cursor.fetchall()
+
+    # ✅ Normalisation pour XML-RPC
+    normalized = []
+    for r in rows:
+        # ✅ Convertir date
+        if isinstance(r.get("date_rdv"), (datetime.date, datetime.datetime)):
+            r["date_rdv"] = r["date_rdv"].strftime("%Y-%m-%d")
+
+        # ✅ Convertir heure_rdv (timedelta → "HH:MM")
+        heure = r.get("heure_rdv")
+        if isinstance(heure, timedelta):
+            total_seconds = int(heure.total_seconds())
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            r["heure_rdv"] = f"{hours:02d}:{minutes:02d}"
+        elif hasattr(heure, "strftime"):
+            r["heure_rdv"] = heure.strftime("%H:%M")
+        else:
+            r["heure_rdv"] = str(heure)
+
+        normalized.append(r)
+
+    cursor.close()
+    conn.close()
+    return normalized
+
+
+
+
 
 # =====================================================
 # ✅ LANCEMENT SERVEUR RPC
@@ -1152,5 +1200,7 @@ if __name__ == "__main__":
     server.register_function(ajouter_tache, "ajouter_tache")
     server.register_function(editer_tache, "editer_tache")
     server.register_function(supprimer_tache, "supprimer_tache")
+    # Rdv_du_jour
+    server.register_function(liste_rdv_aujourdhui, "liste_rdv_aujourdhui")
 
     server.serve_forever()

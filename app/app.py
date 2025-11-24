@@ -19,7 +19,15 @@ rpc = xmlrpc.client.ServerProxy("http://localhost:8000", allow_none=True)
 def dashboard():
     stats = rpc.get_stats()
     taches = rpc.liste_taches()
-    return render_template("admin/dashboard.html", stats=stats, taches=taches)
+    rdv_aujourdhui = rpc.liste_rdv_aujourdhui()
+    search = request.args.get("search", "")
+
+    if search:
+        rdv_aujourdhui = [
+            r for r in rdv_aujourdhui
+            if search.lower() in r["patient_nom"].lower()
+        ]
+    return render_template("admin/dashboard.html", stats=stats, taches=taches, rdv_aujourdhui=rdv_aujourdhui, search=search)
 
 # ✅ Blueprints Admin
 app.register_blueprint(medecins_bp, url_prefix="/admin/medecins")
