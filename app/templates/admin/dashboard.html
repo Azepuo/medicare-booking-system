@@ -13,19 +13,19 @@
 
 	<title>HealthAdmin</title>
 	<script>
-    // Ce script s'exécute immédiatement, AVANT le rendu
-    (function() {
-      // Dark Mode
-      if (localStorage.getItem('dark-mode') === 'enabled') {
-        document.documentElement.classList.add('dark');
-      }
-      
-      // Sidebar (on ajoute un attribut pour le CSS)
-      if (localStorage.getItem('sidebar') === 'hidden') {
-        document.documentElement.setAttribute('data-sidebar', 'hidden');
-      }
-    })();
-  </script>
+		// Ce script s'exécute immédiatement, AVANT le rendu
+		(function () {
+			// Dark Mode
+			if (localStorage.getItem('dark-mode') === 'enabled') {
+				document.documentElement.classList.add('dark');
+			}
+
+			// Sidebar (on ajoute un attribut pour le CSS)
+			if (localStorage.getItem('sidebar') === 'hidden') {
+				document.documentElement.setAttribute('data-sidebar', 'hidden');
+			}
+		})();
+	</script>
 </head>
 
 <body>
@@ -39,7 +39,7 @@
 		</a>
 		<ul class="side-menu top">
 			<li class="active">
-				<a href="#">
+				 <a href="/admin/dashboard">
 					<i class='bx bxs-dashboard'></i>
 					<span class="text">Dashboard</span>
 				</a>
@@ -216,23 +216,27 @@
 					<div class="head">
 						<h3>Tâches Administratives</h3>
 						<i class='bx bx-plus' id="todoAddBtn"></i>
-						<i class='bx bx-filter'></i>
 					</div>
+
 					<ul class="todo-list" id="todoList">
-						<li class="completed" data-id="">
-							<p>Vérifier les nouveaux médecins</p>
-							<i class='bx bx-dots-vertical-rounded'></i>
+						{% for t in taches %}
+						<li class="{{ 'completed' if t.statut == 'complétée' else 'not-completed' }}"
+							data-id="{{ t.id }}">
+							<p>{{ t.titre }}</p>
+							<div style="display:flex;gap:6px;align-items:center">
+								<i class='bx bx-edit-alt' title="Modifier"></i>
+								<i class='bx bx-trash' title="Supprimer"></i>
+							</div>
 						</li>
-						<li class="not-completed" data-id="">
-							<p>Valider les rendez-vous en attente</p>
-							<i class='bx bx-dots-vertical-rounded'></i>
+						{% endfor %}
+						{% if taches|length == 0 %}
+						<li style="text-align:center; padding:15px; opacity:0.7;">
+							Aucune tâche pour le moment
 						</li>
-						<li class="completed" data-id="">
-							<p>Mettre à jour les dossiers patients</p>
-							<i class='bx bx-dots-vertical-rounded'></i>
-						</li>
+						{% endif %}
 					</ul>
 				</div>
+
 
 		</main>
 		<!-- MAIN -->
@@ -255,8 +259,8 @@
 				<div class="field">
 					<label for="taskStatus">Statut</label>
 					<select id="taskStatus">
-						<option value="completed">Complétée (barre bleue)</option>
-						<option value="not-completed">Non complétée (barre orange)</option>
+						<option value="complétée">Complétée (barre bleue)</option>
+						<option value="non_complétée">Non complétée (barre orange)</option>
 					</select>
 				</div>
 			</div>

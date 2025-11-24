@@ -880,3 +880,73 @@ body.dark .remove-btn {
 body.dark .remove-btn:hover {
     background: #922d32 !important;
 }
+/* Taks_Dashboard */
+/* ✅ STYLE DU POPUP EN MODE LIGHT (normal) */
+#taskDialog {
+    background: #ffffff;
+    color: #111;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+}
+
+/* ✅ Fond assombri derrière le popup */
+#taskDialog::backdrop {
+    background: rgba(0, 0, 0, 0.45);
+}
+
+/* ✅ Champs */
+#taskDialog input,
+#taskDialog select {
+    background: #f7f7f7;
+    color: #111;
+    border: 1px solid #ccc;
+}
+
+/* ✅ Boutons */
+#taskDialog .btn-secondary {
+    background: #eee;
+    color: #111;
+}
+
+#taskDialog .btn-primary {
+    background: var(--blue);
+    color: white;
+}
+
+/* ✅ ✅ DARK MODE */
+body.dark #taskDialog {
+    background: #1e1e1e;
+    color: #fff;
+    border: 1px solid #333;
+}
+
+body.dark #taskDialog input,
+body.dark #taskDialog select {
+    background: #2a2a2a;
+    color: #fff;
+    border: 1px solid #555;
+}
+
+body.dark #taskDialog .btn-secondary {
+    background: #333;
+    color: #fff;
+    border: 1px solid #555;
+}
+
+body.dark #taskDialog .btn-secondary:hover {
+    background: #444;
+}
+
+body.dark #taskDialog .btn-primary {
+    background: var(--blue);
+    color: white;
+}
+#taskDialog .icon-close {
+    background: transparent;
+    color: inherit;
+    font-size: 18px;
+}
+
+body.dark #taskDialog .icon-close:hover {
+    color: #bbb;
+}

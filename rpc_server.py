@@ -957,6 +957,145 @@ def get_stats():
         "factures_payees": factures_payees,
         "factures_en_attente": factures_en_attente
     }
+# =====================================================
+# ✅ NORMALISATION TACHES
+# =====================================================
+
+def normalize_tache(row):
+    if row is None:
+        return None
+
+    data = dict(row)
+
+    # Convertir la date si nécessaire
+    if data.get("date_creation") and hasattr(data["date_creation"], "isoformat"):
+        data["date_creation"] = data["date_creation"].isoformat()
+
+    return data
+
+
+# =====================================================
+# ✅ FONCTIONS TACHES
+# =====================================================
+
+def liste_taches():
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM taches ORDER BY date_creation DESC")
+    rows = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return [normalize_tache(row) for row in rows]
+
+
+def get_tache(tache_id):
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM taches WHERE id = %s", (tache_id,))
+    row = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return normalize_tache(row)
+
+
+def ajouter_tache(data):
+    """
+    Ajoute une tâche avec titre et statut.
+    Statut attendu : 'à faire', 'en cours', ou 'terminée'
+    """
+    conn = create_connection()
+    cursor = conn.cursor()
+
+    titre = data.get("titre")
+    statut = data.get("statut", "à faire")  # ✅ Valeur par défaut
+
+    if not titre:
+        return {"success": False, "error": "TITRE_OBLIGATOIRE"}
+
+    try:
+        cursor.execute("""
+            INSERT INTO taches (titre, statut)
+            VALUES (%s, %s)
+        """, (titre, statut))
+
+        conn.commit()
+        tache_id = cursor.lastrowid
+        
+        cursor.close()
+        conn.close()
+
+        return {"success": True, "tache_id": tache_id}
+    
+    except Exception as e:
+        cursor.close()
+        conn.close()
+        print(f"❌ Erreur ajouter_tache: {e}")
+        return {"success": False, "error": str(e)}
+
+
+def editer_tache(tache_id, data):
+    """
+    Modifie une tâche existante.
+    Statut attendu : 'à faire', 'en cours', ou 'terminée'
+    """
+    conn = create_connection()
+    cursor = conn.cursor()
+
+    titre = data.get("titre")
+    statut = data.get("statut")
+
+    if not titre:
+        cursor.close()
+        conn.close()
+        return {"success": False, "error": "TITRE_OBLIGATOIRE"}
+
+    try:
+        cursor.execute("""
+            UPDATE taches
+            SET titre=%s, statut=%s
+            WHERE id=%s
+        """, (titre, statut, tache_id))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return {"success": True}
+    
+    except Exception as e:
+        cursor.close()
+        conn.close()
+        print(f"❌ Erreur editer_tache: {e}")
+        return {"success": False, "error": str(e)}
+
+
+def supprimer_tache(tache_id):
+    """
+    Supprime une tâche par son ID.
+    """
+    conn = create_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("DELETE FROM taches WHERE id=%s", (tache_id,))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return {"success": True}
+    
+    except Exception as e:
+        cursor.close()
+        conn.close()
+        print(f"❌ Erreur supprimer_tache: {e}")
+        return {"success": False, "error": str(e)}
 
 
 # =====================================================
@@ -1007,4 +1146,11 @@ if __name__ == "__main__":
     server.register_function(update_last_login, "update_last_login")
     # Statistiques
     server.register_function(get_stats, "get_stats")
+    # Tâches
+    server.register_function(liste_taches, "liste_taches")
+    server.register_function(get_tache, "get_tache")
+    server.register_function(ajouter_tache, "ajouter_tache")
+    server.register_function(editer_tache, "editer_tache")
+    server.register_function(supprimer_tache, "supprimer_tache")
+
     server.serve_forever()

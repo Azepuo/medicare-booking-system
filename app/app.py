@@ -4,6 +4,7 @@ from app.routes.admin_rt.patient_routes import patients_bp
 from app.routes.admin_rt.rdv_routes import rdv_bp
 from app.routes.admin_rt.factures_routes import facture_bp
 from app.routes.admin_rt.account_routes import admin_bp
+from app.routes.admin_rt.tasks_routes import tasks_bp
 
 import xmlrpc.client   # ✅ AJOUT
 
@@ -14,9 +15,11 @@ app.secret_key = "un_secret_tres_long_et_complexe"
 rpc = xmlrpc.client.ServerProxy("http://localhost:8000", allow_none=True)
 
 # ✅ Tableau de bord admin
-@app.route('/admin/dashboard')
-def admin_dashboard():
-    return render_template('admin/dashboard.html')
+@app.route("/admin/dashboard")
+def dashboard():
+    stats = rpc.get_stats()
+    taches = rpc.liste_taches()
+    return render_template("admin/dashboard.html", stats=stats, taches=taches)
 
 # ✅ Blueprints Admin
 app.register_blueprint(medecins_bp, url_prefix="/admin/medecins")
@@ -24,6 +27,7 @@ app.register_blueprint(patients_bp, url_prefix="/admin/patients")
 app.register_blueprint(rdv_bp, url_prefix="/admin/rendez_vous")
 app.register_blueprint(facture_bp, url_prefix="/admin/facturation")
 app.register_blueprint(admin_bp, url_prefix="/admin")
+app.register_blueprint(tasks_bp)
 
 # ✅ Accueil public
 @app.route('/')
