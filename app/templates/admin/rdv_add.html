@@ -9,6 +9,20 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 
     <title>HealthAdmin - Rendez-vous</title>
+    <script>
+        // Ce script s'exécute immédiatement, AVANT le rendu
+        (function () {
+            // Dark Mode
+            if (localStorage.getItem('dark-mode') === 'enabled') {
+                document.documentElement.classList.add('dark');
+            }
+
+            // Sidebar (on ajoute un attribut pour le CSS)
+            if (localStorage.getItem('sidebar') === 'hidden') {
+                document.documentElement.setAttribute('data-sidebar', 'hidden');
+            }
+        })();
+    </script>
 </head>
 
 <body>
@@ -49,6 +63,8 @@
                     <button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
                 </div> -->
             </form>
+            <input type="checkbox" id="switch-mode" hidden>
+            <label for="switch-mode" class="switch-mode"></label>
             <a href="#" class="profile">
                 <img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
 
@@ -207,7 +223,7 @@
                 });
         });
     </script>
-
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 </body>
 
 </html>

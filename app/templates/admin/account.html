@@ -10,6 +10,20 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/account.css') }}">
 
     <title>HealthAdmin - Mon compte</title>
+    <script>
+        // Ce script s'exécute immédiatement, AVANT le rendu
+        (function () {
+            // Dark Mode
+            if (localStorage.getItem('dark-mode') === 'enabled') {
+                document.documentElement.classList.add('dark');
+            }
+
+            // Sidebar (on ajoute un attribut pour le CSS)
+            if (localStorage.getItem('sidebar') === 'hidden') {
+                document.documentElement.setAttribute('data-sidebar', 'hidden');
+            }
+        })();
+    </script>
 </head>
 
 <body>
@@ -45,8 +59,23 @@
         <!-- NAVBAR -->
         <nav>
             <i class='bx bx-menu'></i>
-            <a class="profile">
+
+            <form action="#">
+                <!-- <div class="form-input">
+					<input type="search" placeholder="Search...">
+					<button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
+				</div> -->
+            </form>
+            <input type="checkbox" id="switch-mode" hidden>
+            <label for="switch-mode" class="switch-mode"></label>
+            <a href="#" class="notification">
+                <i class='bx bxs-bell'></i>
+                <span class="num">8</span>
+            </a>
+            <a href="#" class="profile">
                 <img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
+                <!-- <img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
+ -->
             </a>
         </nav>
 
@@ -194,7 +223,7 @@
             });
         });
     </script>
-
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 </body>
 
 </html>

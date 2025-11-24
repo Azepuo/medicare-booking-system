@@ -9,6 +9,20 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 
     <title>HealthAdmin - Modifier Patient</title>
+    <script>
+        // Ce script s'exécute immédiatement, AVANT le rendu
+        (function () {
+            // Dark Mode
+            if (localStorage.getItem('dark-mode') === 'enabled') {
+                document.documentElement.classList.add('dark');
+            }
+
+            // Sidebar (on ajoute un attribut pour le CSS)
+            if (localStorage.getItem('sidebar') === 'hidden') {
+                document.documentElement.setAttribute('data-sidebar', 'hidden');
+            }
+        })();
+    </script>
 </head>
 
 <body>
@@ -79,6 +93,8 @@
                     <button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
                 </div> -->
             </form>
+            <input type="checkbox" id="switch-mode" hidden>
+            <label for="switch-mode" class="switch-mode"></label>
             <a href="#" class="profile">
                 <img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
 
@@ -113,44 +129,42 @@
                             <!-- Nom -->
                             <div class="field">
                                 <label for="nom">Nom complet</label>
-                                <input type="text" id="nom" name="nom"
-                                       value="{{ patient.nom }}" required>
+                                <input type="text" id="nom" name="nom" value="{{ patient.nom }}" required>
                             </div>
 
                             <!-- CIN -->
                             <div class="field">
                                 <label for="cin">CIN</label>
-                                <input type="text" id="cin" name="cin"
-                                       value="{{ patient.cin }}">
+                                <input type="text" id="cin" name="cin" value="{{ patient.cin }}">
                             </div>
 
                             <!-- Email -->
                             <div class="field">
                                 <label for="email">Email</label>
-                                <input type="email" id="email" name="email"
-                                       value="{{ patient.email }}" required>
+                                <input type="email" id="email" name="email" value="{{ patient.email }}" required>
                             </div>
 
                             <!-- Téléphone -->
                             <div class="field">
                                 <label for="telephone">Téléphone</label>
-                                <input type="text" id="telephone" name="telephone"
-                                       value="{{ patient.telephone }}">
+                                <input type="text" id="telephone" name="telephone" value="{{ patient.telephone }}">
                             </div>
 
                             <!-- Date naissance -->
                             <div class="field">
                                 <label for="date_naissance">Date de naissance</label>
                                 <input type="date" id="date_naissance" name="date_naissance"
-                                       value="{{ patient.date_naissance }}">
+                                    value="{{ patient.date_naissance }}">
                             </div>
 
                             <!-- Sexe -->
                             <div class="field">
                                 <label for="sexe">Sexe</label>
                                 <select id="sexe" name="sexe">
-                                    <option value="Homme" {% if patient.sexe == "Homme" %}selected{% endif %}>Homme</option>
-                                    <option value="Femme" {% if patient.sexe == "Femme" %}selected{% endif %}>Femme</option>
+                                    <option value="Homme" {% if patient.sexe=="Homme" %}selected{% endif %}>Homme
+                                    </option>
+                                    <option value="Femme" {% if patient.sexe=="Femme" %}selected{% endif %}>Femme
+                                    </option>
                                 </select>
                             </div>
 

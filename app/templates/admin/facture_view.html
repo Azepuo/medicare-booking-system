@@ -12,6 +12,20 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/facture.css') }}">
 
     <title>HealthAdmin - Facturation</title>
+    <script>
+        // Ce script s'exécute immédiatement, AVANT le rendu
+        (function () {
+            // Dark Mode
+            if (localStorage.getItem('dark-mode') === 'enabled') {
+                document.documentElement.classList.add('dark');
+            }
+
+            // Sidebar (on ajoute un attribut pour le CSS)
+            if (localStorage.getItem('sidebar') === 'hidden') {
+                document.documentElement.setAttribute('data-sidebar', 'hidden');
+            }
+        })();
+    </script>
 </head>
 
 <body>
@@ -77,7 +91,7 @@
         <!-- NAVBAR -->
         <nav>
             <i class='bx bx-menu'></i>
-            
+
             <form action="#">
                 <!-- <div class="form-input">
                     <input type="search" placeholder="Search...">

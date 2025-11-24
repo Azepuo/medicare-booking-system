@@ -41,6 +41,20 @@
             background: #d9363e;
         }
     </style>
+    <script>
+        // Ce script s'exécute immédiatement, AVANT le rendu
+        (function () {
+            // Dark Mode
+            if (localStorage.getItem('dark-mode') === 'enabled') {
+                document.documentElement.classList.add('dark');
+            }
+
+            // Sidebar (on ajoute un attribut pour le CSS)
+            if (localStorage.getItem('sidebar') === 'hidden') {
+                document.documentElement.setAttribute('data-sidebar', 'hidden');
+            }
+        })();
+    </script>
 </head>
 
 <body>
@@ -55,8 +69,10 @@
             <li><a href="/admin/dashboard"><i class='bx bxs-dashboard'></i><span class="text">Dashboard</span></a></li>
             <li><a href="/admin/medecins"><i class='bx bxs-user-pin'></i><span class="text">Médecin</span></a></li>
             <li><a href="/admin/patients"><i class='bx bx-user'></i><span class="text">Patients</span></a></li>
-            <li><a href="/admin/rendez_vous"><i class='bx bxs-calendar'></i><span class="text">Rendez-vous</span></a></li>
-            <li class="active"><a href="/admin/facturation"><i class='bx bxs-receipt'></i><span class="text">Facturation</span></a></li>
+            <li><a href="/admin/rendez_vous"><i class='bx bxs-calendar'></i><span class="text">Rendez-vous</span></a>
+            </li>
+            <li class="active"><a href="/admin/facturation"><i class='bx bxs-receipt'></i><span
+                        class="text">Facturation</span></a></li>
         </ul>
         <ul class="side-menu">
             <li>
@@ -85,6 +101,8 @@
                     <button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
                 </div> -->
             </form>
+            <input type="checkbox" id="switch-mode" hidden>
+            <label for="switch-mode" class="switch-mode"></label>
             <a href="#" class="profile">
                 <img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
 
@@ -131,9 +149,12 @@
                             <div class="field">
                                 <label>Statut</label>
                                 <select name="statut">
-                                    <option value="non_payé" {% if facture.statut=='non_payé' %}selected{% endif %}>Non payé</option>
-                                    <option value="payé" {% if facture.statut=='payé' %}selected{% endif %}>Payé</option>
-                                    <option value="en_attente" {% if facture.statut=='en_attente' %}selected{% endif %}>En attente</option>
+                                    <option value="non_payé" {% if facture.statut=='non_payé' %}selected{% endif %}>Non
+                                        payé</option>
+                                    <option value="payé" {% if facture.statut=='payé' %}selected{% endif %}>Payé
+                                    </option>
+                                    <option value="en_attente" {% if facture.statut=='en_attente' %}selected{% endif %}>
+                                        En attente</option>
                                 </select>
                             </div>
 
@@ -141,10 +162,14 @@
                             <div class="field">
                                 <label>Moyen de paiement</label>
                                 <select name="moyen_paiement">
-                                    <option value="non_defini" {% if facture.moyen_paiement=='non_defini' %}selected{% endif %}>Non défini</option>
-                                    <option value="especes" {% if facture.moyen_paiement=='especes' %}selected{% endif %}>Espèces</option>
-                                    <option value="carte" {% if facture.moyen_paiement=='carte' %}selected{% endif %}>Carte bancaire</option>
-                                    <option value="virement" {% if facture.moyen_paiement=='virement' %}selected{% endif %}>Virement</option>
+                                    <option value="non_defini" {% if facture.moyen_paiement=='non_defini' %}selected{%
+                                        endif %}>Non défini</option>
+                                    <option value="especes" {% if facture.moyen_paiement=='especes' %}selected{% endif
+                                        %}>Espèces</option>
+                                    <option value="carte" {% if facture.moyen_paiement=='carte' %}selected{% endif %}>
+                                        Carte bancaire</option>
+                                    <option value="virement" {% if facture.moyen_paiement=='virement' %}selected{% endif
+                                        %}>Virement</option>
                                 </select>
                             </div>
 
@@ -177,7 +202,8 @@
                             <!-- TOTAL -->
                             <div class="field">
                                 <label>Montant total (DH)</label>
-                                <input type="number" id="total" name="montant_total" value="{{ facture.montant_total }}" readonly>
+                                <input type="number" id="total" name="montant_total" value="{{ facture.montant_total }}"
+                                    readonly>
                             </div>
 
                         </div>
@@ -199,8 +225,8 @@
     <script>
         const priceMap = {
             {% for s in services %}
-            "{{ s.nom_service }}": {{ s.prix_unitaire }},
-            {% endfor %}
+        "{{ s.nom_service }}": { { s.prix_unitaire } },
+        {% endfor %}
         };
 
         let services = [];
@@ -256,7 +282,7 @@
 
         initServices();
     </script>
-
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 </body>
 
 </html>

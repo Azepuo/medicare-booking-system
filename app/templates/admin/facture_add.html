@@ -9,6 +9,20 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 
     <title>HealthAdmin - Facture</title>
+    <script>
+        // Ce script s'exécute immédiatement, AVANT le rendu
+        (function () {
+            // Dark Mode
+            if (localStorage.getItem('dark-mode') === 'enabled') {
+                document.documentElement.classList.add('dark');
+            }
+
+            // Sidebar (on ajoute un attribut pour le CSS)
+            if (localStorage.getItem('sidebar') === 'hidden') {
+                document.documentElement.setAttribute('data-sidebar', 'hidden');
+            }
+        })();
+    </script>
 </head>
 
 <body>
@@ -46,7 +60,7 @@
 
     <!-- CONTENT -->
     <section id="content">
-         <nav>
+        <nav>
             <i class='bx bx-menu'></i>
             <form action="#">
                 <!-- <div class="form-input">
@@ -54,6 +68,8 @@
                     <button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
                 </div> -->
             </form>
+            <input type="checkbox" id="switch-mode" hidden>
+            <label for="switch-mode" class="switch-mode"></label>
             <a href="#" class="profile">
                 <img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
 
@@ -76,7 +92,7 @@
 
             <div class="form-wrapper">
                 <div class="form-card form-card-medium">
-                  <form method="POST" action="{{ form_action }}">
+                    <form method="POST" action="{{ form_action }}">
 
                         <input type="hidden" name="rdv_id" value="{{ rdv.id }}">
 
@@ -165,56 +181,56 @@
 
     <!-- SCRIPT SERVICES -->
     <script>
-    const priceMap = {
+        const priceMap = {
         {% for s in services %}
-        "{{ s.nom_service }}": {{ s.prix_unitaire }}{% if not loop.last %},{% endif %}
+        "{{ s.nom_service }}": { { s.prix_unitaire } } {% if not loop.last %}, {% endif %}
         {% endfor %}
     };
 
-    console.log("✅ Script loaded"); // TEST
+        console.log("✅ Script loaded"); // TEST
 
-    function addService() {
-        console.log("✅ Button clicked"); // TEST
+        function addService() {
+            console.log("✅ Button clicked"); // TEST
 
-        const service = document.getElementById('service-select').value;
-        const qty = parseInt(document.getElementById('qty').value, 10);
+            const service = document.getElementById('service-select').value;
+            const qty = parseInt(document.getElementById('qty').value, 10);
 
-        if (!service || qty <= 0) return;
+            if (!service || qty <= 0) return;
 
-        const list = document.getElementById('services-list');
+            const list = document.getElementById('services-list');
 
-        if (list.value.trim() === "") {
-            list.value = `${service}:${qty}`;
-        } else {
-            list.value += `, ${service}:${qty}`;
-        }
-
-        calculateTotal();
-    }
-
-    function calculateTotal() {
-        const raw = document.getElementById('services-list').value.trim();
-
-        if (raw === "") {
-            document.getElementById('total').value = 0;
-            return;
-        }
-
-        const entries = raw.split(",");
-        let total = 0;
-
-        entries.forEach(item => {
-            const [name, qty] = item.trim().split(":");
-            if (priceMap[name]) {
-                total += priceMap[name] * parseInt(qty);
+            if (list.value.trim() === "") {
+                list.value = `${service}:${qty}`;
+            } else {
+                list.value += `, ${service}:${qty}`;
             }
-        });
 
-        document.getElementById('total').value = total;
-    }
-</script>
+            calculateTotal();
+        }
 
+        function calculateTotal() {
+            const raw = document.getElementById('services-list').value.trim();
 
+            if (raw === "") {
+                document.getElementById('total').value = 0;
+                return;
+            }
+
+            const entries = raw.split(",");
+            let total = 0;
+
+            entries.forEach(item => {
+                const [name, qty] = item.trim().split(":");
+                if (priceMap[name]) {
+                    total += priceMap[name] * parseInt(qty);
+                }
+            });
+
+            document.getElementById('total').value = total;
+        }
+    </script>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 
 </body>
 

@@ -800,3 +800,62 @@ dialog {
 	}
 }
 
+/* ✅ DARK MODE CORRECT FIX */
+body.dark {
+	--light: #0e0e0e;
+	--grey: #1a1a1a;
+	--dark: #ffffff;
+	--dark-grey: #cfcfcf;
+
+	--light-blue: #2b3b55;
+	--light-yellow: #5c5528;
+	--light-orange: #603c2f;
+}
+
+/* ✅ Optional: form & inputs look nicer in dark */
+body.dark input,
+body.dark select,
+body.dark textarea {
+	background: #2c2c2c !important;
+	color: #fff !important;
+	border-color: #444 !important;
+}
+
+body.dark .form-card,
+body.dark .table-data > div {
+	background: #242424 !important;
+}
+body.dark main,
+body.dark #content,
+body.dark .form-card,
+body.dark .form-wrapper {
+    background: #1e1e1e !important;
+    color: #fff !important;
+}
+
+body.dark label {
+    color: #ddd !important;
+}
+
+body.dark select,
+body.dark input,
+body.dark textarea {
+    background: #2c2c2c !important;
+    border-color: #444 !important;
+    color: #fff !important;
+}
+body.dark .btn-secondary {
+    background: transparent !important;
+    color: #ffffff !important;
+    border: 1px solid #3C91E6 !important;
+}
+
+body.dark .btn-secondary:hover {
+    background: #3C91E6 !important;
+    color: #ffffff !important;
+}
+
+.switch-mode.no-transition::before {
+    transition: none !important;
+}
+/* add */

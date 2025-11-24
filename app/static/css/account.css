@@ -125,6 +125,8 @@
 		text-align: left;
 	}
 }
+
+/* Champs mot de passe */
 .password-field {
     position: relative;
 }
@@ -140,4 +142,71 @@
 
 .password-field .toggle-pwd:hover {
     color: #000;
+}
+
+/* ✅ Fix bouton Annuler (Mode normal) */
+.account-form-card .btn-secondary {
+    background: #ffffff;
+    color: #111;
+    border: 1px solid #ccc;
+    border-radius: 999px;
+}
+
+/* ✅ Hover en mode normal */
+.account-form-card .btn-secondary:hover {
+    background: #f2f2f2;
+}
+
+/* ✅ Dark Mode */
+body.dark .account-form-card .btn-secondary {
+    background: #2b2b2b !important;
+    color: #ffffff !important;
+    border-color: #555 !important;
+}
+
+/* ✅ Hover Dark Mode */
+body.dark .account-form-card .btn-secondary:hover {
+    background: #3a3a3a !important;
+}
+
+/* ✅ Alignement des boutons */
+.account-form-card .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 16px;
+}
+/* ✅ Force le style du bouton Annuler sur la page Mon compte */
+#content .account-form-card .form-actions .btn-secondary {
+    background: #ffffff !important;
+    color: #111 !important;
+    border: 1px solid #ccc !important;
+    border-radius: 999px !important;
+}
+
+/* ✅ Hover (Mode normal) */
+#content .account-form-card .form-actions .btn-secondary:hover {
+    background: #f2f2f2 !important;
+}
+
+/* ✅ Dark Mode */
+body.dark #content .account-form-card .form-actions .btn-secondary {
+    background: #2b2b2b !important;
+    color: #ffffff !important;
+    border-color: #555 !important;
+}
+
+/* ✅ Hover Dark Mode */
+body.dark #content .account-form-card .form-actions .btn-secondary:hover {
+    background: #3a3a3a !important;
+}
+body.dark .account-card,
+body.dark .account-form-card {
+    background: #1f1f1f !important;
+    color: #fff !important;
+}
+
+body.dark .account-info-list p,
+body.dark .account-meta {
+    color: #cfcfcf !important;
 }
