@@ -9,7 +9,17 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 
     <title>HealthAdmin - Modifier Facture</title>
-
+    <script>
+        // Avant le rendu → Dark mode + Sidebar
+        (function () {
+            if (localStorage.getItem('dark-mode') === 'enabled') {
+                document.documentElement.classList.add('dark');
+            }
+            if (localStorage.getItem('sidebar') === 'hidden') {
+                document.documentElement.setAttribute('data-sidebar', 'hidden');
+            }
+        })();
+    </script>
     <style>
         .service-item {
             display: flex;
@@ -41,20 +51,6 @@
             background: #d9363e;
         }
     </style>
-    <script>
-        // Ce script s'exécute immédiatement, AVANT le rendu
-        (function () {
-            // Dark Mode
-            if (localStorage.getItem('dark-mode') === 'enabled') {
-                document.documentElement.classList.add('dark');
-            }
-
-            // Sidebar (on ajoute un attribut pour le CSS)
-            if (localStorage.getItem('sidebar') === 'hidden') {
-                document.documentElement.setAttribute('data-sidebar', 'hidden');
-            }
-        })();
-    </script>
 </head>
 
 <body>
@@ -75,18 +71,9 @@
                         class="text">Facturation</span></a></li>
         </ul>
         <ul class="side-menu">
-            <li>
-                <a href="/admin/account">
-                    <i class='bx bxs-id-card'></i>
-                    <span class="text">Mon compte</span>
-                </a>
-            </li>
-            <li>
-                <a href="#" class="logout">
-                    <i class='bx bxs-log-out-circle'></i>
-                    <span class="text">Déconnexion</span>
-                </a>
-            </li>
+            <li><a href="/admin/account"><i class='bx bxs-id-card'></i><span class="text">Mon compte</span></a></li>
+            <li><a href="#" class="logout"><i class='bx bxs-log-out-circle'></i><span
+                        class="text">Déconnexion</span></a></li>
         </ul>
     </section>
 
@@ -95,17 +82,13 @@
 
         <nav>
             <i class='bx bx-menu'></i>
-            <form action="#">
-                <!-- <div class="form-input">
-                    <input type="search" placeholder="Search...">
-                    <button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
-                </div> -->
-            </form>
+            <form action="#"></form>
+
             <input type="checkbox" id="switch-mode" hidden>
             <label for="switch-mode" class="switch-mode"></label>
+
             <a href="#" class="profile">
                 <img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
-
             </a>
         </nav>
 
@@ -142,7 +125,7 @@
                             <!-- Date -->
                             <div class="field">
                                 <label>Date du rendez-vous</label>
-                                <input type="date" value="{{ facture.date_facture }}" readonly>
+                                <input type="date" value="{{ facture.date_rdv }}" readonly>
                             </div>
 
                             <!-- Statut -->
@@ -158,7 +141,7 @@
                                 </select>
                             </div>
 
-                            <!-- Moyen de paiement -->
+                            <!-- Paiement -->
                             <div class="field">
                                 <label>Moyen de paiement</label>
                                 <select name="moyen_paiement">
@@ -173,9 +156,9 @@
                                 </select>
                             </div>
 
-                            <!-- SERVICES -->
+                            <!-- Ajouter un service -->
                             <div class="field field-full">
-                                <label>Modifier les services</label>
+                                <label>Ajouter un service</label>
 
                                 <div style="display:flex; gap:10px;">
                                     <select id="service-select">
@@ -185,12 +168,11 @@
                                     </select>
 
                                     <input type="number" id="qty" value="1" min="1">
-
                                     <button type="button" class="btn-primary" onclick="addService()">+ Ajouter</button>
                                 </div>
                             </div>
 
-                            <!-- SERVICES LIST -->
+                            <!-- Liste services -->
                             <div class="field field-full">
                                 <label>Services sélectionnés</label>
 
@@ -199,7 +181,7 @@
                                 <input type="hidden" id="services-input" name="services" value="{{ facture.services }}">
                             </div>
 
-                            <!-- TOTAL -->
+                            <!-- Total -->
                             <div class="field">
                                 <label>Montant total (DH)</label>
                                 <input type="number" id="total" name="montant_total" value="{{ facture.montant_total }}"
@@ -225,7 +207,7 @@
     <script>
         const priceMap = {
             {% for s in services %}
-        "{{ s.nom_service }}": { { s.prix_unitaire } },
+        "{{ s.nom_service }}": { { s.prix_unitaire } } {% if not loop.last %}, {% endif %}
         {% endfor %}
         };
 
@@ -282,6 +264,7 @@
 
         initServices();
     </script>
+
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 </body>
 

@@ -9,15 +9,14 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 
     <title>HealthAdmin - Facture</title>
+
     <script>
-        // Ce script s'exécute immédiatement, AVANT le rendu
+        // ✅ Exécuter avant rendu (Dark Mode + Sidebar)
         (function () {
-            // Dark Mode
             if (localStorage.getItem('dark-mode') === 'enabled') {
                 document.documentElement.classList.add('dark');
             }
 
-            // Sidebar (on ajoute un attribut pour le CSS)
             if (localStorage.getItem('sidebar') === 'hidden') {
                 document.documentElement.setAttribute('data-sidebar', 'hidden');
             }
@@ -62,17 +61,12 @@
     <section id="content">
         <nav>
             <i class='bx bx-menu'></i>
-            <form action="#">
-                <!-- <div class="form-input">
-                    <input type="search" placeholder="Search...">
-                    <button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
-                </div> -->
-            </form>
+
             <input type="checkbox" id="switch-mode" hidden>
             <label for="switch-mode" class="switch-mode"></label>
+
             <a href="#" class="profile">
                 <img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
-
             </a>
         </nav>
 
@@ -163,7 +157,7 @@
                             <!-- TOTAL -->
                             <div class="field">
                                 <label>Montant total (DH)</label>
-                                <input type="number" id="total" name="montant_total" readonly>
+                                <input type="number" id="total" name="montant_total" value="0" readonly>
                             </div>
 
                         </div>
@@ -179,19 +173,16 @@
         </main>
     </section>
 
-    <!-- SCRIPT SERVICES -->
+    <!-- ✅ SCRIPT SERVICES -->
     <script>
+        // ✅ priceMap corrigé !
         const priceMap = {
-        {% for s in services %}
-        "{{ s.nom_service }}": { { s.prix_unitaire } } {% if not loop.last %}, {% endif %}
-        {% endfor %}
-    };
-
-        console.log("✅ Script loaded"); // TEST
+            {% for s in services %}
+            "{{ s.nom_service }}": {{ s.prix_unitaire }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+        };
 
         function addService() {
-            console.log("✅ Button clicked"); // TEST
-
             const service = document.getElementById('service-select').value;
             const qty = parseInt(document.getElementById('qty').value, 10);
 

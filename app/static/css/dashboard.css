@@ -858,4 +858,25 @@ body.dark .btn-secondary:hover {
 .switch-mode.no-transition::before {
     transition: none !important;
 }
-/* add */
+/* ✅ DARK MODE : Services */
+body.dark .service-item {
+    background: #2b2b2b !important;
+    border-color: #444 !important;
+    color: #fff !important;
+}
+
+/* ✅ DARK MODE : Texte du service */
+body.dark .service-item span {
+    color: #fff !important;
+}
+
+/* ✅ DARK MODE : Bouton supprimer */
+body.dark .remove-btn {
+    background: #b9363e !important;
+    color: white !important;
+}
+
+/* ✅ Hover bouton supprimer */
+body.dark .remove-btn:hover {
+    background: #922d32 !important;
+}
