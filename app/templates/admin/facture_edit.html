@@ -207,7 +207,7 @@
     <script>
         const priceMap = {
             {% for s in services %}
-        "{{ s.nom_service }}": { { s.prix_unitaire } } {% if not loop.last %}, {% endif %}
+       "{{ s.nom_service }}": {{ s.prix_unitaire }} {% if not loop.last %}, {% endif %}
         {% endfor %}
         };
 
