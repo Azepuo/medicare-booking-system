@@ -43,11 +43,11 @@
 
         <!-- NAVBAR -->
         <nav>
-             <form action="#">
-                <div class="form-input">
+            <form action="#">
+                <!-- <div class="form-input">
                     <input type="search" placeholder="Search...">
                     <button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
-                </div>
+                </div> -->
             </form>
             <a href="#" class="profile">
                 <img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
@@ -148,11 +148,11 @@
                             <div class="field">
                                 <label for="statut">Statut</label>
                                 <select id="statut" name="statut">
-                                    <option value="en_attente" {% if rdv and rdv.statut == 'en_attente' %}selected{% endif
+                                    <option value="en_attente" {% if rdv and rdv.statut=='en_attente' %}selected{% endif
                                         %}>En attente</option>
-                                    <option value="Terminé" {% if rdv and rdv.statut == 'terminé' %}selected{% endif %}>
+                                    <option value="Terminé" {% if rdv and rdv.statut=='terminé' %}selected{% endif %}>
                                         Terminé</option>
-                                    <option value="annule" {% if rdv and rdv.statut == 'annule' %}selected{% endif %}>
+                                    <option value="annule" {% if rdv and rdv.statut=='annule' %}selected{% endif %}>
                                         Annulé</option>
                                 </select>
                             </div>
