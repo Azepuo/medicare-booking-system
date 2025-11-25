@@ -11,7 +11,6 @@
     <title>HealthAdmin - Facture</title>
 
     <script>
-        // ✅ Exécuter avant rendu (Dark Mode + Sidebar)
         (function () {
             if (localStorage.getItem('dark-mode') === 'enabled') {
                 document.documentElement.classList.add('dark');
@@ -36,10 +35,8 @@
             <li><a href="/admin/dashboard"><i class='bx bxs-dashboard'></i><span class="text">Dashboard</span></a></li>
             <li><a href="/admin/medecins"><i class='bx bxs-user-pin'></i><span class="text">Médecin</span></a></li>
             <li><a href="/admin/patients"><i class='bx bx-user'></i><span class="text">Patients</span></a></li>
-            <li><a href="/admin/rendez_vous"><i class='bx bxs-calendar'></i><span class="text">Rendez-vous</span></a>
-            </li>
-            <li class="active"><a href="/admin/facturation"><i class='bx bxs-receipt'></i><span
-                        class="text">Facturation</span></a></li>
+            <li><a href="/admin/rendez_vous"><i class='bx bxs-calendar'></i><span class="text">Rendez-vous</span></a></li>
+            <li class="active"><a href="/admin/facturation"><i class='bx bxs-receipt'></i><span class="text">Facturation</span></a></li>
         </ul>
         <ul class="side-menu">
             <li>
@@ -59,9 +56,9 @@
 
     <!-- CONTENT -->
     <section id="content">
-        <nav>
+         <nav>
             <i class='bx bx-menu'></i>
-
+            <form action="#"></form>
             <input type="checkbox" id="switch-mode" hidden>
             <label for="switch-mode" class="switch-mode"></label>
 
@@ -69,6 +66,7 @@
                 <img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
             </a>
         </nav>
+
 
         <main>
             <div class="head-title">
@@ -89,6 +87,9 @@
                     <form method="POST" action="{{ form_action }}">
 
                         <input type="hidden" name="rdv_id" value="{{ rdv.id }}">
+
+                        <!-- 🔥 AJOUT : tarif du médecin -->
+                        <input type="hidden" id="tarif_medecin" value="{{ rdv.tarif_consultation }}">
 
                         <div class="form-grid">
 
@@ -140,6 +141,8 @@
                                         {% for s in services %}
                                         <option value="{{ s.nom_service }}">{{ s.nom_service }}</option>
                                         {% endfor %}
+                                        <!-- 🔥 Ajouter consultation si pas dans la table -->
+                                        <option value="Consultation">Consultation</option>
                                     </select>
 
                                     <input type="number" id="qty" value="1" min="1">
@@ -175,12 +178,15 @@
 
     <!-- ✅ SCRIPT SERVICES -->
     <script>
-        // ✅ priceMap corrigé !
+        // Prix des services de la table "services"
         const priceMap = {
             {% for s in services %}
             "{{ s.nom_service }}": {{ s.prix_unitaire }}{% if not loop.last %},{% endif %}
             {% endfor %}
         };
+
+        // 🔥 Tarif consultation du médecin
+        const tarifConsultation = parseFloat(document.getElementById("tarif_medecin").value);
 
         function addService() {
             const service = document.getElementById('service-select').value;
@@ -212,7 +218,10 @@
 
             entries.forEach(item => {
                 const [name, qty] = item.trim().split(":");
-                if (priceMap[name]) {
+
+                if (name === "Consultation") {
+                    total += tarifConsultation * parseInt(qty);
+                } else if (priceMap[name]) {
                     total += priceMap[name] * parseInt(qty);
                 }
             });

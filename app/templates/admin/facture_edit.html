@@ -83,7 +83,6 @@
         <nav>
             <i class='bx bx-menu'></i>
             <form action="#"></form>
-
             <input type="checkbox" id="switch-mode" hidden>
             <label for="switch-mode" class="switch-mode"></label>
 
@@ -113,7 +112,7 @@
                     <form method="POST" action="{{ form_action }}">
 
                         <input type="hidden" name="facture_id" value="{{ facture.id }}">
-
+                        <input type="hidden" id="consultation_price" value="{{ facture.tarif_consultation }}">
                         <div class="form-grid">
 
                             <!-- Patient -->
@@ -204,66 +203,72 @@
     </section>
 
     <!-- SCRIPT -->
-    <script>
-        const priceMap = {
-            {% for s in services %}
-       "{{ s.nom_service }}": {{ s.prix_unitaire }} {% if not loop.last %}, {% endif %}
+  <script>
+    const CONSULTATION_PRICE = parseFloat(document.getElementById('consultation_price').value);
+
+    const priceMap = {
+        "Consultation": CONSULTATION_PRICE,
+        {% for s in services %}
+        {% if s.nom_service != "Consultation" %}
+        "{{ s.nom_service }}": {{ s.prix_unitaire }}{% if not loop.last %},{% endif %}
+        {% endif %}
         {% endfor %}
-        };
+    };
 
-        let services = [];
+    let services = [];
 
-        function initServices() {
-            const raw = document.getElementById('services-input').value;
-            if (!raw.trim()) return;
+    function initServices() {
+        const raw = document.getElementById('services-input').value;
+        if (!raw.trim()) return;
 
-            raw.split(',').forEach(item => {
-                const [name, qty] = item.trim().split(':');
-                services.push({ name, qty: parseInt(qty) });
-            });
+        raw.split(',').forEach(item => {
+            const [name, qty] = item.trim().split(':');
+            services.push({ name, qty: parseInt(qty) });
+        });
 
-            renderServices();
-        }
+        renderServices();
+    }
 
-        function addService() {
-            const name = document.getElementById('service-select').value;
-            const qty = parseInt(document.getElementById('qty').value);
+    function addService() {
+        const name = document.getElementById('service-select').value;
+        const qty = parseInt(document.getElementById('qty').value);
 
-            services.push({ name, qty });
-            renderServices();
-        }
+        services.push({ name, qty });
+        renderServices();
+    }
 
-        function removeService(index) {
-            services.splice(index, 1);
-            renderServices();
-        }
+    function removeService(index) {
+        services.splice(index, 1);
+        renderServices();
+    }
 
-        function renderServices() {
-            const container = document.getElementById('services-container');
-            container.innerHTML = "";
+    function renderServices() {
+        const container = document.getElementById('services-container');
+        container.innerHTML = "";
 
-            let total = 0;
+        let total = 0;
 
-            services.forEach((srv, index) => {
-                const price = priceMap[srv.name] * srv.qty;
-                total += price;
+        services.forEach((srv, index) => {
+            const price = priceMap[srv.name] * srv.qty;
+            total += price;
 
-                container.innerHTML += `
-                    <div class="service-item">
-                        <span>${srv.name} (x${srv.qty}) - ${price} DH</span>
-                        <button class="remove-btn" onclick="removeService(${index})">❌</button>
-                    </div>
-                `;
-            });
+            container.innerHTML += `
+                <div class="service-item">
+                    <span>${srv.name} (x${srv.qty}) - ${price} DH</span>
+                    <button class="remove-btn" onclick="removeService(${index})">❌</button>
+                </div>
+            `;
+        });
 
-            document.getElementById('total').value = total;
+        document.getElementById('total').value = total;
 
-            document.getElementById('services-input').value =
-                services.map(s => `${s.name}:${s.qty}`).join(', ');
-        }
+        document.getElementById('services-input').value =
+            services.map(s => `${s.name}:${s.qty}`).join(', ');
+    }
 
-        initServices();
-    </script>
+    initServices();
+</script>
+
 
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 </body>

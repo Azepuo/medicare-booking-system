@@ -243,7 +243,6 @@ def supprimer_patient(patient_id):
 # =====================================================
 # ✅ NORMALISATION RDV
 # =====================================================
-
 def normalize_rdv(row):
     if row is None:
         return None
@@ -253,6 +252,10 @@ def normalize_rdv(row):
     if data.get("date_rdv"):
         data["date_rdv"] = str(data["date_rdv"])
 
+    # ⚠ ajouter ceci si tu veux être sûre
+    if "tarif_consultation" in data:
+        data["tarif_consultation"] = float(data["tarif_consultation"])
+    
     heure = data.get("heure_rdv")
     if heure is not None:
         if isinstance(heure, timedelta):
@@ -319,7 +322,8 @@ def get_rdv(rdv_id):
     cursor.execute("""
         SELECT r.*,
                p.nom AS patient_nom,
-               m.nom AS medecin_nom
+               m.nom AS medecin_nom,
+               m.tarif_consultation
         FROM rendezvous r
         JOIN patients p ON r.patient_id = p.id
         JOIN medecins m ON r.medecin_id = m.id
@@ -641,7 +645,8 @@ def get_facture(facture_id):
             m.nom AS medecin_nom,
             m.specialite AS medecin_specialite,
             m.email AS medecin_email,
-            m.telephone AS medecin_telephone
+            m.telephone AS medecin_telephone,
+            m.tarif_consultation  -- ✅ NOUVEAU : tarif du médecin
         FROM factures f
         JOIN rendezvous r ON f.rdv_id = r.id
         JOIN patients p ON r.patient_id = p.id
@@ -656,15 +661,24 @@ def get_facture(facture_id):
 
     if row:
         for key, value in row.items():
-            # ✅ Convertir les dates
+
+            # Convertir dates → string
             if hasattr(value, "isoformat"):
                 row[key] = value.isoformat()
-
-            # ✅ Convertir les Decimal en float
+            
+            # Convertir Decimal → float
             elif isinstance(value, Decimal):
                 row[key] = float(value)
 
+        # Forcer la conversion du tarif consultation si nécessaire
+        if "tarif_consultation" in row:
+            try:
+                row["tarif_consultation"] = float(row["tarif_consultation"])
+            except:
+                pass
+
     return row
+
 
 
 def ajouter_facture(data):
