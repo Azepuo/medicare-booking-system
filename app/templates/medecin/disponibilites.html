@@ -1,0 +1,472 @@
+{% extends "medecin/base.html" %}
+
+{% block title %}Disponibilités • Médecin{% endblock %}
+
+{% block body_id %}dispo-page{% endblock %}
+
+{% block content %}
+<div class="header-row">
+  <h1 class="h1">Gestion des Disponibilités</h1>
+  <button class="btn" onclick="showAddForm()">
+    <i class="fas fa-plus"></i> Ajouter
+  </button>
+</div>
+
+<!-- Formulaire d'ajout -->
+<div class="card" id="addForm" style="display: none; margin-bottom: 20px;">
+  <h3>Nouvelle Disponibilité</h3>
+  <form id="addDispoForm">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Jour</label>
+        <select class="input" id="jourSelect" required>
+          <option value="">Sélectionner un jour</option>
+          <option value="lundi">Lundi</option>
+          <option value="mardi">Mardi</option>
+          <option value="mercredi">Mercredi</option>
+          <option value="jeudi">Jeudi</option>
+          <option value="vendredi">Vendredi</option>
+          <option value="samedi">Samedi</option>
+          <option value="dimanche">Dimanche</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Heure Début</label>
+        <input type="time" class="input" id="heureDebut" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Heure Fin</label>
+        <input type="time" class="input" id="heureFin" required />
+      </div>
+      <div class="form-group" style="align-self: flex-end;">
+        <button type="submit" class="btn">
+          <i class="fas fa-save"></i> Enregistrer
+        </button>
+        <button type="button" class="btn secondary" onclick="hideAddForm()" style="margin-left: 10px;">
+          <i class="fas fa-times"></i> Annuler
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Formulaire de modification -->
+<div class="card" id="editForm" style="display: none; margin-bottom: 20px;">
+  <h3>Modifier la Disponibilité</h3>
+  <form id="editDispoForm">
+    <input type="hidden" id="editId">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Jour</label>
+        <select class="input" id="editJourSelect" required>
+          <option value="lundi">Lundi</option>
+          <option value="mardi">Mardi</option>
+          <option value="mercredi">Mercredi</option>
+          <option value="jeudi">Jeudi</option>
+          <option value="vendredi">Vendredi</option>
+          <option value="samedi">Samedi</option>
+          <option value="dimanche">Dimanche</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Heure Début</label>
+        <input type="time" class="input" id="editHeureDebut" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Heure Fin</label>
+        <input type="time" class="input" id="editHeureFin" required />
+      </div>
+      <div class="form-group" style="align-self: flex-end;">
+        <button type="submit" class="btn">
+          <i class="fas fa-save"></i> Modifier
+        </button>
+        <button type="button" class="btn secondary" onclick="hideEditForm()" style="margin-left: 10px;">
+          <i class="fas fa-times"></i> Annuler
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Liste des disponibilités -->
+<div class="card">
+  <div class="header-row">
+    <h3>Mes Disponibilités</h3>
+    <button class="btn secondary" onclick="refreshData()">
+      <i class="fas fa-sync-alt"></i> Actualiser
+    </button>
+  </div>
+  
+  <div id="loadingMessage" style="text-align: center; padding: 20px;">
+    <p>Chargement des disponibilités...</p>
+  </div>
+  
+  <table class="table" id="dispoTable" style="display: none;">
+    <thead>
+      <tr>
+        <th>Jour</th>
+        <th>Heure Début</th>
+        <th>Heure Fin</th>
+        <th>Durée</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="dispoTbody">
+      <!-- Les données seront chargées dynamiquement -->
+    </tbody>
+  </table>
+  
+  <div id="noDataMessage" style="display: none; text-align: center; padding: 20px;">
+    <p>Aucune disponibilité configurée</p>
+    <button class="btn" onclick="showAddForm()">
+      <i class="fas fa-plus"></i> Ajouter la première disponibilité
+    </button>
+  </div>
+</div>
+
+<!-- Résumé hebdomadaire -->
+<div class="grid" style="margin-top: 20px;">
+  <div class="card card-primary">
+    <h3>Heures/Semaine</h3>
+    <p id="heuresSemaine">0h</p>
+    <div class="small">Total hebdomadaire</div>
+  </div>
+  <div class="card card-success">
+    <h3>Jours Travaillés</h3>
+    <p id="joursTravailles">0</p>
+    <div class="small">Jours/semaine</div>
+  </div>
+  <div class="card card-warning">
+    <h3>Créneaux</h3>
+    <p id="totalCreneaux">0</p>
+    <div class="small">Total créneaux</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// URLs API
+const API_BASE = '/api/disponibilites';
+
+// État global
+let currentEditId = null;
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    loadDisponibilites();
+    setupFormListeners();
+});
+
+function setupFormListeners() {
+    // Formulaire d'ajout
+    document.getElementById('addDispoForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        addDisponibilite();
+    });
+    
+    // Formulaire de modification
+    document.getElementById('editDispoForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        updateDisponibilite();
+    });
+}
+
+function showAddForm() {
+    document.getElementById('addForm').style.display = 'block';
+    document.getElementById('editForm').style.display = 'none';
+}
+
+function hideAddForm() {
+    document.getElementById('addForm').style.display = 'none';
+    document.getElementById('addDispoForm').reset();
+}
+
+function showEditForm() {
+    document.getElementById('editForm').style.display = 'block';
+    document.getElementById('addForm').style.display = 'none';
+}
+
+function hideEditForm() {
+    document.getElementById('editForm').style.display = 'none';
+    currentEditId = null;
+}
+
+function loadDisponibilites() {
+    showLoading();
+    
+    fetch(API_BASE)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayDisponibilites(data.data);
+                updateStats();
+            } else {
+                showError('Erreur lors du chargement: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('Erreur de connexion');
+        });
+}
+
+function showLoading() {
+    document.getElementById('loadingMessage').style.display = 'block';
+    document.getElementById('dispoTable').style.display = 'none';
+    document.getElementById('noDataMessage').style.display = 'none';
+}
+
+function displayDisponibilites(disponibilites) {
+    const tbody = document.getElementById('dispoTbody');
+    const table = document.getElementById('dispoTable');
+    const loading = document.getElementById('loadingMessage');
+    const noData = document.getElementById('noDataMessage');
+    
+    loading.style.display = 'none';
+    
+    if (disponibilites.length === 0) {
+        table.style.display = 'none';
+        noData.style.display = 'block';
+        return;
+    }
+    
+    noData.style.display = 'none';
+    table.style.display = 'table';
+    
+    tbody.innerHTML = '';
+    
+    disponibilites.forEach(dispo => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${capitalizeFirst(dispo.jour_semaine)}</td>
+            <td>${dispo.heure_debut}</td>
+            <td>${dispo.heure_fin}</td>
+            <td>${dispo.duree}</td>
+            <td>
+                <button class="btn secondary small" onclick="editDisponibilite(${dispo.id})">
+                    <i class="fas fa-edit"></i> Modifier
+                </button>
+                <button class="btn danger small" onclick="deleteDisponibilite(${dispo.id})" style="margin-left: 5px;">
+                    <i class="fas fa-trash"></i> Supprimer
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function addDisponibilite() {
+    const formData = {
+        jour_semaine: document.getElementById('jourSelect').value,
+        heure_debut: document.getElementById('heureDebut').value,
+        heure_fin: document.getElementById('heureFin').value
+    };
+    
+    // Validation
+    if (!formData.jour_semaine || !formData.heure_debut || !formData.heure_fin) {
+        showError('Veuillez remplir tous les champs');
+        return;
+    }
+    
+    if (formData.heure_debut >= formData.heure_fin) {
+        showError('L\'heure de fin doit être après l\'heure de début');
+        return;
+    }
+    
+    fetch(API_BASE, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess(data.message);
+            hideAddForm();
+            loadDisponibilites();
+        } else {
+            showError(data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Erreur lors de l\'ajout');
+    });
+}
+
+function editDisponibilite(id) {
+    fetch(`${API_BASE}/${id}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const dispo = data.data;
+                currentEditId = id;
+                document.getElementById('editId').value = id;
+                document.getElementById('editJourSelect').value = dispo.jour_semaine;
+                document.getElementById('editHeureDebut').value = dispo.heure_debut;
+                document.getElementById('editHeureFin').value = dispo.heure_fin;
+                showEditForm();
+            } else {
+                showError(data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('Erreur lors du chargement');
+        });
+}
+
+function updateDisponibilite() {
+    const formData = {
+        jour_semaine: document.getElementById('editJourSelect').value,
+        heure_debut: document.getElementById('editHeureDebut').value,
+        heure_fin: document.getElementById('editHeureFin').value
+    };
+    
+    // Validation
+    if (!formData.jour_semaine || !formData.heure_debut || !formData.heure_fin) {
+        showError('Veuillez remplir tous les champs');
+        return;
+    }
+    
+    if (formData.heure_debut >= formData.heure_fin) {
+        showError('L\'heure de fin doit être après l\'heure de début');
+        return;
+    }
+    
+    fetch(`${API_BASE}/${currentEditId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess(data.message);
+            hideEditForm();
+            loadDisponibilites();
+        } else {
+            showError(data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Erreur lors de la modification');
+    });
+}
+
+function deleteDisponibilite(id) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette disponibilité ?')) {
+        return;
+    }
+    
+    fetch(`${API_BASE}/${id}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess(data.message);
+            loadDisponibilites();
+        } else {
+            showError(data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Erreur lors de la suppression');
+    });
+}
+
+function updateStats() {
+    fetch(`${API_BASE}/stats`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('heuresSemaine').textContent = data.data.heures_semaine + 'h';
+                document.getElementById('joursTravailles').textContent = data.data.jours_travailles;
+                document.getElementById('totalCreneaux').textContent = data.data.total_creneaux;
+            }
+        })
+        .catch(error => console.error('Error updating stats:', error));
+}
+
+function refreshData() {
+    loadDisponibilites();
+    showSuccess('Données actualisées');
+}
+
+// Utilitaires
+function capitalizeFirst(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+function showSuccess(message) {
+    // Vous pouvez utiliser toast ou alert
+    alert('✅ ' + message);
+}
+
+function showError(message) {
+    alert('❌ ' + message);
+}
+</script>
+
+<style>
+.btn.danger {
+    background: #dc3545;
+}
+
+.btn.danger:hover {
+    background: #bb2d3b;
+}
+
+.form-row {
+    display: flex;
+    gap: 15px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-label {
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.input:focus {
+    outline: none;
+    border-color: #0d6efd;
+}
+
+.small {
+    font-size: 0.875rem;
+    opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        flex-direction: column;
+    }
+    
+    .form-group {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}

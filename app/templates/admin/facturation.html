@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <title>Facturation - Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/test.css') }}">
+    <link rel="canonical" href="https://getbootstrap.com/docs/5.0/examples/navbar-static/">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto|Varela+Round">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css">
+    <link href="navbar-top.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/medecins.css') }}">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+
+</head>
+
+<body>
+
+    <!-- Header/Menu Admin -->
+    <header class="theheader">
+        <div class="logo">
+            <i class='bx bxs-clinic'></i>
+            <span>Medicare+</span>
+        </div>
+        <!-- <a href="#" class="sitelogo"><h2><span>Med</span>I<span>care</span></h2></a> -->
+        <nav class="nav">
+            <a href="/admin/dashboard">Accueil</a>
+            <a href="/admin/medecins">Medecins</a>
+            <a href="/admin/patients">Patients</a>
+            <a href="/admin/rendez_vous">Rendez-vous</a>
+            <a href="/admin/account">Mon Compte</a>
+        </nav>
+        <div class="buttons">
+            <a href="#" class="btn">Déconnecter</a>
+        </div>
+    </header>
+
+    <!-- Section Facturation -->
+    <section class="schedule">
+        <br><br><br><br>
+        <h1 class="heading"><span>Gestion</span> des Factures</h1>
+    </section>
+
+    <section class="Zainab">
+        <div class="buttons">
+            <a href="/admin/facture_add" class="btn">Ajouter</a>
+        </div>
+
+        <div class="tb">
+            <table class="table table-striped table-custom">
+                <thead>
+                    <tr class="zozo">
+                        <th>Numéro Facture</th>
+                        <th>Patient</th>
+                        <th>Date</th>
+                        <th>Services</th>
+                        <th>Montant Total</th>
+                        <th>Statut</th>
+                        <th>ACTION</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Ligne de facture exemple -->
+                    <tr class="lignecolor">
+                        <td>F001</td>
+                        <td>Zainab ERROSSAFI</td>
+                        <td>2025-11-06</td>
+                        <td>Consultation, Examens</td>
+                        <td>800 DH</td>
+                        <td style="color:red;">Non payé</td>
+                        <td>
+                            <a href="/admin/facture_view"><i class="material-icons" style="color: #3C91E6;"
+                                    title="Voir">&#xE8F4;</i></a>
+                            <a href="/admin/facturation_edit"><i class="material-icons" style="color: #3C91E6;"
+                                    title="Modifier">&#xE254;</i></a>
+                            <a onclick="return confirm('Voulez-vous supprimer cette facture ?')" href="#"><i
+                                    class="material-icons" style="color: red;" title="Supprimer">&#xE872;</i></a>
+                        </td>
+                    </tr>
+
+                    <tr class="lignecolor">
+                        <td>F002</td>
+                        <td>Meryen Moumen</td>
+                        <td>2025-11-07</td>
+                        <td>Consultation</td>
+                        <td>350 DH</td>
+                        <td style="color:green;">Payé</td>
+                        <td>
+                            <a href="/admin/facture_view"><i class="material-icons" style="color: #3C91E6;" title="Voir">&#xE8F4;</i></a>
+                            <a href="/admin/facturation_edit"><i class="material-icons" style="color: #3C91E6;"
+                                    title="Modifier">&#xE254;</i></a>
+                            <a onclick="return confirm('Voulez-vous supprimer cette facture ?')" href="#"><i
+                                    class="material-icons" style="color: red;" title="Supprimer">&#xE872;</i></a>
+                        </td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+</body>
+
+</html>

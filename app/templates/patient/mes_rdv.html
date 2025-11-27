@@ -1,0 +1,44 @@
+{% extends "patient/base.html" %}
+{% block title %}Rendez-vous{% endblock %}
+{% set active_page = 'mes_rdv' %}
+
+{% block content %}
+<div class="content">
+    <div class="container">
+        <div class="heade">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h1>Historique des Rendez-vous</h1>
+                <button class="btn-add-appointment" onclick="showAppointmentForm()">
+                    <i class="fas fa-plus" style="color: white;"></i> Ajouter un Rendez-vous
+                </button>
+            </div>
+
+            <div class="filters">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Rechercher par médecin, spécialité ou date...">
+                </div>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="tous">Tous</button>
+                    <button class="filter-btn" data-filter="confirmé">Confirmés</button>
+                    <button class="filter-btn" data-filter="terminé">Terminés</button>
+                    <button class="filter-btn" data-filter="annulé">Annulés</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="stats" class="stats"></div>
+        <div id="appointmentsGrid" class="appointments-grid"></div>
+
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <div class="empty-state-icon">📅</div>
+            <h3>Aucun rendez-vous trouvé</h3>
+            <p>Essayez de modifier vos critères de recherche</p>
+        </div>
+    </div>
+</div>
+
+{% include "patient/prise_rdv.html" %}
+{% endblock %}
+<script>
+    document.getElementById("welcome-title")
+</script>
