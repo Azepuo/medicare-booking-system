@@ -152,24 +152,34 @@ def normalize_patient(row):
 # =====================================================
 
 def liste_patients(search=""):
-    conn = create_connection()
-    cursor = conn.cursor(dictionary=True)
+    try:
+        conn = create_connection()
+        if not conn:
+            print("Erreur: Connexion BD impossible")
+            return []
+        
+        cursor = conn.cursor(dictionary=True)
 
-    if search:
-        cursor.execute("""
-            SELECT * FROM patients
-            WHERE nom LIKE %s
-               OR email LIKE %s
-               OR telephone LIKE %s
-               OR cin LIKE %s
-        """, (f"%{search}%", f"%{search}%", f"%{search}%", f"%{search}%"))
-    else:
-        cursor.execute("SELECT * FROM patients")
+        if search:
+            cursor.execute("""
+                SELECT * FROM patients
+                WHERE nom LIKE %s
+                   OR email LIKE %s
+                   OR telephone LIKE %s
+                   OR cin LIKE %s
+            """, (f"%{search}%", f"%{search}%", f"%{search}%", f"%{search}%"))
+        else:
+            cursor.execute("SELECT * FROM patients")
 
-    rows = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return [normalize_patient(row) for row in rows]
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return [normalize_patient(row) for row in rows]
+    except Exception as e:
+        print(f"Erreur liste_patients: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
 
 
 def get_patient(patient_id):
@@ -1166,7 +1176,7 @@ def liste_rdv_aujourdhui():
 
 if __name__ == "__main__":
     server = SimpleXMLRPCServer(("localhost", 8000), allow_none=True)
-    print("🚀 Serveur RPC lancé sur http://localhost:8000")
+    print("Serveur RPC lance sur http://localhost:8000")
 
     # Médecins
     server.register_function(liste_medecins, "liste_medecins")
