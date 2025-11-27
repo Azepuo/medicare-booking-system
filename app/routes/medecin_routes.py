@@ -5,6 +5,9 @@ from models.rendezvous import Rendezvous
 from models.medecin import Medecin
 from database.connection import create_connection  # ✅ AJOUTEZ CET IMPORT
 from datetime import datetime, date
+from models.disponibilite import Disponibilite
+from flask import session
+
 
 medecin = Blueprint('medecin', __name__)
 
@@ -46,9 +49,17 @@ def rdv_edit_page(rid):
 def rdv_delete_page(rid):
     return render_template('medecin/rdv_delete.html', rid=rid)
 
-@medecin.route('/disponibilites')
-def disponibilites():
-    return render_template('medecin/disponibilites.html')
+# ---------------- LISTE DES DISPONIBILITÉS ----------------
+@medecin.route("/disponibilites")
+def dispo_list():
+    return render_template("medecin/disponibilites.html")  # correspond au fichier réel
+
+# ---------------- AJOUT D’UNE DISPONIBILITÉ ----------------
+@medecin.route("/disponibilites/add")
+def dispo_add():
+    return render_template("medecin/disponibilites_add.html")  # correspond au fichier réel
+
+
 
 @medecin.route('/chat')
 def chat():

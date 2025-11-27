@@ -32,13 +32,11 @@
                         <i class="fas fa-users"></i> Patients 
                         <i class="fas fa-chevron-down dropdown-arrow"></i>
                     </a>
-
                     <div class="dropdown-menu">
                         <a href="{{ url_for('medecin.patients') }}"
                            class="dropdown-link {% if request.endpoint == 'medecin.patients' %}active{% endif %}">
                             <i class="fas fa-list"></i> Liste des patients
                         </a>
-
                         <a href="{{ url_for('medecin.patient_add_page') }}"
                            class="dropdown-link {% if request.endpoint == 'medecin.patient_add_page' %}active{% endif %}">
                             <i class="fas fa-user-plus"></i> Nouveau patient
@@ -53,13 +51,11 @@
                         <i class="fas fa-calendar-check"></i> Rendez-vous 
                         <i class="fas fa-chevron-down dropdown-arrow"></i>
                     </a>
-
                     <div class="dropdown-menu">
                         <a href="{{ url_for('medecin.rdv_list') }}"
                            class="dropdown-link {% if request.endpoint == 'medecin.rdv_list' %}active{% endif %}">
                             <i class="fas fa-calendar-day"></i> RDV du jour
                         </a>
-
                         <a href="{{ url_for('medecin.rdv_add_page') }}"
                            class="dropdown-link {% if request.endpoint == 'medecin.rdv_add_page' %}active{% endif %}">
                             <i class="fas fa-plus-circle"></i> Nouveau RDV
@@ -67,11 +63,24 @@
                     </div>
                 </div>
 
-                <!-- DISPONIBILITÉS -->
-                <a href="{{ url_for('medecin.disponibilites') }}" 
-                   class="nav-link {% if request.endpoint == 'medecin.disponibilites' %}active{% endif %}">
-                    <i class="fas fa-clock"></i> Disponibilités
-                </a>
+                <!-- MENU DISPONIBILITÉS -->
+                <div class="nav-dropdown">
+                    <a href="#" class="nav-link dropdown-toggle
+                       {% if request.endpoint in ['medecin.dispo_list', 'medecin.dispo_add'] %}active{% endif %}">
+                        <i class="fas fa-clock"></i> Disponibilités
+                        <i class="fas fa-chevron-down dropdown-arrow"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="{{ url_for('medecin.dispo_list') }}"
+                           class="dropdown-link {% if request.endpoint == 'medecin.dispo_list' %}active{% endif %}">
+                            <i class="fas fa-list"></i> Liste des disponibilités
+                        </a>
+                        <a href="{{ url_for('medecin.dispo_add') }}"
+                           class="dropdown-link {% if request.endpoint == 'medecin.dispo_add' %}active{% endif %}">
+                            <i class="fas fa-plus-circle"></i> Nouvelle disponibilité
+                        </a>
+                    </div>
+                </div>
 
                 <!-- COMPTE -->
                 <a href="{{ url_for('medecin.profil') }}" 
@@ -93,14 +102,12 @@
                 <div class="header-left">
                     <h1 class="h1">{% block page_title %}Tableau de Bord{% endblock %}</h1>
                 </div>
-
                 <div class="header-center">
                     <div class="search-bar">
                         <input type="text" placeholder="Search..." id="searchInput">
                         <button class="btn search-btn"><i class="fas fa-search"></i></button>
                     </div>
                 </div>
-
                 <div class="header-right">
                     <button class="icon-btn">
                         <i class="fas fa-bell"></i>
