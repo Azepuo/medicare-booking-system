@@ -1,3 +1,13 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prendre un Rendez-vous</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+
 <div class="appointment-form-container" id="appointmentFormContainer">
     <div class="appointment-form">
         <div class="form-header">
@@ -8,47 +18,116 @@
         <form id="appointmentForm">
             <div class="form-row">
                 <div class="form-group">
-                    <label for="patientName">Nom du patient</label>
-                    <input type="text" id="patientName" class="form-control" required>
+                    <label for="specialization">Spécialisation</label>
+                    <select id="specialization" name="specialization" class="form-control" required>
+                        <option value="">Choisir une spécialisation</option>
+                        {% for specialisation in specialisations %}
+                            <option value="{{ specialisation[0] }}">{{ specialisation[1] }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
                 <div class="form-group">
-                    <label for="patientAge">Âge</label>
-                    <input type="number" id="patientAge" class="form-control" min="0" max="120" required>
+                    <label for="doctor">Docteur</label>
+                    <select id="doctor" name="doctor_id" class="form-control" required disabled>
+                        <option value="">Sélectionnez d'abord une spécialisation</option>
+                    </select>
                 </div>
-            </div>
-
-            <div class="form-group">
-                <label for="doctor">Médecin</label>
-                <select id="doctor" class="form-control" required>
-                    <option value="">Sélectionnez un médecin</option>
-                    <option value="dr_dupont">Dr. Dupont (Cardiologie)</option>
-                    <option value="dr_martin">Dr. Martin (Dermatologie)</option>
-                    <option value="dr_leroy">Dr. Leroy (Pédiatrie)</option>
-                    <option value="dr_bernard">Dr. Bernard (Neurologie)</option>
-                </select>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="appointmentDate">Date</label>
-                    <input type="date" id="appointmentDate" class="form-control" required>
+                    <label for="honoraire">Honoraire de consultation</label>
+                    <select id="honoraire" name="honoraire" class="form-control" required disabled>
+                        <option value="">Sélectionnez d'abord un docteur</option>
+                    </select>
                 </div>
                 <div class="form-group">
-                    <label for="appointmentTime">Heure</label>
-                    <input type="time" id="appointmentTime" class="form-control" required>
+                    <label for="consultationDate">Date de consultation</label>
+                    <input type="date" id="consultationDate" name="consultation_date" class="form-control" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="consultationTime">Heure de consultation</label>
+                    <input type="time" id="consultationTime" name="consultation_time" class="form-control" required>
                 </div>
             </div>
 
             <div class="form-group">
                 <label for="reason">Motif de consultation</label>
-                <textarea id="reason" class="form-control" rows="3"
-                    placeholder="Décrivez brièvement le motif de votre consultation"></textarea>
+                <textarea id="reason" name="reason" class="form-control" rows="3" placeholder="Décrivez brièvement le motif de votre consultation" required></textarea>
             </div>
 
             <div class="form-actions">
                 <button type="button" class="btn-cancel-form" onclick="hideAppointmentForm()">Annuler</button>
-                <button type="submit" class="btn-submit">Prendre Rendez-vous</button>
+                <button type="submit" class="btn-submit">Confirmer le Rendez-vous</button>
             </div>
         </form>
     </div>
 </div>
+
+<script>
+// Quand la spécialisation change
+$('#specialization').on('change', function() {
+    var specialization_id = $(this).val();
+    var doctorSelect = $('#doctor');
+    var honoraireSelect = $('#honoraire');
+
+    // Réinitialiser les sélections suivantes
+    doctorSelect.prop('disabled', true).empty().append('<option value="">Sélectionnez d\'abord une spécialisation</option>');
+    honoraireSelect.prop('disabled', true).empty().append('<option value="">Sélectionnez d\'abord un docteur</option>');
+
+    if (specialization_id) {
+        $.get('/patient/get_doctors', { specialization: specialization_id }, function(data) {
+            doctorSelect.prop('disabled', false);
+            doctorSelect.empty().append('<option value="">Sélectionnez un docteur</option>');
+            data.forEach(function(doctor) {
+                doctorSelect.append('<option value="' + doctor.id + '">' + doctor.nom + '</option>');
+            });
+        }).fail(function() {
+            alert('Erreur lors du chargement des docteurs');
+        });
+    }
+});
+
+// Quand le docteur change
+$('#doctor').on('change', function() {
+    var doctor_id = $(this).val();
+    var honoraireSelect = $('#honoraire');
+
+    honoraireSelect.prop('disabled', true).empty().append('<option value="">Sélectionnez d\'abord un docteur</option>');
+
+    if (doctor_id) {
+        $.get('/patient/get_honoraires', { doctor_id: doctor_id }, function(data) {
+            honoraireSelect.prop('disabled', false);
+            honoraireSelect.empty().append('<option value="">Sélectionnez un honoraire</option>');
+            data.forEach(function(honoraire) {
+                honoraireSelect.append('<option value="' + honoraire.id + '">' + honoraire.montant + ' DH</option>');
+            });
+        }).fail(function() {
+            alert('Erreur lors du chargement des honoraires');
+        });
+    }
+});
+
+// Soumission du formulaire
+$('#appointmentForm').on('submit', function(e) {
+    e.preventDefault();
+    
+    var formData = $(this).serialize();
+    
+    $.post('/book_appointment', formData, function(response) {
+        if (response.success) {
+            alert('Rendez-vous confirmé avec succès!');
+            hideAppointmentForm();
+        } else {
+            alert('Erreur: ' + response.message);
+        }
+    }).fail(function() {
+        alert('Erreur lors de la prise de rendez-vous');
+    });
+});
+</script>
+</body>
+</html>

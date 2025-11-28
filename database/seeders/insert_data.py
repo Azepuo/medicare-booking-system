@@ -148,3 +148,30 @@ def seed_statistiques(cursor):
             VALUES (%s, %s, %s, %s, %s)
         """, (medecin, total_rdv, total_patients, total_avis, moyenne))
     print("Statistiques insérées.")
+
+# Spécialités marocaines
+def seed_specialisations(cursor):
+    specialites = [
+        ("Cardiologie", "Traitement des maladies du cœur"),
+        ("Dermatologie", "Soins de la peau et des ongles"),
+        ("Pédiatrie", "Santé des enfants"),
+        ("Neurologie", "Étude et traitement des maladies du système nerveux"),
+        ("Orthopédie", "Appareil locomoteur et os"),
+        ("Gynécologie", "Santé des femmes")
+    ]
+    for nom, description in specialites:
+        cursor.execute("""
+            INSERT INTO specialisations (nom, description)
+            VALUES (%s, %s)
+            ON DUPLICATE KEY UPDATE description = VALUES(description)
+        """, (nom, description))
+    print("Spécialités insérées.")
+def seed_all(cursor):
+    seed_patients(cursor)
+    seed_medecins(cursor)
+    seed_disponibilites(cursor)
+    seed_rendezvous(cursor)
+    seed_avis(cursor)
+    seed_statistiques(cursor)
+    seed_specialisations(cursor)  # <- Ajout ici
+    print("Données marocaines insérées avec succès.")
