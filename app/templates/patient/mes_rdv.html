@@ -22,23 +22,45 @@
                     <button class="filter-btn" data-filter="confirmé">Confirmés</button>
                     <button class="filter-btn" data-filter="terminé">Terminés</button>
                     <button class="filter-btn" data-filter="annulé">Annulés</button>
+                    <button class="filter-btn" data-filter="attente">En Attente</button>
                 </div>
             </div>
         </div>
 
         <div id="stats" class="stats"></div>
+
         <div id="appointmentsGrid" class="appointments-grid"></div>
 
-        <div id="emptyState" class="empty-state" style="display: none;">
+        <!-- Empty state, toujours présent -->
+        <div id="emptyState" class="empty-state" style="display:none;">
             <div class="empty-state-icon">📅</div>
             <h3>Aucun rendez-vous trouvé</h3>
             <p>Essayez de modifier vos critères de recherche</p>
         </div>
+
     </div>
 </div>
 
 {% include "patient/prise_rdv.html" %}
+
 {% endblock %}
+
+{% block scripts %}
 <script>
-    document.getElementById("welcome-title")
+    // ✅ Tableau JS à partir des données Flask
+    const appointments = [
+        {% for rdv in upcoming_appointments %}
+        {
+            id: {{ rdv.id }},
+            medecin_name: "{{ rdv.medecin_nom }}",
+            medecin_spec: "{{ rdv.specialite }}",
+            date: "{{ rdv.date_heure.strftime('%Y-%m-%d') }}",
+            time: "{{ rdv.date_heure.strftime('%H:%M') }}",
+            clinic: "{{ rdv.clinic or '' }}",
+            status: "{{ rdv.statut | lower }}"
+        },
+        {% endfor %}
+    ];
 </script>
+<script src="{{ url_for('static', filename='js/patient.js') }}"></script>
+{% endblock %}

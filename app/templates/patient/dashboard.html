@@ -1,16 +1,196 @@
 {% extends "patient/base.html" %}
 
 {% block title %}Tableau de bord - WeCare{% endblock %}
-
 {% block page_title %}Tableau de bord{% endblock %}
 
 {% block content %}
+<style>
+    /* Calendrier simple et moderne */
+    #calendar {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* En-tête */
+    .fc .fc-toolbar-title {
+        font-size: 1.3em;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    /* Boutons */
+    .fc .fc-button {
+        background: #107aca;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 8px;
+        font-weight: 500;
+    }
+
+    .fc .fc-button:hover {
+        background: #107aca;
+    }
+
+    .fc .fc-button-active {
+        background: #107aca;
+    }
+
+    /* En-tête jours */
+    .fc .fc-col-header-cell {
+        background: #f7f9fc;
+        padding: 12px;
+        font-weight: 600;
+        color: #64748b;
+        border: none;
+    }
+
+    /* Cellules */
+    .fc .fc-daygrid-day-number {
+        padding: 8px;
+        color: #475569;
+    }
+
+    /* Aujourd'hui */
+    .fc .fc-day-today {
+        background: #eff6ff !important;
+    }
+
+    .fc .fc-day-today .fc-daygrid-day-number {
+        color: #107aca;
+        font-weight: 700;
+    }
+
+    /* Événements */
+    .fc-event {
+        background: #107aca !important;
+        border: none !important;
+        border-radius: 4px !important;
+        padding: 2px 6px !important;
+    }
+
+    /* Bordures */
+    .fc .fc-scrollgrid {
+        border: none !important;
+    }
+
+    .fc .fc-scrollgrid td {
+        border-color: #e2e8f0 !important;
+    }
+
+    /* Cartes rendez-vous */
+    .appointment-card2 {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .dashboard-header h1 {
+        font-size: 1.8em;
+        color: #1e293b;
+        margin-bottom: 25px;
+    }
+
+    .dashboard-left h2,
+    .dashboard-right h2 {
+        color: #1e293b;
+        font-size: 1.2em;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+</style>
+
 <div class="content" id="dashboardContent">
-    <h2>Prochains rendez-vous</h2>
-    
+    <div class="dashboard-header">
+        <h1>Bonjour, {{ patient_name }} 👋</h1>
+    </div>
+
+    <div class="dashboard-main" style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <!-- Rendez-vous -->
+        <div class="dashboard-left" style="flex: 1; min-width: 300px;">
+            <h2>Prochains rendez-vous</h2>
+            {% if upcoming_appointments %}
+                {% for rdv in upcoming_appointments %}
+                <div class="appointment-card2">
+                    <img src="{{ url_for('static', filename=rdv.photo_url) }}" 
+                         alt="Dr. {{ rdv.medecin_nom }}" 
+                         style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+                    <div style="flex: 1;">
+                        <p style="margin: 0; font-weight: 600; color: #1e293b;"> {{ rdv.medecin_nom }}</p>
+                        <p style="margin: 3px 0; color: #64748b; font-size: 0.9em;">{{ rdv.specialite }}</p>
+                        <p style="margin: 3px 0; color: #107aca; font-size: 0.9em;">{{ rdv.date_heure.strftime("%d/%m/%Y à %H:%M") }}</p>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-edit1" style="padding: 6px 12px; border: none; background: #107aca; color: white; border-radius: 6px; cursor: pointer;">Modifier</button>
+                        <button class="btn-cancel1" style="padding: 6px 12px; border: none; background: #ef4444; color: white; border-radius: 6px; cursor: pointer;">Annuler</button>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p style="color: #64748b; padding: 15px; background: #f8fafc; border-radius: 8px; text-align: center;">Aucun rendez-vous à venir.</p>
+            {% endif %}
+        </div>
+
+        <!-- Calendrier -->
+        <div class="dashboard-right" style="flex: 1; min-width: 300px;">
+            <h2>Calendrier</h2>
+            <div id="calendar"></div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css' rel='stylesheet' />
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+<script src='https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.8/locales/fr.global.min.js'></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    
+    if (calendarEl) {
+        var events = [];
+        
+        {% for rdv in upcoming_appointments %}
+        events.push({
+            title: 'Dr. {{ rdv.medecin_nom }}',
+            start: '{{ rdv.date_heure.strftime("%Y-%m-%dT%H:%M:%S") }}',
+            extendedProps: {
+                specialite: '{{ rdv.specialite }}',
+                dateheure: '{{ rdv.date_heure.strftime("%d/%m/%Y à %H:%M") }}'
+            },
+            color: '#107aca',          // couleur visible
+            textColor: 'white'
+        });
+        {% endfor %}
 
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'fr',
+            headerToolbar: {
+                left: 'prev,next',
+                center: 'title',
+                right: 'today'
+            },
+            buttonText: {
+                today: "Aujourd'hui"
+            },
+            events: events,
+            height: 'auto',
+            eventDidMount: function(info) {
+                // Tooltip avec date/heure et spécialité
+                info.el.setAttribute('title', info.event.extendedProps.dateheure + ' - ' + info.event.extendedProps.specialite);
+            }
+        });
+
+        calendar.render();
+    }
+});
+</script>
 {% endblock %}

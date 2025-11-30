@@ -5,129 +5,386 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prendre un Rendez-vous</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* Style pour le message de succès */
+        .success-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .success-toast.error {
+            background: #f44336;
+        }
+
+        .success-toast i {
+            font-size: 20px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .close-toast {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        #confirmationModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .btn_confirm,
+        .btn_cancel {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        .btn_confirm {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+        }
+
+        .btn_cancel {
+            background-color: #f44336;
+            color: white;
+            border: none;
+        }
+    </style>
 </head>
+
 <body>
 
-<div class="appointment-form-container" id="appointmentFormContainer">
-    <div class="appointment-form">
-        <div class="form-header">
-            <h2 class="form-title">Prendre un Rendez-vous</h2>
-            <button class="close-form" onclick="hideAppointmentForm()">&times;</button>
-        </div>
+    <div class="appointment-form-container" id="appointmentFormContainer">
+        <div class="appointment-form">
+            <div class="form-header">
+                <h2 class="form-title">Prendre un Rendez-vous</h2>
+                <button class="close-form" onclick="hideAppointmentForm()">&times;</button>
+            </div>
 
-        <form id="appointmentForm">
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="specialization">Spécialisation</label>
-                    <select id="specialization" name="specialization" class="form-control" required>
-                        <option value="">Choisir une spécialisation</option>
-                        {% for specialisation in specialisations %}
+            <form id="appointmentForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="specialization">Spécialisation</label>
+                        <select id="specialization" name="specialization" class="form-control" required>
+                            <option value="">Choisir une spécialisation</option>
+                            {% for specialisation in specialisations %}
                             <option value="{{ specialisation[0] }}">{{ specialisation[1] }}</option>
-                        {% endfor %}
-                    </select>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="doctor">Docteur</label>
+                        <select id="doctor" name="doctor_id" class="form-control" required disabled>
+                            <option value="">Sélectionnez d'abord une spécialisation</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="doctor">Docteur</label>
-                    <select id="doctor" name="doctor_id" class="form-control" required disabled>
-                        <option value="">Sélectionnez d'abord une spécialisation</option>
-                    </select>
-                </div>
-            </div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="honoraire">Honoraire de consultation</label>
-                    <select id="honoraire" name="honoraire" class="form-control" required disabled>
-                        <option value="">Sélectionnez d'abord un docteur</option>
-                    </select>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="honoraire">Honoraire de consultation</label>
+                        <input type="text" id="honoraire" name="honoraire" class="form-control" readonly
+                            placeholder="Sélectionnez un docteur">
+                    </div>
+                    <div class="form-group">
+                        <label for="consultationDate">Date de consultation</label>
+                        <select id="consultationDate" name="consultation_date" class="form-control" required disabled>
+                            <option value="">Sélectionnez un docteur d'abord</option>
+                        </select>
+                    </div>
                 </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="consultationTime">Heure de consultation</label>
+                        <select id="consultationTime" name="consultation_time" class="form-control" required disabled>
+                            <option value="">Sélectionnez une date d'abord</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="form-group">
-                    <label for="consultationDate">Date de consultation</label>
-                    <input type="date" id="consultationDate" name="consultation_date" class="form-control" required>
+                    <label for="reason">Motif de consultation</label>
+                    <textarea id="reason" name="reason" class="form-control" rows="3"
+                        placeholder="Décrivez brièvement le motif de votre consultation" required></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel-form" onclick="hideAppointmentForm()">Annuler</button>
+                    <button type="submit" class="btn-submit">Confirmer le Rendez-vous</button>
+                </div>
+            </form>
+            <!-- Modale de confirmation -->
+            <div id="confirmationModal" style="display: none;">
+                <div class="modal-content">
+                    <h3>Confirmation du Rendez-vous</h3>
+                    <p>Êtes-vous sûr de vouloir confirmer ce rendez-vous ?</p>
+                    <button id="confirmButton" class="btn_confirm">Confirmer</button>
+                    <button id="cancelButton" class="btn_cancel">Annuler</button>
                 </div>
             </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="consultationTime">Heure de consultation</label>
-                    <input type="time" id="consultationTime" name="consultation_time" class="form-control" required>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="reason">Motif de consultation</label>
-                <textarea id="reason" name="reason" class="form-control" rows="3" placeholder="Décrivez brièvement le motif de votre consultation" required></textarea>
-            </div>
-
-            <div class="form-actions">
-                <button type="button" class="btn-cancel-form" onclick="hideAppointmentForm()">Annuler</button>
-                <button type="submit" class="btn-submit">Confirmer le Rendez-vous</button>
-            </div>
-        </form>
+        </div>
     </div>
-</div>
 
-<script>
-// Quand la spécialisation change
-$('#specialization').on('change', function() {
-    var specialization_id = $(this).val();
-    var doctorSelect = $('#doctor');
-    var honoraireSelect = $('#honoraire');
+    <script>
+        // Fonction pour afficher les messages toast
+        function showToast(message, isError = false) {
+            console.log("Affichage du toast:", message, "Erreur:", isError);
 
-    // Réinitialiser les sélections suivantes
-    doctorSelect.prop('disabled', true).empty().append('<option value="">Sélectionnez d\'abord une spécialisation</option>');
-    honoraireSelect.prop('disabled', true).empty().append('<option value="">Sélectionnez d\'abord un docteur</option>');
+            // Supprimer les toasts existants
+            $('.success-toast').remove();
 
-    if (specialization_id) {
-        $.get('/patient/get_doctors', { specialization: specialization_id }, function(data) {
-            doctorSelect.prop('disabled', false);
-            doctorSelect.empty().append('<option value="">Sélectionnez un docteur</option>');
-            data.forEach(function(doctor) {
-                doctorSelect.append('<option value="' + doctor.id + '">' + doctor.nom + '</option>');
+            const icon = isError ? '❌' : '✅';
+            const toastClass = isError ? 'success-toast error' : 'success-toast';
+
+            const toast = $('<div>', {
+                class: toastClass,
+                html: `
+                <i>${icon}</i>
+                <span>${message}</span>
+                <button class="close-toast" onclick="$(this).parent().remove()">&times;</button>
+            `
             });
-        }).fail(function() {
-            alert('Erreur lors du chargement des docteurs');
-        });
-    }
-});
 
-// Quand le docteur change
-$('#doctor').on('change', function() {
-    var doctor_id = $(this).val();
-    var honoraireSelect = $('#honoraire');
+            $('body').append(toast);
+            console.log("Toast ajouté au DOM");
 
-    honoraireSelect.prop('disabled', true).empty().append('<option value="">Sélectionnez d\'abord un docteur</option>');
-
-    if (doctor_id) {
-        $.get('/patient/get_honoraires', { doctor_id: doctor_id }, function(data) {
-            honoraireSelect.prop('disabled', false);
-            honoraireSelect.empty().append('<option value="">Sélectionnez un honoraire</option>');
-            data.forEach(function(honoraire) {
-                honoraireSelect.append('<option value="' + honoraire.id + '">' + honoraire.montant + ' DH</option>');
-            });
-        }).fail(function() {
-            alert('Erreur lors du chargement des honoraires');
-        });
-    }
-});
-
-// Soumission du formulaire
-$('#appointmentForm').on('submit', function(e) {
-    e.preventDefault();
-    
-    var formData = $(this).serialize();
-    
-    $.post('/book_appointment', formData, function(response) {
-        if (response.success) {
-            alert('Rendez-vous confirmé avec succès!');
-            hideAppointmentForm();
-        } else {
-            alert('Erreur: ' + response.message);
+            // Auto-suppression après 5 secondes
+            setTimeout(() => {
+                toast.fadeOut(300, function () {
+                    $(this).remove();
+                });
+            }, 5000);
         }
-    }).fail(function() {
-        alert('Erreur lors de la prise de rendez-vous');
-    });
-});
-</script>
+
+        // Fonctions globales accessibles depuis l'HTML
+        function showAppointmentForm() {
+            $('#appointmentFormContainer').show();
+        }
+
+        function hideAppointmentForm() {
+            $('#appointmentFormContainer').hide();
+            resetForm(); // Réinitialiser aussi quand on ferme le formulaire
+        }
+
+        function resetForm() {
+            console.log("Réinitialisation du formulaire...");
+
+            // Réinitialiser le formulaire
+            $('#appointmentForm')[0].reset();
+
+            // Réinitialiser tous les sélecteurs
+            $('#doctor').prop('disabled', true).empty().html('<option value="">Sélectionnez d\'abord une spécialisation</option>');
+            $('#honoraire').val('');
+            $('#consultationDate').prop('disabled', true).empty().html('<option value="">Sélectionnez un docteur d\'abord</option>');
+            $('#consultationTime').prop('disabled', true).empty().html('<option value="">Sélectionnez une date d\'abord</option>');
+
+            console.log("✅ Formulaire réinitialisé");
+        }
+
+        function resetSlots() {
+            $('#consultationTime').prop('disabled', true)
+                .empty()
+                .html('<option value="">Sélectionnez une date d\'abord</option>');
+        }
+
+        $(document).ready(function () {
+            console.log("Document ready - Formulaire de rendez-vous");
+
+            // Quand la spécialisation change
+            $('#specialization').on('change', function () {
+                var specialization_id = $(this).val();
+                var doctorSelect = $('#doctor');
+
+                // Réinitialiser les sélections suivantes
+                doctorSelect.prop('disabled', true).empty().html('<option value="">Sélectionnez d\'abord une spécialisation</option>');
+                $('#honoraire').val('');
+                resetSlots();
+
+                if (specialization_id) {
+                    console.log("Chargement des docteurs pour spécialisation:", specialization_id);
+                    $.get('/patient/get_doctors', { specialization: specialization_id })
+                        .done(function (data) {
+                            doctorSelect.prop('disabled', false).empty().html('<option value="">Sélectionnez un docteur</option>');
+                            data.forEach(function (doctor) {
+                                doctorSelect.append('<option value="' + doctor.id + '">' + doctor.nom + '</option>');
+                            });
+                            console.log("Docteurs chargés:", data.length);
+                        })
+                        .fail(function (xhr, status, error) {
+                            console.error("Erreur chargement docteurs:", error);
+                            showToast('Erreur lors du chargement des docteurs.', true);
+                        });
+                }
+            });
+
+            // Quand le docteur change
+            $('#doctor').on('change', function () {
+                var doctor_id = $(this).val();
+                var honoraireSelect = $('#honoraire');
+
+                honoraireSelect.val('');
+                resetSlots();
+
+                if (doctor_id) {
+                    console.log("Chargement des honoraires pour docteur:", doctor_id);
+
+                    // Charger l'honoraire
+                    $.get('/patient/get_honoraires', { doctor_id: doctor_id })
+                        .done(function (data) {
+                            if (data.length > 0) {
+                                $('#honoraire').val(data[0].montant + ' DH');
+                                console.log("Honoraire chargé:", data[0].montant);
+                            } else {
+                                $('#honoraire').val('');
+                                console.log("Aucun honoraire trouvé");
+                            }
+                        })
+                        .fail(function (xhr, status, error) {
+                            console.error("Erreur chargement honoraires:", error);
+                            showToast('Erreur lors du chargement des honoraires.', true);
+                        });
+
+                    // Charger les dates disponibles pour le médecin
+                    console.log("Chargement des dates disponibles pour docteur:", doctor_id);
+                    $.get('/patient/get_available_dates', { doctor_id: doctor_id })
+                        .done(function (data) {
+                            var dateSelect = $('#consultationDate');
+                            dateSelect.prop('disabled', false).empty().html('<option value="">Sélectionnez une date</option>');
+
+                            if (data.success && data.dates.length > 0) {
+                                data.dates.forEach(function (d) {
+                                    dateSelect.append('<option value="' + d + '">' + d + '</option>');
+                                });
+                                console.log("Dates disponibles chargées:", data.dates.length);
+                            } else {
+                                dateSelect.prop('disabled', true).empty().html('<option value="">Aucune date disponible</option>');
+                                console.log("Aucune date disponible");
+                            }
+                        })
+                        .fail(function (xhr, status, error) {
+                            console.error("Erreur chargement dates:", error);
+                            showToast('Erreur lors du chargement des dates disponibles.', true);
+                        });
+                }
+            });
+
+            // Quand la date change
+            $('#consultationDate').on('change', function () {
+                var doctor_id = $('#doctor').val();
+                var consultation_date = $(this).val();
+                var consultationTimeInput = $('#consultationTime');
+
+                consultationTimeInput.prop('disabled', true).empty();
+
+                if (doctor_id && consultation_date) {
+                    console.log("Chargement des créneaux pour:", consultation_date);
+                    $.get('/patient/get_available_slots', { doctor_id: doctor_id, consultation_date: consultation_date })
+                        .done(function (data) {
+                            consultationTimeInput.prop('disabled', false).empty().html('<option value="">Sélectionnez un créneau</option>');
+
+                            if (data.success && data.slots.length > 0) {
+                                data.slots.forEach(function (slot) {
+                                    consultationTimeInput.append('<option value="' + slot + '">' + slot + '</option>');
+                                });
+                                console.log("Créneaux chargés:", data.slots.length);
+                            } else {
+                                consultationTimeInput.html('<option value="">Pas de créneaux disponibles</option>');
+                                console.log("Aucun créneau disponible");
+                            }
+                        })
+                        .fail(function (xhr, status, error) {
+                            console.error("Erreur chargement créneaux:", error);
+                            consultationTimeInput.html('<option value="">Erreur lors du chargement des créneaux</option>');
+                        });
+                }
+            });
+
+            // SOUMMISSION DU FORMULAIRE - VERSION CORRIGÉE
+            $('#appointmentForm').on('submit', function (e) {
+                e.preventDefault();
+                console.log("Soumission du formulaire...");
+                var formData = $(this).serialize();
+                console.log("Données du formulaire:", formData);
+
+                // Désactiver le bouton pour éviter les doubles clics
+                $('.btn-submit').prop('disabled', true).text('Enregistrement...');
+
+                $.post('/patient/book_appointment', formData)
+                    .done(function (response) {
+                        console.log("Réponse serveur:", response);
+
+                        if (response.success) {
+                            // Message de succès stylisé
+                            showToast('Votre rendez-vous a été enregistré avec succès !');
+
+                            // Réinitialiser le formulaire
+                            resetForm();
+
+                            // Fermer le formulaire
+                            setTimeout(() => {
+                                hideAppointmentForm();
+                            }, 1000);
+
+                        } else {
+                            // Message d'erreur stylisé
+                            showToast('Erreur: ' + response.message, true);
+                        }
+                    })
+                    .fail(function (xhr, status, error) {
+                        console.error("Erreur soumission:", error);
+                        showToast('Erreur lors de la prise de rendez-vous.', true);
+                    })
+                    .always(function () {
+                        // Réactiver le bouton
+                        $('.btn-submit').prop('disabled', false).text('Confirmer le Rendez-vous');
+                    });
+            });
+        });
+    </script>
+
+
 </body>
+
 </html>

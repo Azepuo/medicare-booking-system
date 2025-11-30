@@ -427,44 +427,7 @@ body {
   gap: 1.5rem;
 }
 
-.appointment-card {
-  background: white;
-  border-radius: 18px;
-  padding: 1.5rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  position: relative;
-  overflow: hidden;
-}
 
-.appointment-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 4px;
-  background: #e0e0e0;
-  ;
-}
-
-.appointment-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1rem;
-}
-
-.doctor-info {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
 
 .avatar {
   width: 60px;
@@ -1377,5 +1340,352 @@ input:checked + .slider:before {
     .profile-stats {
         flex-direction: column;
         gap: 15px;
+    }
+}
+
+.appointment-card2 {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background-color: #f8f9fc;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    max-width: 600px;      /* empêche la carte d’être trop large */
+    margin-top: 15px;
+}
+
+.doctor-photo {
+    width: 90px;           /* taille contrôlée */
+    height: 90px;
+    border-radius: 50%;    /* rend la photo ronde */
+    object-fit: cover;     /* garde la bonne proportion */
+    flex-shrink: 0;        /* empêche l’image de s’étirer */
+}
+
+.appointment-info2 {
+    flex: 1;
+}
+
+.appointment-actions2 {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.btn-edit1, .btn-cancel1 {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #fff;
+}
+
+.btn-edit1 {
+    background-color: #007AFF;
+}
+
+.btn-cancel1 {
+    background-color: #dc3545;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/* Carte de rendez-vous - Version compacte */
+.appointment-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.appointment-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+}
+
+.appointment-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(102, 126, 234, 0.15);
+}
+
+/* En-tête de la carte - Compact */
+.card-header {
+    padding: 1rem 1rem 1rem 1.5rem;
+    background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+    border-bottom: 1px solid #e8ecf9;
+}
+
+.card-header h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    color: #1e293b;
+    font-weight: 700;
+}
+
+.specialite {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* Corps de la carte - Compact */
+.card-body {
+    padding: 1rem 1rem 1rem 1.5rem;
+}
+
+.card-body p {
+    margin: 0.5rem 0;
+    color: #475569;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.card-body strong {
+    color: #334155;
+    font-weight: 600;
+    min-width: 70px;
+    font-size: 0.85rem;
+}
+
+/* Pied de la carte - Compact */
+.card-footer {
+    padding: 0.8rem 1rem 0.8rem 1.5rem;
+    background: #fafbfc;
+    border-top: 1px solid #e8ecf9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Statistiques - Une seule ligne avec cards compactes */
+.stats {
+    display: flex;
+    gap: 1.9rem;
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+}
+
+.stats > div {
+    background: white;
+    padding: 1.2rem 1.9rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    text-align: center;
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    min-width: 140px;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.stats > div::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+}
+
+/* Couleurs subtiles pour chaque stat */
+.stats > div:nth-child(1)::before {
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+}
+
+.stats > div:nth-child(2)::before {
+    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+}
+
+.stats > div:nth-child(3)::before {
+    background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.stats > div:nth-child(4)::before {
+    background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+}
+
+.stats > div:nth-child(5)::before {
+    background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+}
+
+.stats > div:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Animation d'apparition */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.stats > div {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.stats > div:nth-child(1) { animation-delay: 0.1s; }
+.stats > div:nth-child(2) { animation-delay: 0.15s; }
+.stats > div:nth-child(3) { animation-delay: 0.2s; }
+.stats > div:nth-child(4) { animation-delay: 0.25s; }
+.stats > div:nth-child(5) { animation-delay: 0.3s; }
+
+/* Scrollbar personnalisée */
+.stats::-webkit-scrollbar {
+    height: 6px;
+}
+
+.stats::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+}
+
+.stats::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+.stats::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+
+/* Pied de la carte */
+.card-footer {
+    padding: 0.8rem 1rem 0.8rem 1.5rem;
+    background: #fafbfc;
+    border-top: 1px solid #e8ecf9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* Bouton modifier */
+.card-footer button {
+    padding: 6px 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.card-footer button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.card-footer button:active {
+    transform: translateY(0);
+}
+
+/* Statuts compacts */
+.status {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+}
+
+.status::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.status.confirmé {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #065f46;
+}
+
+.status.confirmé::before {
+    background: #10b981;
+}
+
+.status.terminé {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    color: #1e40af;
+}
+
+.status.terminé::before {
+    background: #3b82f6;
+}
+
+.status.annulé {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: #991b1b;
+}
+
+.status.annulé::before {
+    background: #ef4444;
+}
+
+.status.attente {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+}
+
+.status.attente::before {
+    background: #f59e0b;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .card-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .card-footer button {
+        width: 100%;
+        text-align: center;
     }
 }
