@@ -11,7 +11,6 @@
 
 <body>
     <div class="container">
-
         <div class="left">
             <h1>Bienvenue 👋</h1>
             <p>Connectez-vous pour accéder à votre espace.</p>
@@ -20,12 +19,16 @@
 
         <div class="right">
             <form method="POST" class="login-box">
-
                 <h2>Se connecter</h2>
 
-                {% if error %}
-                    <div class="error-msg">{{ error }}</div>
-                {% endif %}
+                <!-- Messages flash -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    {% for category, message in messages %}
+                      <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                  {% endif %}
+                {% endwith %}
 
                 <div class="input-group">
                     <input type="email" name="email" placeholder=" " required>
@@ -45,10 +48,8 @@
                 </p>
 
                 <a href="{{ url_for('index') }}" class="link-services">← Retour à l'accueil</a>
-
             </form>
         </div>
-
     </div>
 </body>
 </html>

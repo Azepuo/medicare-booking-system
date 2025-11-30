@@ -10,7 +10,7 @@ def create_connection():
     try:
         connection = mysql.connector.connect(
             host=os.getenv('DB_HOST', 'localhost'),
-            port=os.getenv('DB_PORT', '3306'),
+            port=os.getenv('DB_PORT', '3307'),
             database=os.getenv('DB_NAME', 'medicare_booking'),
             user=os.getenv('DB_USER', 'root'),
             password=os.getenv('DB_PASSWORD', '')
