@@ -22,7 +22,7 @@
                     <button class="filter-btn" data-filter="confirmé">Confirmés</button>
                     <button class="filter-btn" data-filter="terminé">Terminés</button>
                     <button class="filter-btn" data-filter="annulé">Annulés</button>
-                    <button class="filter-btn" data-filter="attente">En Attente</button>
+                    <button class="filter-btn" data-filter="En attente">En Attente</button>
                 </div>
             </div>
         </div>
@@ -57,7 +57,7 @@
             date: "{{ rdv.date_heure.strftime('%Y-%m-%d') }}",
             time: "{{ rdv.date_heure.strftime('%H:%M') }}",
             clinic: "{{ rdv.clinic or '' }}",
-            status: "{{ rdv.statut | lower }}"
+            status: "{{ rdv.statut}}"
         },
         {% endfor %}
     ];

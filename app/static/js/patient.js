@@ -1,7 +1,26 @@
 console.log("✅ patient.js est chargé avec succès !");
 
+// DEBUG: Afficher tous les rendez-vous et leurs statuts
+console.log('📋 Tous les rendez-vous:', appointments);
+console.log('🔍 Statuts uniques trouvés:', [...new Set(appointments.map(a => a.status))]);
+
 let currentFilter = 'tous';
 let searchQuery = '';
+
+// Fonction pour normaliser les statuts
+function normalizeStatus(status) {
+    const statusMap = {
+        'confirmé': 'confirmé',
+        'Confirmé': 'confirmé',
+        'en attente': 'En attente', 
+        'En attente': 'En attente',
+        'terminé': 'terminé',
+        'Terminé': 'terminé',
+        'annulé': 'annulé',
+        'Annulé': 'annulé'
+    };
+    return statusMap[status] || status;
+}
 
 // Fonctions utilitaires
 const getInitials = name => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -33,7 +52,7 @@ function addNewAppointment(patientName, patientAge, doctor, appointmentDate, app
         time: appointmentTime,
         clinic: "Clinique Principale",
         notes: reason || "",
-        status: "confirmé",
+        status: "En attente", // CORRECTION: Utiliser "En attente" pour la cohérence
     };
 
     appointments.push(newAppointment);
@@ -56,14 +75,9 @@ function modifier(id) {
                 <input type="text" id="editMedecinSpec" value="${appointment.medecin_spec}">
                 <input type="date" id="editDate" value="${appointment.date}">
                 <input type="time" id="editTime" value="${appointment.time}">
-                <select id="editStatus">
-                    <option value="confirmé" ${appointment.status === 'confirmé' ? 'selected' : ''}>Confirmé</option>
-                    <option value="attente" ${appointment.status === 'attente' ? 'selected' : ''}>En attente</option>
-                    <option value="terminé" ${appointment.status === 'terminé' ? 'selected' : ''}>Terminé</option>
-                    <option value="annulé" ${appointment.status === 'annulé' ? 'selected' : ''}>Annulé</option>
-                </select>
+    
                 <input type="text" id="editClinic" value="${appointment.clinic}">
-                <textarea id="editNotes">${appointment.notes || ''}</textarea>
+               Notes: <textarea id="editNotes">${appointment.notes || ''}</textarea>
                 <button type="submit">Enregistrer</button>
             </form>
         </div>
@@ -113,32 +127,64 @@ function cancelAppointment(id) {
     }
 }
 
-// Stats
+// Stats - VERSION CORRIGÉE
 function updateStats() {
     const statsEl = document.getElementById('stats');
     if (!statsEl) return;
+    
+    // Utiliser les statuts normalisés pour le comptage
+    const normalizedAppointments = appointments.map(a => ({
+        ...a,
+        normalizedStatus: normalizeStatus(a.status)
+    }));
+    
+    const total = normalizedAppointments.length;
+    const confirmes = normalizedAppointments.filter(a => a.normalizedStatus === 'confirmé').length;
+    const termines = normalizedAppointments.filter(a => a.normalizedStatus === 'terminé').length;
+    const annules = normalizedAppointments.filter(a => a.normalizedStatus === 'annulé').length;
+    const enAttente = normalizedAppointments.filter(a => a.normalizedStatus === 'En attente').length;
+
+    console.log('📊 Statistiques calculées:', { total, confirmes, termines, annules, enAttente });
+
     statsEl.innerHTML = `
-        <div>Total: ${appointments.length}</div>
-        <div>Confirmés: ${appointments.filter(a => a.status === 'confirmé').length}</div>
-        <div>Terminés: ${appointments.filter(a => a.status === 'terminé').length}</div>
-        <div>Annulés: ${appointments.filter(a => a.status === 'annulé').length}</div>
-        <div>En attente: ${appointments.filter(a => a.status.toLowerCase() === 'attente').length}</div>
+        <div class="stat-item">Total: ${total}</div>
+        <div class="stat-item">Confirmés: ${confirmes}</div>
+        <div class="stat-item">Terminés: ${termines}</div>
+        <div class="stat-item">Annulés: ${annules}</div>
+        <div class="stat-item">En attente: ${enAttente}</div>
     `;
 }
 
-// Render cards
+// Render cards - VERSION CORRIGÉE
 function renderAppointments() {
     const grid = document.getElementById('appointmentsGrid');
     const empty = document.getElementById('emptyState');
     if (!grid || !empty) return;
 
-    let filtered = appointments;
-    if (currentFilter !== 'tous') filtered = filtered.filter(a => a.status === currentFilter);
-    if (searchQuery) filtered = filtered.filter(a =>
-        a.medecin_name.toLowerCase().includes(searchQuery) ||
-        a.medecin_spec.toLowerCase().includes(searchQuery) ||
-        a.date.includes(searchQuery)
-    );
+    // Normaliser les statuts pour le filtrage
+    const normalizedAppointments = appointments.map(a => ({
+        ...a,
+        normalizedStatus: normalizeStatus(a.status)
+    }));
+
+    let filtered = normalizedAppointments;
+    
+    // CORRECTION: Filtrage avec statuts normalisés
+    if (currentFilter !== 'tous') {
+        const normalizedFilter = normalizeStatus(currentFilter);
+        filtered = filtered.filter(a => a.normalizedStatus === normalizedFilter);
+    }
+    
+    if (searchQuery) {
+        filtered = filtered.filter(a =>
+            a.medecin_name.toLowerCase().includes(searchQuery) ||
+            a.medecin_spec.toLowerCase().includes(searchQuery) ||
+            a.date.includes(searchQuery)
+        );
+    }
+
+    console.log('🔍 Rendez-vous filtrés:', filtered);
+    console.log('🎯 Filtre appliqué:', currentFilter);
 
     grid.innerHTML = '';
     if (filtered.length === 0) {
@@ -153,34 +199,41 @@ function renderAppointments() {
     filtered.forEach(a => {
         const card = document.createElement('div');
         card.classList.add('appointment-card');
-        card.dataset.statut = a.status;
-        
-        // Afficher le statut en français
-        const statusDisplay = a.status === 'attente' ? 'En attente' : a.status;
-        
-        card.innerHTML = `
-            <div class="card-header">
-                <h3>${a.medecin_name}</h3>
-                <span class="specialite">${a.medecin_spec}</span>
-            </div>
-            <div class="card-body">
-                <p><strong>Date :</strong> ${a.date} ${a.time}</p>
-                <p><strong>Clinique :</strong> ${a.clinic}</p>
-            </div>
-            <div class="card-footer">
-                <span class="status ${a.status}">${statusDisplay}</span>
-                <div class="card-actions">
-                    ${a.status === 'terminé' || a.status === 'annulé' ? '' : `<button class="btn-modifier" onclick="modifier(${a.id})">Modifier</button>`}
-                    ${a.status === 'attente' || a.status === 'confirmé' ? `<button class="btn-annuler" onclick="cancelAppointment(${a.id})">Annuler</button>` : ''}
-                </div>
-            </div>
-        `;
+        card.dataset.statut = a.normalizedStatus;
+
+        // CORRECTION: Affichage cohérent du statut
+        const statusDisplay = a.normalizedStatus;
+
+        // CORRECTION: Logique des boutons avec statuts normalisés
+        const showModifier = !(a.normalizedStatus === 'terminé' || a.normalizedStatus === 'annulé');
+        const showAnnuler = (a.normalizedStatus === 'En attente' || a.normalizedStatus === 'confirmé');
+
+      // Dans renderAppointments(), remplacez toute la partie card.innerHTML par :
+card.innerHTML = `
+    <div class="card-header">
+        <h3>${a.medecin_name}</h3>
+        <span class="specialite">${a.medecin_spec}</span>
+    </div>
+    <div class="card-body">
+        <p><strong>Date :</strong> ${a.date} ${a.time}</p>
+        <p><strong>Clinique :</strong> ${a.clinic}</p>
+    </div>
+    <div class="card-footer">
+        <span class="status ${a.normalizedStatus === 'En attente' ? 'en-attente' : a.normalizedStatus}">${statusDisplay}</span>
+        <div class="card-actions">
+            ${showModifier ? `<button class="btn-modifier" onclick="modifier(${a.id})">Modifier</button>` : ''}
+            ${showAnnuler ? `<button class="btn-annuler" onclick="cancelAppointment(${a.id})">Annuler</button>` : ''}
+        </div>
+    </div>
+`;
         grid.appendChild(card);
     });
 }
 
 // Filtres & recherche
 document.addEventListener("DOMContentLoaded", () => {
+    console.log("🚀 Initialisation du tableau de bord...");
+
     const filterButtons = document.querySelectorAll(".filter-btn");
     const searchInput = document.getElementById("searchInput");
 
@@ -189,6 +242,7 @@ document.addEventListener("DOMContentLoaded", () => {
             filterButtons.forEach(b => b.classList.remove("active"));
             btn.classList.add("active");
             currentFilter = btn.dataset.filter;
+            console.log('🎛️ Filtre changé:', currentFilter);
             renderAppointments();
             updateStats();
         });
@@ -200,6 +254,20 @@ document.addEventListener("DOMContentLoaded", () => {
         updateStats();
     });
 
+    // Initialisation
     renderAppointments();
     updateStats();
 });
+
+// Fonction de débogage
+function debugStats() {
+    console.log('🐛 Débogage détaillé:');
+    appointments.forEach((rdv, index) => {
+        console.log(`RDV ${index + 1}:`, {
+            id: rdv.id,
+            medecin: rdv.medecin_name,
+            statut_original: rdv.status,
+            statut_normalisé: normalizeStatus(rdv.status)
+        });
+    });
+}
