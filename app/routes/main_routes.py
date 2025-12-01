@@ -5,12 +5,12 @@ main = Blueprint('main', __name__)
 
 @main.route('/')
 def index():
-    return render_template('main/index.html')
+    return render_template('index.html')
 
 @main.route('/services')
 def services():
-    return render_template('main/services.html')
+    return render_template('services.html')
 
 @main.route('/about')
 def about():
-    return render_template('main/about.html')
+    return render_template('about.html')
