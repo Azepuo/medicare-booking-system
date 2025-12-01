@@ -31,7 +31,7 @@
                 {% endwith %}
 
                 <div class="input-group">
-                    <input type="text" name="fullname" placeholder=" " required>
+                    <input type="text" name="nom" placeholder=" " required>
                     <label>Nom complet</label>
                 </div>
 
@@ -50,8 +50,14 @@
                     <label>Confirmer le mot de passe</label>
                 </div>
 
-                <!-- Rôle forcé à patient -->
-                <input type="hidden" name="role" value="patient">
+                <!-- Sélection du rôle -->
+                <div class="input-group">
+                    <label>Rôle</label>
+                    <select name="role" required>
+                        <option value="patient" selected>Patient</option>
+                        <option value="medecin">Médecin</option>
+                    </select>
+                </div>
 
                 <button type="submit" class="btn">S'inscrire</button>
 

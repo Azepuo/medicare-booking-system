@@ -4,10 +4,10 @@ from .extensions import db, login_manager, bcrypt
 def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = 'ton_secret_key'
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite3'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:@localhost:3307/medicare_booking'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # Initialisation des extensions
+    # ⚡ Initialisation des extensions
     db.init_app(app)
     bcrypt.init_app(app)
     login_manager.init_app(app)
@@ -15,7 +15,7 @@ def create_app():
     login_manager.login_view = "auth.login"
     login_manager.login_message_category = "info"
 
-    # Enregistrement des blueprints
+    # 🔹 Enregistrement des blueprints
     from .routes.auth_routes import auth
     app.register_blueprint(auth)
 
@@ -29,6 +29,6 @@ def create_app():
     app.register_blueprint(medecin, url_prefix='/medecin')
 
     from .routes.main_routes import main
-    app.register_blueprint(main)  # accueil, services, about
+    app.register_blueprint(main)
 
     return app

@@ -9,98 +9,56 @@ class Medecin:
         self.annees_experience = annees_experience
         self.tarif_consultation = tarif_consultation
         self.description = description
-    
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'nom': self.nom,
+            'specialite': self.specialite,
+            'email': self.email,
+            'annees_experience': self.annees_experience,
+            'tarif_consultation': float(self.tarif_consultation) if self.tarif_consultation else None,
+            'description': self.description
+        }
+
     @staticmethod
     def get_all():
-        """Récupérer tous les médecins"""
-        connection = create_connection()
-        if not connection:
+        conn = create_connection()
+        if not conn:
             return []
-        
         try:
-            cursor = connection.cursor(dictionary=True)
-            cursor.execute("SELECT * FROM medecins")
-            medecins = cursor.fetchall()
-            return [Medecin(**m) for m in medecins]
-        except Exception as e:
-            print(f"Erreur: {e}")
-            return []
+            cur = conn.cursor(dictionary=True)
+            cur.execute("SELECT * FROM medecins ORDER BY nom")
+            rows = cur.fetchall()
+            return [Medecin(**r) for r in rows]
         finally:
-            if connection.is_connected():
-                cursor.close()
-                connection.close()
-    
+            cur.close()
+            conn.close()
+
     @staticmethod
-    def get_by_id(medecin_id):
-        """Récupérer un médecin par son ID"""
-        connection = create_connection()
-        if not connection:
+    def get_by_id(mid):
+        conn = create_connection()
+        if not conn:
             return None
-        
         try:
-            cursor = connection.cursor(dictionary=True)
-            cursor.execute("SELECT * FROM medecins WHERE id = %s", (medecin_id,))
-            medecin_data = cursor.fetchone()
-            return Medecin(**medecin_data) if medecin_data else None
-        except Exception as e:
-            print(f"Erreur: {e}")
-            return None
+            cur = conn.cursor(dictionary=True)
+            cur.execute("SELECT * FROM medecins WHERE id=%s", (mid,))
+            row = cur.fetchone()
+            return Medecin(**row) if row else None
         finally:
-            if connection.is_connected():
-                cursor.close()
-                connection.close()
+            cur.close()
+            conn.close()
 
     @staticmethod
     def get_by_specialite(specialite):
-        """Récupérer les médecins par spécialité"""
-        connection = create_connection()
-        if not connection:
+        conn = create_connection()
+        if not conn:
             return []
-        
         try:
-            cursor = connection.cursor(dictionary=True)
-            cursor.execute("SELECT * FROM medecins WHERE specialite = %s", (specialite,))
-            medecins = cursor.fetchall()
-            return [Medecin(**m) for m in medecins]
-        except Exception as e:
-            print(f"Erreur: {e}")
-            return []
+            cur = conn.cursor(dictionary=True)
+            cur.execute("SELECT * FROM medecins WHERE specialite=%s ORDER BY nom", (specialite,))
+            rows = cur.fetchall()
+            return [Medecin(**r) for r in rows]
         finally:
-            if connection.is_connected():
-                cursor.close()
-                connection.close()
-
-    def save(self):
-        """Sauvegarder le médecin (create or update)"""
-        connection = create_connection()
-        if not connection:
-            return False
-        
-        try:
-            cursor = connection.cursor()
-            if self.id:
-                # Update
-                cursor.execute(
-                    "UPDATE medecins SET nom = %s, specialite = %s, email = %s, annees_experience = %s, tarif_consultation = %s, description = %s WHERE id = %s",
-                    (self.nom, self.specialite, self.email, self.annees_experience, self.tarif_consultation, self.description, self.id)
-                )
-            else:
-                # Create
-                cursor.execute(
-                    "INSERT INTO medecins (nom, specialite, email, annees_experience, tarif_consultation, description) VALUES (%s, %s, %s, %s, %s, %s)",
-                    (self.nom, self.specialite, self.email, self.annees_experience, self.tarif_consultation, self.description)
-                )
-                self.id = cursor.lastrowid
-            
-            connection.commit()
-            return True
-        except Exception as e:
-            print(f"Erreur: {e}")
-            return False
-        finally:
-            if connection.is_connected():
-                cursor.close()
-                connection.close()
-
-    def __repr__(self):
-        return f"<Medecin {self.id}: {self.nom} ({self.specialite})>"
+            cur.close()
+            conn.close()
