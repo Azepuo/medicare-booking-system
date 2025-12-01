@@ -54,33 +54,48 @@ def dashboard():
         last_consults=last_consults
     )
 
-
 @patient.route("/mes_rdv")
 def mes_rdv():
-    patient_id = 1  # récupère l'id du patient connecté
+    patient_id = 1
 
     conn = get_db_connection()
-
-    # --- Curseur pour les rendez-vous (dictionnaire) ---
     cursor_rdv = conn.cursor(dictionary=True)
+    
+    # MODIFICATION ICI : Utiliser TIME_FORMAT pour avoir HH:MM
     cursor_rdv.execute("""
-        SELECT r.id, r.date_heure, r.statut, m.clinic, r.notes,
-               m.nom AS medecin_nom, s.nom AS specialite
+        SELECT 
+            r.id, 
+            r.date_heure, 
+            r.statut, 
+            m.clinic, 
+            r.notes,
+            m.id as medecin_id,
+            m.nom AS medecin_nom, 
+            s.nom AS specialite,
+            DATE(r.date_heure) as date_only,
+            TIME_FORMAT(r.date_heure, '%H:%i') as time_only  # ← HH:MM sans secondes
         FROM rendezvous r
         JOIN medecins m ON r.medecin_id = m.id
         JOIN specialisations s ON m.id_specialisation = s.id
         WHERE r.patient_id = %s
         ORDER BY r.date_heure DESC
     """, (patient_id,))
+    
     upcoming_appointments = cursor_rdv.fetchall()
-    cursor_rdv.close()
-
-    # --- Curseur pour les spécialités (tuple classique) ---
+    
+    # Si TIME_FORMAT ne marche pas, faites le formatage en Python
+    for rdv in upcoming_appointments:
+        if 'time_only' not in rdv or not rdv['time_only']:
+            # Extraire l'heure de date_heure
+            time_obj = rdv['date_heure'].time()
+            rdv['time_only'] = time_obj.strftime('%H:%M')
+    
     cursor_spec = conn.cursor()
     cursor_spec.execute("SELECT id, nom FROM specialisations")
     specialisations = cursor_spec.fetchall()
+    
+    cursor_rdv.close()
     cursor_spec.close()
-
     conn.close()
 
     return render_template(
@@ -89,13 +104,176 @@ def mes_rdv():
         upcoming_appointments=upcoming_appointments
     )
 
- 
+@patient.route("/update_appointment", methods=["POST"])
+def update_appointment():
+    appointment_id = request.form.get("id")
+    medecin_id = request.form.get("medecin_id")
+    date = request.form.get("date")
+    time_str = request.form.get("time")
+    notes = request.form.get("notes")
+    
+    patient_id = 1  # À remplacer par l'ID du patient connecté
 
- 
+    print(f"📝 Mise à jour RDV: id={appointment_id}, medecin={medecin_id}, date={date}, time={time_str}")
 
+    if not (appointment_id and medecin_id and date and time_str):
+        return jsonify({"success": False, "message": "Tous les champs sont requis."})
+
+    date_heure_str = f"{date} {time_str}:00"
+    print(f"📅 Date/heure combinée: {date_heure_str}")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # VÉRIFICATION : Le patient ne doit pas avoir déjà un rendez-vous ce jour-là avec ce médecin
+        # (sauf celui qu'on est en train de modifier)
+        cursor.execute("""
+            SELECT COUNT(*) 
+            FROM rendezvous
+            WHERE patient_id = %s 
+              AND medecin_id = %s 
+              AND DATE(date_heure) = %s
+              AND statut != 'Annulé'
+              AND id != %s  -- Exclure le rendez-vous qu'on modifie
+        """, (patient_id, medecin_id, date, appointment_id))
+
+        already_has = cursor.fetchone()[0]
+        print(f"📊 Nombre de RDV existants ce jour: {already_has}")
+
+        if already_has > 0:
+            cursor.close()
+            conn.close()
+            return jsonify({
+                "success": False,
+                "message": "Vous avez déjà un rendez-vous ce jour-là avec ce médecin."
+            })
+
+        # VÉRIFICATION : Le créneau est-il disponible ?
+        # (conflit avec d'autres patients)
+        cursor.execute("""
+            SELECT COUNT(*) 
+            FROM rendezvous
+            WHERE medecin_id = %s 
+              AND date_heure = %s
+              AND id != %s
+        """, (medecin_id, date_heure_str, appointment_id))
+        
+        conflict = cursor.fetchone()[0]
+        
+        if conflict > 0:
+            cursor.close()
+            conn.close()
+            return jsonify({
+                "success": False,
+                "message": "Ce créneau est déjà pris par un autre patient."
+            })
+
+        # Si toutes les vérifications passent, procéder à la mise à jour
+        cursor.execute("""
+            UPDATE rendezvous
+            SET medecin_id = %s, date_heure = %s, notes = %s
+            WHERE id = %s
+        """, (medecin_id, date_heure_str, notes, appointment_id))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        print("✅ Mise à jour réussie")
+        return jsonify({"success": True})
+        
+    except Exception as e:
+        print(f"❌ Erreur lors de la mise à jour: {e}")
+        cursor.close()
+        conn.close()
+        return jsonify({"success": False, "message": str(e)})
+@patient.route("/cancel_appointment", methods=["POST"])
+def cancel_appointment():
+    try:
+        data = request.get_json()
+        appointment_id = data.get("appointment_id")
+        
+        if not appointment_id:
+            return jsonify({"success": False, "message": "ID du rendez-vous manquant"})
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Mettre à jour le statut dans la base de données
+        cursor.execute("""
+            UPDATE rendezvous 
+            SET statut = 'Annulé' 
+            WHERE id = %s
+        """, (appointment_id,))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        print(f"✅ Rendez-vous {appointment_id} annulé dans la BD")
+        return jsonify({"success": True, "message": "Rendez-vous annulé avec succès"})
+        
+    except Exception as e:
+        print(f"❌ Erreur lors de l'annulation: {e}")
+        return jsonify({"success": False, "message": str(e)})
+    
 @patient.route("/profile")
 def profile():
-    return render_template("patient/profile.html")
+    patient_id = 1  # remplacer par session['patient_id']
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Infos patient
+    cursor.execute("SELECT id, nom, email, telephone FROM patients WHERE id=%s", (patient_id,))
+    patient_data = cursor.fetchone()
+
+    # Statistiques du patient (exemple : nombre de RDV)
+    cursor.execute("SELECT COUNT(*) as rdv_count FROM rendezvous WHERE patient_id=%s", (patient_id,))
+    rdv_count = cursor.fetchone()['rdv_count']
+
+    stats = {
+        "rdv_count": rdv_count,
+        "medecins_count": 3,  # exemple
+        "pending_count": 2    # exemple
+    }
+
+    cursor.close()
+    conn.close()
+
+    return render_template("patient/profile.html", patient=patient_data, stats=stats)
+
+
+@patient.route("/update_profile", methods=["POST"])
+def update_profile():
+    patient_id = 1  # Remplacer par session['patient_id']
+    nom = request.form.get("nom", "").strip()
+    email = request.form.get("email", "").strip()
+    telephone = request.form.get("telephone", "").strip()
+
+    if not nom:
+        return jsonify({"success": False, "message": "Le nom est requis."})
+    if not email:
+        return jsonify({"success": False, "message": "L'email est requis."})
+    if not telephone:
+        return jsonify({"success": False, "message": "Le téléphone est requis."})
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE patients
+            SET nom=%s, email=%s, telephone=%s
+            WHERE id=%s
+        """, (nom, email, telephone, patient_id))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({"success": True, "message": "Profil mis à jour avec succès."})
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Erreur: {str(e)}"})
+
 
 @patient.route("/logout")
 def logout():

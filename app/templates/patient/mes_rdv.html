@@ -7,7 +7,7 @@
     <div class="container">
         <div class="heade">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h1>Historique des Rendez-vous</h1>
+                <h1>Mes Rendez-vous</h1>
                 <button class="btn-add-appointment" onclick="showAppointmentForm()">
                     <i class="fas fa-plus" style="color: white;"></i> Ajouter un Rendez-vous
                 </button>
@@ -31,7 +31,6 @@
 
         <div id="appointmentsGrid" class="appointments-grid"></div>
 
-        <!-- Empty state, toujours présent -->
         <div id="emptyState" class="empty-state" style="display:none;">
             <div class="empty-state-icon">📅</div>
             <h3>Aucun rendez-vous trouvé</h3>
@@ -47,20 +46,28 @@
 
 {% block scripts %}
 <script>
-    // ✅ Tableau JS à partir des données Flask
+    const specialisations = {{ specialisations|tojson }};
+    
     const appointments = [
         {% for rdv in upcoming_appointments %}
         {
             id: {{ rdv.id }},
+            medecin_id: {{ rdv.medecin_id }},
             medecin_name: "{{ rdv.medecin_nom }}",
             medecin_spec: "{{ rdv.specialite }}",
-            date: "{{ rdv.date_heure.strftime('%Y-%m-%d') }}",
-            time: "{{ rdv.date_heure.strftime('%H:%M') }}",
+            date: "{{ rdv.date_only }}",
+            time: "{{ rdv.time_only }}",
             clinic: "{{ rdv.clinic or '' }}",
-            status: "{{ rdv.statut}}"
-        },
+            status: "{{ rdv.statut }}",
+            notes: {{ rdv.notes|tojson if rdv.notes else '""' }}
+        }{% if not loop.last %},{% endif %}
         {% endfor %}
     ];
+    
+    console.log('📋 Appointments chargés:', appointments);
+    console.log('🔍 Exemple d\'heure:', appointments.length > 0 ? appointments[0].time : 'Aucun RDV');
+    console.log('🏥 Spécialisations:', specialisations);
 </script>
+
 <script src="{{ url_for('static', filename='js/patient.js') }}"></script>
 {% endblock %}

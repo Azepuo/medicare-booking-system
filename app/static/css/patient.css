@@ -1745,3 +1745,179 @@ input:checked + .slider:before {
 #editAppointmentForm button:hover {
     background: #45a049;
 }
+
+.edit-form-container {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease;
+}
+
+.edit-form {
+    background: #ffffff;
+    padding: 36px 30px;
+    border-radius: 16px;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18);
+    width: 440px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease;
+}
+
+.edit-form h3 {
+    margin-bottom: 24px;
+    font-size: 24px;
+    font-weight: 600;
+    color: #2d3748;
+    text-align: center;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 12px;
+}
+
+.edit-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.edit-form select,
+.edit-form textarea {
+    width: 100%;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    border: 1.8px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 15px;
+    color: #2d3748;
+    background: #f9fafb;
+    transition: all 0.2s ease;
+}
+
+.edit-form select:hover,
+.edit-form textarea:hover {
+    border-color: #cbd5e0;
+}
+
+.edit-form select:focus,
+.edit-form textarea:focus {
+    outline: none;
+    border-color: #107aca;
+    box-shadow: 0 0 0 3px rgba(16, 122, 202, 0.25);
+    background: #ffffff;
+}
+
+.edit-form textarea {
+    resize: vertical;
+    min-height: 90px;
+    font-family: 'Inter', sans-serif;
+}
+
+.form-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+/* --- Boutons --- */
+.btn-save,
+.btn-cancel {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+/* Enregistrer (bleu) */
+.btn-save {
+    background: linear-gradient(135deg, #107aca, #0d67a9);
+    color: white;
+    box-shadow: 0 4px 10px rgba(16, 122, 202, 0.3);
+}
+
+.btn-save:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(16, 122, 202, 0.4);
+}
+
+/* Annuler (gris doux) */
+.btn-cancel {
+    background: #f0f2f5;
+    color: #555;
+}
+
+.btn-cancel:hover {
+    background: #e2e6ea;
+    transform: translateY(-1px);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(40px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Scrollbar douce */
+.edit-form::-webkit-scrollbar {
+    width: 8px;
+}
+
+.edit-form::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 6px;
+}
+
+.edit-form::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.flash-message {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    font-weight: 500;
+    transition: opacity 0.3s ease;
+}
+
+.flash-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.flash-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
