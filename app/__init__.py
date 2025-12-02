@@ -15,7 +15,9 @@ def create_app():
     login_manager.login_view = "auth.login"
     login_manager.login_message_category = "info"
 
-    # 🔹 Enregistrement des blueprints
+    # ────────────────────────────────────────────
+    # 🔹 Enregistrement des blueprints existants
+    # ────────────────────────────────────────────
     from .routes.auth_routes import auth
     app.register_blueprint(auth)
 
@@ -30,5 +32,12 @@ def create_app():
 
     from .routes.main_routes import main
     app.register_blueprint(main)
+
+    # ────────────────────────────────────────────
+    # 🔹 ENREGISTREMENT DU RPC AUTH 📌
+    # ────────────────────────────────────────────
+    from app.rpc_auth import auth_rpc
+    app.register_blueprint(auth_rpc, url_prefix="/api")
+    # Exemple final : POST /api/rpc
 
     return app
