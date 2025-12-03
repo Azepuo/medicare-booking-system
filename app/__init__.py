@@ -8,6 +8,7 @@ app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = ''
 app.config['MYSQL_DB'] = 'medicare_db'
 
+
 def get_db_connection():
     return mysql.connector.connect(
         host=app.config['MYSQL_HOST'],

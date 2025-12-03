@@ -13,14 +13,12 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
-    /* En-tête */
     .fc .fc-toolbar-title {
         font-size: 1.3em;
         font-weight: 600;
         color: #2c3e50;
     }
 
-    /* Boutons */
     .fc .fc-button {
         background: #107aca;
         border: none;
@@ -30,14 +28,13 @@
     }
 
     .fc .fc-button:hover {
-        background: #107aca;
+        background: #0d5fa3;
     }
 
     .fc .fc-button-active {
         background: #107aca;
     }
 
-    /* En-tête jours */
     .fc .fc-col-header-cell {
         background: #f7f9fc;
         padding: 12px;
@@ -46,13 +43,11 @@
         border: none;
     }
 
-    /* Cellules */
     .fc .fc-daygrid-day-number {
         padding: 8px;
         color: #475569;
     }
 
-    /* Aujourd'hui */
     .fc .fc-day-today {
         background: #eff6ff !important;
     }
@@ -62,7 +57,6 @@
         font-weight: 700;
     }
 
-    /* Événements */
     .fc-event {
         background: #107aca !important;
         border: none !important;
@@ -70,7 +64,6 @@
         padding: 2px 6px !important;
     }
 
-    /* Bordures */
     .fc .fc-scrollgrid {
         border: none !important;
     }
@@ -79,7 +72,6 @@
         border-color: #e2e8f0 !important;
     }
 
-    /* Cartes rendez-vous */
     .appointment-card2 {
         background: white;
         border-radius: 10px;
@@ -104,6 +96,201 @@
         margin-bottom: 15px;
         font-weight: 600;
     }
+
+    /* Modal Styles */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        animation: fadeIn 0.3s;
+    }
+
+    .modal-overlay.active {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 600px;
+        max-height: 85vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s;
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, #107aca 0%, #0d5fa3 100%);
+        color: white;
+        padding: 25px;
+        border-radius: 16px 16px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.5em;
+        font-weight: 600;
+    }
+
+    .modal-close {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        font-size: 24px;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.3s;
+    }
+
+    .modal-close:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    .modal-body {
+        padding: 25px;
+    }
+
+    .doctor-info {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #f1f5f9;
+        margin-bottom: 25px;
+    }
+
+    .doctor-photo {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #107aca;
+    }
+
+    .doctor-details h4 {
+        margin: 0 0 5px 0;
+        color: #1e293b;
+        font-size: 1.3em;
+    }
+
+    .doctor-details p {
+        margin: 3px 0;
+        color: #64748b;
+    }
+
+    .info-section {
+        margin-bottom: 20px;
+    }
+
+    .info-section h5 {
+        color: #1e293b;
+        font-size: 1.05em;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .info-item {
+        background: #f8fafc;
+        padding: 12px 15px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .info-icon {
+        font-size: 20px;
+        width: 35px;
+        height: 35px;
+        background: white;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .info-text {
+        flex: 1;
+    }
+
+    .info-label {
+        font-size: 0.85em;
+        color: #64748b;
+        margin-bottom: 2px;
+    }
+
+    .info-value {
+        color: #1e293b;
+        font-weight: 500;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        font-weight: 600;
+    }
+
+    .status-confirme {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .status-en-attente {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .notes-box {
+        background: #fffbeb;
+        border-left: 4px solid #f59e0b;
+        padding: 15px;
+        border-radius: 8px;
+        color: #78350f;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+        from {
+            transform: translateY(50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .btn-details:hover {
+        background: #0d5fa3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 122, 202, 0.3);
+        transition: all 0.3s;
+    }
 </style>
 
 <div class="content" id="dashboardContent">
@@ -122,18 +309,22 @@
                          alt="Dr. {{ rdv.medecin_nom }}" 
                          style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
                     <div style="flex: 1;">
-                        <p style="margin: 0; font-weight: 600; color: #1e293b;"> {{ rdv.medecin_nom }}</p>
+                        <p style="margin: 0; font-weight: 600; color: #1e293b;">{{ rdv.medecin_nom }}</p>
                         <p style="margin: 3px 0; color: #64748b; font-size: 0.9em;">{{ rdv.specialite }}</p>
-                        <p style="margin: 3px 0; color: #107aca; font-size: 0.9em;">{{ rdv.date_heure.strftime("%d/%m/%Y à %H:%M") }}</p>
+                        <p style="margin: 3px 0; color: #107aca; font-size: 0.9em;">{{ rdv.date_heure }}</p>
                     </div>
                     <div style="display: flex; gap: 8px;">
-                        <button class="btn-edit1" style="padding: 6px 12px; border: none; background: #107aca; color: white; border-radius: 6px; cursor: pointer;">Modifier</button>
-                        <button class="btn-cancel1" style="padding: 6px 12px; border: none; background: #ef4444; color: white; border-radius: 6px; cursor: pointer;">Annuler</button>
+                        <button class="btn-details" data-rdv-id="{{ rdv.id }}" 
+                                style="padding: 6px 12px; border: none; background: #107aca; color: white; border-radius: 6px; cursor: pointer;">
+                            📋 Détails
+                        </button>
                     </div>
                 </div>
                 {% endfor %}
             {% else %}
-                <p style="color: #64748b; padding: 15px; background: #f8fafc; border-radius: 8px; text-align: center;">Aucun rendez-vous à venir.</p>
+                <p style="color: #64748b; padding: 15px; background: #f8fafc; border-radius: 8px; text-align: center;">
+                    Aucun rendez-vous à venir.
+                </p>
             {% endif %}
         </div>
 
@@ -144,6 +335,24 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Détails -->
+<div class="modal-overlay" id="detailsModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>📋 Détails du rendez-vous</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody">
+            <!-- Contenu chargé dynamiquement -->
+            <div style="text-align: center; padding: 40px;">
+                <div style="font-size: 40px; margin-bottom: 15px;">⏳</div>
+                <p style="color: #64748b;">Chargement...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -152,6 +361,7 @@
 <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.8/locales/fr.global.min.js'></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Calendrier
     var calendarEl = document.getElementById('calendar');
     
     if (calendarEl) {
@@ -160,12 +370,12 @@ document.addEventListener('DOMContentLoaded', function() {
         {% for rdv in upcoming_appointments %}
         events.push({
             title: 'Dr. {{ rdv.medecin_nom }}',
-            start: '{{ rdv.date_heure.strftime("%Y-%m-%dT%H:%M:%S") }}',
+            start: '{{ rdv.date_heure.replace(" ", "T") }}:00',
             extendedProps: {
                 specialite: '{{ rdv.specialite }}',
-                dateheure: '{{ rdv.date_heure.strftime("%d/%m/%Y à %H:%M") }}'
+                dateheure: '{{ rdv.date_heure }}'
             },
-            color: '#107aca',          // couleur visible
+            color: '#107aca',
             textColor: 'white'
         });
         {% endfor %}
@@ -184,12 +394,159 @@ document.addEventListener('DOMContentLoaded', function() {
             events: events,
             height: 'auto',
             eventDidMount: function(info) {
-                // Tooltip avec date/heure et spécialité
                 info.el.setAttribute('title', info.event.extendedProps.dateheure + ' - ' + info.event.extendedProps.specialite);
             }
         });
 
         calendar.render();
+    }
+
+    // Gestion des boutons Détails
+    document.querySelectorAll('.btn-details').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const rdvId = this.getAttribute('data-rdv-id');
+            loadRdvDetails(rdvId);
+        });
+    });
+});
+
+// Fonction pour charger les détails du RDV
+function loadRdvDetails(rdvId) {
+    const modal = document.getElementById('detailsModal');
+    const modalBody = document.getElementById('modalBody');
+    
+    // Afficher le modal avec loader
+    modal.classList.add('active');
+    modalBody.innerHTML = `
+        <div style="text-align: center; padding: 40px;">
+            <div style="font-size: 40px; margin-bottom: 15px;">⏳</div>
+            <p style="color: #64748b;">Chargement des détails...</p>
+        </div>
+    `;
+    
+    // Appel AJAX
+    fetch(`/patient/rdv/details/${rdvId}`)
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                const rdv = result.data;
+                displayRdvDetails(rdv);
+            } else {
+                modalBody.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #ef4444;">
+                        <div style="font-size: 40px; margin-bottom: 15px;">❌</div>
+                        <p>${result.message}</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            modalBody.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #ef4444;">
+                    <div style="font-size: 40px; margin-bottom: 15px;">⚠️</div>
+                    <p>Une erreur est survenue lors du chargement.</p>
+                </div>
+            `;
+        });
+}
+
+// Fonction pour afficher les détails
+function displayRdvDetails(rdv) {
+    const modalBody = document.getElementById('modalBody');
+    
+    const statutClass = rdv.statut === 'confirmé' ? 'status-confirme' : 'status-en-attente';
+    const statutText = rdv.statut === 'confirmé' ? 'Confirmé' : 'En attente';
+    
+    modalBody.innerHTML = `
+        <div class="doctor-info">
+            <img src="/static/${rdv.photo_url}" alt="${rdv.medecin_nom}" class="doctor-photo">
+            <div class="doctor-details">
+                <h4>Dr. ${rdv.medecin_nom}</h4>
+                <p style="color: #107aca; font-weight: 600;">${rdv.specialite}</p>
+                <p>🎓 ${rdv.annee_experience} ans d'expérience</p>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h5>📅 Informations du rendez-vous</h5>
+            <div class="info-item">
+                <div class="info-icon">🕐</div>
+                <div class="info-text">
+                    <div class="info-label">Date et heure</div>
+                    <div class="info-value">${rdv.date_heure}</div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-icon">📍</div>
+                <div class="info-text">
+                    <div class="info-label">Adresse</div>
+                    <div class="info-value">${rdv.adresse_cabinet || 'Non spécifiée'}</div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-icon">💰</div>
+                <div class="info-text">
+                    <div class="info-label">Tarif consultation</div>
+                    <div class="info-value">${rdv.tarif_consultation} DH</div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-icon">✓</div>
+                <div class="info-text">
+                    <div class="info-label">Statut</div>
+                    <div class="info-value">
+                        <span class="status-badge ${statutClass}">${statutText}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h5>👨‍⚕️ Contact</h5>
+            <div class="info-item">
+                <div class="info-icon">📧</div>
+                <div class="info-text">
+                    <div class="info-label">Email</div>
+                    <div class="info-value">${rdv.medecin_email}</div>
+                </div>
+            </div>
+        </div>
+
+        ${rdv.description ? `
+        <div class="info-section">
+            <h5>ℹ️ À propos du médecin</h5>
+            <p style="color: #475569; line-height: 1.6;">${rdv.description}</p>
+        </div>
+        ` : ''}
+
+        ${rdv.notes ? `
+        <div class="info-section">
+            <h5>📝 Notes</h5>
+            <div class="notes-box">
+                ${rdv.notes}
+            </div>
+        </div>
+        ` : ''}
+    `;
+}
+
+// Fermer le modal
+function closeModal() {
+    document.getElementById('detailsModal').classList.remove('active');
+}
+
+// Fermer avec clic en dehors
+document.getElementById('detailsModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeModal();
+    }
+});
+
+// Fermer avec touche Échap
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeModal();
     }
 });
 </script>

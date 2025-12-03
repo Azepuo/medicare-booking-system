@@ -1,8 +1,30 @@
-from flask import Blueprint, render_template,request,jsonify
+from flask import Blueprint, render_template, request, jsonify
 from app import get_db_connection
-from datetime import datetime, timedelta,time
+from datetime import datetime, timedelta, time
 import calendar
+from xmlrpc.client import ServerProxy
+import xmlrpc.client
+import http.client
+
 patient = Blueprint("patient", __name__, url_prefix="/patient")
+
+# ✅ Fonction pour créer une nouvelle connexion RPC à chaque appel
+def get_rpc_server():
+    """Crée une nouvelle connexion RPC avec timeout pour éviter les conflits"""
+    class TimeoutTransport(xmlrpc.client.Transport):
+        def __init__(self, timeout=10, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.timeout = timeout
+        
+        def make_connection(self, host):
+            connection = http.client.HTTPConnection(host, timeout=self.timeout)
+            return connection
+    
+    return ServerProxy(
+        "http://localhost:9000/", 
+        allow_none=True,
+        transport=TimeoutTransport(timeout=10)
+    )
 
 @patient.route("/accueil")
 def accueil():
@@ -10,270 +32,333 @@ def accueil():
  
 @patient.route("/dashboard")
 def dashboard():
-    patient_id = 1  # patient par défaut
+    patient_id = 1  # à remplacer par session['patient_id']
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)  # pour récupérer dict au lieu de tuple
-
-    # Nom du patient
-    cursor.execute("SELECT nom FROM patients WHERE id=%s", (patient_id,))
-    patient_row = cursor.fetchone()
-    patient_name = patient_row['nom'] if patient_row else 'Patient'
-
-    # Tous les rendez-vous à venir
-    cursor.execute("""
-        SELECT r.id, r.date_heure, r.statut, r.notes,
-               m.nom AS medecin_nom, 
-               m.specialite, 
-               m.photo_url
-        FROM rendezvous r
-        JOIN medecins m ON r.medecin_id = m.id
-        WHERE r.patient_id=%s AND r.date_heure >= NOW() AND r.statut != 'Annulé' And r.statut!='En attente'
-        ORDER BY r.date_heure ASC
-    """, (patient_id,))
-    upcoming_appointments = cursor.fetchall()  # renommer pour refléter plusieurs RDV
-
-    # Historique 3 derniers rendez-vous
-    cursor.execute("""
-        SELECT r.date_heure, m.nom AS medecin_nom, r.statut
-        FROM rendezvous r
-        JOIN medecins m ON r.medecin_id = m.id
-        WHERE r.patient_id=%s
-        ORDER BY r.date_heure DESC
-        LIMIT 3
-    """, (patient_id,))
-    last_consults = cursor.fetchall()
-
-    cursor.close()
-    conn.close()
+    try:
+        # Appel RPC
+        rpc_server = get_rpc_server()
+        rpc_data = rpc_server.get_dashboard(patient_id)
+        patient_name = rpc_data['patient_info']['nom']
+        upcoming_appointments = rpc_data['upcoming_appointments']
+        last_consults = rpc_data['past_appointments']
+    except Exception as e:
+        print("Erreur RPC:", e)
+        # Fallback si RPC échoue
+        patient_name = "Patient"
+        upcoming_appointments = []
+        last_consults = []
 
     return render_template(
         "patient/dashboard.html",
         patient_name=patient_name,
-        upcoming_appointments=upcoming_appointments,  # bien refléter la variable
+        upcoming_appointments=upcoming_appointments,
         last_consults=last_consults
     )
+@patient.route('/rdv/details/<int:rdv_id>', methods=['GET'])
+def get_rdv_details(rdv_id):
+    try:
+        print("="*50)
+        print(f"[RDV_DETAILS] Récupération détails pour RDV: {rdv_id}")
+        
+        patient_id = 1  # À remplacer par session['patient_id']
+        
+        # Vérifier que le RDV appartient au patient (sécurité)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT patient_id FROM rendezvous WHERE id = %s
+        """, (rdv_id,))
+        rdv_patient = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if not rdv_patient or rdv_patient[0] != patient_id:
+            return jsonify({
+                'success': False,
+                'message': 'Accès non autorisé'
+            }), 403
+
+        # 🔴 CORRECTION : Créer une connexion RPC
+        rpc_server = get_rpc_server()  # ← AJOUTEZ CETTE LIGNE !
+        
+        # Appel RPC
+        result = rpc_server.get_rendezvous_details(rdv_id)
+        
+        print(f"[RDV_DETAILS] Résultat RPC: {result}")
+        
+        if result.get('success'):
+            return jsonify({
+                'success': True,
+                'data': result['data']
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': result.get('message', 'Rendez-vous introuvable')
+            }), 404
+            
+    except Exception as e:
+        print(f"[RDV_DETAILS] ❌ Erreur: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': f'Erreur serveur: {str(e)}'
+        }), 500
 
 @patient.route("/mes_rdv")
 def mes_rdv():
-    patient_id = 1
+    patient_id = 1  # à remplacer par session['patient_id']
 
-    conn = get_db_connection()
-    cursor_rdv = conn.cursor(dictionary=True)
-    
-    # MODIFICATION ICI : Utiliser TIME_FORMAT pour avoir HH:MM
-    cursor_rdv.execute("""
-        SELECT 
-            r.id, 
-            r.date_heure, 
-            r.statut, 
-            m.clinic, 
-            r.notes,
-            m.id as medecin_id,
-            m.nom AS medecin_nom, 
-            s.nom AS specialite,
-            DATE(r.date_heure) as date_only,
-            TIME_FORMAT(r.date_heure, '%H:%i') as time_only  # ← HH:MM sans secondes
-        FROM rendezvous r
-        JOIN medecins m ON r.medecin_id = m.id
-        JOIN specialisations s ON m.id_specialisation = s.id
-        WHERE r.patient_id = %s
-        ORDER BY r.date_heure DESC
-    """, (patient_id,))
-    
-    upcoming_appointments = cursor_rdv.fetchall()
-    
-    # Si TIME_FORMAT ne marche pas, faites le formatage en Python
-    for rdv in upcoming_appointments:
-        if 'time_only' not in rdv or not rdv['time_only']:
-            # Extraire l'heure de date_heure
-            time_obj = rdv['date_heure'].time()
-            rdv['time_only'] = time_obj.strftime('%H:%M')
-    
-    cursor_spec = conn.cursor()
-    cursor_spec.execute("SELECT id, nom FROM specialisations")
-    specialisations = cursor_spec.fetchall()
-    
-    cursor_rdv.close()
-    cursor_spec.close()
-    conn.close()
+    try:
+        print("="*50)
+        print(f"[ROUTE] Récupération RDV pour patient_id: {patient_id}")
+        print("="*50)
+        
+        # Appel RPC
+        rpc_server = get_rpc_server()
+        rpc_data = rpc_server.get_all_appointments(patient_id)
+        
+        print(f"[ROUTE] Type de rpc_data: {type(rpc_data)}")
+        print(f"[ROUTE] rpc_data reçu: {rpc_data}")
+        
+        if isinstance(rpc_data, dict) and rpc_data.get("success") is False:
+            print(f"[RPC] Erreur récupération rendez-vous: {rpc_data.get('message')}")
+            all_appointments = []
+        else:
+            all_appointments = rpc_data
+
+        print(f"[ROUTE] Nombre de RDV: {len(all_appointments) if all_appointments else 0}")
+        if all_appointments and len(all_appointments) > 0:
+            print(f"[ROUTE] Premier RDV brut: {all_appointments[0]}")
+
+        # Sécuriser et formater les données
+        for i, rdv in enumerate(all_appointments):
+            print(f"\n[ROUTE] Traitement RDV {i+1}:")
+            print(f"  - ID: {rdv.get('id')}")
+            print(f"  - date_heure avant: {rdv.get('date_heure')} (type: {type(rdv.get('date_heure'))})")
+            
+            # date_heure
+            if isinstance(rdv.get("date_heure"), datetime):
+                rdv["date_heure"] = rdv["date_heure"].strftime("%Y-%m-%d %H:%M")
+            elif not rdv.get("date_heure"):
+                rdv["date_heure"] = ""
+
+            print(f"  - date_heure après: {rdv.get('date_heure')}")
+            print(f"  - date_only: {rdv.get('date_only')}")
+            print(f"  - time_only: {rdv.get('time_only')}")
+
+            # time_only
+            if not rdv.get("time_only"):
+                try:
+                    rdv["time_only"] = rdv["date_heure"].split(" ")[1] if rdv["date_heure"] else ""
+                except:
+                    rdv["time_only"] = ""
+                    print(f"  ⚠️ Erreur extraction time_only")
+
+            # Autres champs jamais None
+            for key in ["statut", "clinic", "notes", "medecin_id", "medecin_nom", "specialite", "date_only"]:
+                if rdv.get(key) is None:
+                    rdv[key] = ""
+                    print(f"  ⚠️ Champ {key} était None, défini à ''")
+
+        print(f"\n[ROUTE] Tous les RDV après formatage:")
+        for i, rdv in enumerate(all_appointments):
+            print(f"  RDV {i+1}: {rdv}")
+
+        # Récupérer les spécialités pour le filtre
+        conn = get_db_connection()
+        cursor_spec = conn.cursor()
+        cursor_spec.execute("SELECT id, nom FROM specialisations")
+        specialisations = cursor_spec.fetchall()
+        print(f"[ROUTE] Spécialisations: {specialisations}")
+        cursor_spec.close()
+        conn.close()
+
+    except Exception as e:
+        print(f"[Mes RDV] ❌ ERREUR: {e}")
+        import traceback
+        traceback.print_exc()
+        all_appointments = []
+        specialisations = []
+
+    print(f"\n[ROUTE] ✅ Envoi au template:")
+    print(f"  - Nombre de RDV: {len(all_appointments)}")
+    print(f"  - Nombre de spécialisations: {len(specialisations)}")
+    print("="*50)
 
     return render_template(
         "patient/mes_rdv.html",
         specialisations=specialisations,
-        upcoming_appointments=upcoming_appointments
+        upcoming_appointments=all_appointments
     )
 
 @patient.route("/update_appointment", methods=["POST"])
 def update_appointment():
-    appointment_id = request.form.get("id")
-    medecin_id = request.form.get("medecin_id")
-    date = request.form.get("date")
-    time_str = request.form.get("time")
-    notes = request.form.get("notes")
-    
-    patient_id = 1  # À remplacer par l'ID du patient connecté
-
-    print(f"📝 Mise à jour RDV: id={appointment_id}, medecin={medecin_id}, date={date}, time={time_str}")
-
-    if not (appointment_id and medecin_id and date and time_str):
-        return jsonify({"success": False, "message": "Tous les champs sont requis."})
-
-    date_heure_str = f"{date} {time_str}:00"
-    print(f"📅 Date/heure combinée: {date_heure_str}")
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
     try:
-        # VÉRIFICATION : Le patient ne doit pas avoir déjà un rendez-vous ce jour-là avec ce médecin
-        # (sauf celui qu'on est en train de modifier)
-        cursor.execute("""
-            SELECT COUNT(*) 
-            FROM rendezvous
-            WHERE patient_id = %s 
-              AND medecin_id = %s 
-              AND DATE(date_heure) = %s
-              AND statut != 'Annulé'
-              AND id != %s  -- Exclure le rendez-vous qu'on modifie
-        """, (patient_id, medecin_id, date, appointment_id))
+        # Récupérer les données du formulaire
+        appointment_id = request.form.get("id")
+        medecin_id = request.form.get("medecin_id")
+        date = request.form.get("date")
+        time_str = request.form.get("time")
+        notes = request.form.get("notes", "")
+        
+        patient_id = 1  # À remplacer par l'ID du patient connecté
 
-        already_has = cursor.fetchone()[0]
-        print(f"📊 Nombre de RDV existants ce jour: {already_has}")
+        print("="*50)
+        print(f"[UPDATE] Mise à jour RDV:")
+        print(f"  - ID: {appointment_id}")
+        print(f"  - Médecin: {medecin_id}")
+        print(f"  - Date: {date}")
+        print(f"  - Heure: {time_str}")
+        print(f"  - Patient: {patient_id}")
 
-        if already_has > 0:
-            cursor.close()
-            conn.close()
+        # Validation
+        if not (appointment_id and medecin_id and date and time_str):
             return jsonify({
-                "success": False,
-                "message": "Vous avez déjà un rendez-vous ce jour-là avec ce médecin."
+                "success": False, 
+                "message": "Tous les champs sont requis."
             })
 
-        # VÉRIFICATION : Le créneau est-il disponible ?
-        # (conflit avec d'autres patients)
-        cursor.execute("""
-            SELECT COUNT(*) 
-            FROM rendezvous
-            WHERE medecin_id = %s 
-              AND date_heure = %s
-              AND id != %s
-        """, (medecin_id, date_heure_str, appointment_id))
+        # Appel RPC
+        rpc_server = get_rpc_server()
+        result = rpc_server.update_appointment(
+            appointment_id, 
+            medecin_id, 
+            date, 
+            time_str, 
+            notes, 
+            patient_id
+        )
         
-        conflict = cursor.fetchone()[0]
-        
-        if conflict > 0:
-            cursor.close()
-            conn.close()
-            return jsonify({
-                "success": False,
-                "message": "Ce créneau est déjà pris par un autre patient."
-            })
+        print(f"[UPDATE] ✅ Résultat RPC: {result}")
+        return jsonify(result)
 
-        # Si toutes les vérifications passent, procéder à la mise à jour
-        cursor.execute("""
-            UPDATE rendezvous
-            SET medecin_id = %s, date_heure = %s, notes = %s
-            WHERE id = %s
-        """, (medecin_id, date_heure_str, notes, appointment_id))
-        
-        conn.commit()
-        cursor.close()
-        conn.close()
-        
-        print("✅ Mise à jour réussie")
-        return jsonify({"success": True})
-        
     except Exception as e:
-        print(f"❌ Erreur lors de la mise à jour: {e}")
-        cursor.close()
-        conn.close()
-        return jsonify({"success": False, "message": str(e)})
+        print(f"[UPDATE] ❌ Erreur globale: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False, 
+            "message": f"Erreur de traitement: {str(e)}"
+        })
+
 @patient.route("/cancel_appointment", methods=["POST"])
 def cancel_appointment():
     try:
+        # Récupérer les données
         data = request.get_json()
         appointment_id = data.get("appointment_id")
         
+        patient_id = 1  # À remplacer par session['patient_id']
+
+        print("="*50)
+        print(f"[CANCEL] Annulation RDV:")
+        print(f"  - RDV ID: {appointment_id}")
+        print(f"  - Patient ID: {patient_id}")
+
+        # Validation
         if not appointment_id:
-            return jsonify({"success": False, "message": "ID du rendez-vous manquant"})
+            return jsonify({
+                "success": False, 
+                "message": "ID du rendez-vous manquant"
+            })
+
+        # Appel RPC
+        rpc_server = get_rpc_server()
+        result = rpc_server.cancel_appointment(appointment_id)
         
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        # Mettre à jour le statut dans la base de données
-        cursor.execute("""
-            UPDATE rendezvous 
-            SET statut = 'Annulé' 
-            WHERE id = %s
-        """, (appointment_id,))
-        
-        conn.commit()
-        cursor.close()
-        conn.close()
-        
-        print(f"✅ Rendez-vous {appointment_id} annulé dans la BD")
-        return jsonify({"success": True, "message": "Rendez-vous annulé avec succès"})
-        
+        print(f"[CANCEL] ✅ Résultat RPC: {result}")
+        return jsonify(result)
+
     except Exception as e:
-        print(f"❌ Erreur lors de l'annulation: {e}")
-        return jsonify({"success": False, "message": str(e)})
-    
+        print(f"[CANCEL] ❌ Erreur globale: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False, 
+            "message": f"Erreur de traitement: {str(e)}"
+        })
+
 @patient.route("/profile")
 def profile():
-    patient_id = 1  # remplacer par session['patient_id']
+    patient_id = 1  # à remplacer par session['patient_id']
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    try:
+        print("="*50)
+        print(f"[PROFILE] Appel RPC pour profil patient:")
+        print(f"  - Patient ID: {patient_id}")
 
-    # Infos patient
-    cursor.execute("SELECT id, nom, email, telephone FROM patients WHERE id=%s", (patient_id,))
-    patient_data = cursor.fetchone()
+        # Appel RPC
+        rpc_server = get_rpc_server()
+        rpc_data = rpc_server.get_profile_local(patient_id)
+        
+        print(f"[PROFILE] ✅ Données RPC reçues: {rpc_data}")
+        
+        if isinstance(rpc_data, dict) and 'patient_info' in rpc_data:
+            patient_data = rpc_data['patient_info']
+            stats = {
+                "rdv_count": rpc_data.get('total_rdv', 0),
+                "medecins_count": 0,  # À calculer si nécessaire
+                "pending_count": 0    # À calculer si nécessaire
+            }
+        else:
+            print(f"[PROFILE] ⚠️ Structure de données invalide")
+            patient_data = {"nom": "", "email": "", "telephone": ""}
+            stats = {"rdv_count": 0, "medecins_count": 0, "pending_count": 0}
 
-    # Statistiques du patient (exemple : nombre de RDV)
-    cursor.execute("SELECT COUNT(*) as rdv_count FROM rendezvous WHERE patient_id=%s", (patient_id,))
-    rdv_count = cursor.fetchone()['rdv_count']
+    except Exception as e:
+        print(f"[PROFILE] ❌ Erreur globale: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Fallback minimal
+        patient_data = {"nom": "", "email": "", "telephone": ""}
+        stats = {"rdv_count": 0, "medecins_count": 0, "pending_count": 0}
 
-    stats = {
-        "rdv_count": rdv_count,
-        "medecins_count": 3,  # exemple
-        "pending_count": 2    # exemple
-    }
-
-    cursor.close()
-    conn.close()
+    print(f"[PROFILE] ✅ Données envoyées au template:")
+    print(f"  - Patient: {patient_data.get('nom')}")
+    print(f"  - RDV count: {stats.get('rdv_count')}")
+    print("="*50)
 
     return render_template("patient/profile.html", patient=patient_data, stats=stats)
 
-
 @patient.route("/update_profile", methods=["POST"])
 def update_profile():
-    patient_id = 1  # Remplacer par session['patient_id']
-    nom = request.form.get("nom", "").strip()
-    email = request.form.get("email", "").strip()
-    telephone = request.form.get("telephone", "").strip()
-
-    if not nom:
-        return jsonify({"success": False, "message": "Le nom est requis."})
-    if not email:
-        return jsonify({"success": False, "message": "L'email est requis."})
-    if not telephone:
-        return jsonify({"success": False, "message": "Le téléphone est requis."})
-
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            UPDATE patients
-            SET nom=%s, email=%s, telephone=%s
-            WHERE id=%s
-        """, (nom, email, telephone, patient_id))
-        conn.commit()
-        cursor.close()
-        conn.close()
-        return jsonify({"success": True, "message": "Profil mis à jour avec succès."})
-    except Exception as e:
-        return jsonify({"success": False, "message": f"Erreur: {str(e)}"})
+        # Récupérer les données
+        nom = request.form.get("nom", "").strip()
+        email = request.form.get("email", "").strip()
+        telephone = request.form.get("telephone", "").strip()
+        
+        patient_id = 1  # À remplacer par l'ID du patient connecté
 
+        print("="*50)
+        print(f"[UPDATE_PROFILE] Appel RPC pour mise à jour profil")
+
+        # Validation basique
+        if not (nom and email and telephone):
+            return jsonify({
+                "success": False, 
+                "message": "Tous les champs sont requis."
+            })
+
+        # Appel RPC
+        rpc_server = get_rpc_server()
+        result = rpc_server.update_profile(patient_id, nom, email, telephone)
+        
+        print(f"[UPDATE_PROFILE] Résultat: {result}")
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"[UPDATE_PROFILE] ❌ Erreur: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        return jsonify({
+            "success": False,
+            "message": f"Erreur lors de la mise à jour: {str(e)}"
+        })
 
 @patient.route("/logout")
 def logout():
@@ -282,353 +367,211 @@ def logout():
 @patient.route("/prise_rdv")
 def prise_rdv():
     return render_template("patient/prise_rdv.html")
-   
+
 @patient.route("/get_doctors")
 def get_doctors():
+    patient_id = 1  # à remplacer par session['patient_id']
     specialization_id = request.args.get('specialization')
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Requête pour récupérer les docteurs de cette spécialisation
-    cursor.execute("""
-        SELECT id, nom 
-        FROM medecins
-        WHERE id_specialisation = %s
-    """, (specialization_id,))
-    
-    docteurs = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    
-    print(f"Docteurs pour spécialisation {specialization_id}:", docteurs)  # Débogage
-    
-    # Retourner en JSON
-    return jsonify([{
-        "id": d[0], 
-        "nom": f"{d[1]}"  # Nom complet
-    } for d in docteurs])
-@patient.route("/get_available_dates")
-def get_available_dates():
-    doctor_id = request.args.get("doctor_id")
-    if not doctor_id:
-        return jsonify({"success": False, "dates": []})
 
     try:
-        jours_en_fr = {
-            "Monday": "Lundi",
-            "Tuesday": "Mardi",
-            "Wednesday": "Mercredi",
-            "Thursday": "Jeudi",
-            "Friday": "Vendredi",
-            "Saturday": "Samedi",
-            "Sunday": "Dimanche"
-        }
+        print("="*50)
+        print(f"[GET_DOCTORS] Récupération médecins:")
+        print(f"  - Patient: {patient_id}")
+        print(f"  - Spécialisation: {specialization_id}")
 
-        print("Connexion à la base de données...")
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        if not specialization_id:
+            return jsonify([])
 
-        today = datetime.today().date()
-        print(f"Date actuelle : {today}")
+        # Appel RPC
+        rpc_server = get_rpc_server()
+        result = rpc_server.get_doctors_local(specialization_id)
         
-        # Chercher les dates sur les 3 prochains mois
-        available_dates = []
+        print(f"[GET_DOCTORS] ✅ Résultat RPC: {len(result) if isinstance(result, list) else 'N/A'}")
         
-        for month_offset in range(0, 3):  # Mois actuel + 2 mois suivants
-            # Calcul correct du mois suivant
-            year = today.year
-            month = today.month + month_offset
-            
-            # Ajuster l'année si le mois dépasse 12
-            if month > 12:
-                year += 1
-                month -= 12
-            
-            _, nb_jours = calendar.monthrange(year, month)
-            print(f"Recherche dans le mois {month}/{year} - {nb_jours} jours")
-
-            # Itérer sur tous les jours du mois
-            for day in range(1, nb_jours + 1):
-                date_obj = datetime(year, month, day).date()
-                jour_semaine = jours_en_fr[date_obj.strftime("%A")]
-                date_str = date_obj.strftime("%Y-%m-%d")
-
-                # Ignorer les dates passées
-                if date_obj < today:
-                    continue
-
-                print(f"Vérification de la date : {date_str} ({jour_semaine})")
-
-                # Vérifier les disponibilités du médecin pour ce jour
-                cursor.execute("""
-                    SELECT heure_debut, heure_fin
-                    FROM disponibilites
-                    WHERE medecin_id=%s AND jour_semaine=%s
-                """, (doctor_id, jour_semaine))
-                dispo_list = cursor.fetchall()
-
-                print(f"Disponibilités trouvées pour {date_str}: {dispo_list}")
-
-                day_has_slot = False
-
-                # Vérification des créneaux pour la date
-                for dispo in dispo_list:
-                    start_time = (datetime.min + dispo[0]).time() if isinstance(dispo[0], timedelta) else dispo[0]
-                    end_time = (datetime.min + dispo[1]).time() if isinstance(dispo[1], timedelta) else dispo[1]
-
-                    if not isinstance(start_time, time) or not isinstance(end_time, time):
-                        print(f"Format d'heure invalide: {start_time}, {end_time}")
-                        continue
-
-                    current_time = datetime.combine(date_obj, start_time)
-                    end_datetime = datetime.combine(date_obj, end_time)
-
-                    while current_time <= end_datetime:
-                        slot_start = current_time.strftime("%Y-%m-%d %H:%M:%S")
-                        slot_end_dt = current_time + timedelta(minutes=30)
-                        slot_end = slot_end_dt.strftime("%Y-%m-%d %H:%M:%S")
-
-                        cursor.execute("""
-                            SELECT COUNT(*) FROM rendezvous
-                            WHERE medecin_id=%s AND date_heure >= %s AND date_heure < %s
-                        """, (doctor_id, slot_start, slot_end))
-                        conflict = cursor.fetchone()[0]
-
-                        if conflict == 0:
-                            print(f"Créneau libre trouvé: {slot_start}")
-                            day_has_slot = True
-                            break
-
-                        current_time += timedelta(minutes=30)
-
-                    if day_has_slot:
-                        break
-
-                if day_has_slot:
-                    available_dates.append(date_str)
-                    print(f"Date ajoutée: {date_str}")
-
-        cursor.close()
-        conn.close()
-
-        print(f"Dates disponibles pour le docteur {doctor_id}: {available_dates}")
-        return jsonify({"success": bool(available_dates), "dates": sorted(list(set(available_dates)))})
+        # Vérifier le type de retour
+        if isinstance(result, list):
+            return jsonify(result)
+        elif isinstance(result, dict) and result.get("success") is False:
+            print(f"[GET_DOCTORS] ⚠️ RPC échoué: {result.get('message')}")
+            return jsonify([])
+        else:
+            return jsonify([])
 
     except Exception as e:
-        print(f"Erreur dans get_available_dates: {e}")
-        return jsonify({"success": False, "dates": [], "error": str(e)})
+        print(f"[GET_DOCTORS] ❌ Erreur globale: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify([])
+
 @patient.route("/get_available_slots")
 def get_available_slots():
+    patient_id = 1  # à remplacer par session['patient_id']
     doctor_id = request.args.get("doctor_id")
     consultation_date = request.args.get("consultation_date")
-    if not doctor_id or not consultation_date:
+
+    try:
+        print("="*50)
+        print(f"[GET_AVAILABLE_SLOTS] Récupération créneaux:")
+        print(f"  - Patient: {patient_id}")
+        print(f"  - Médecin: {doctor_id}")
+        print(f"  - Date: {consultation_date}")
+
+        if not doctor_id or not consultation_date:
+            return jsonify({"success": False, "slots": []})
+
+        # Appel RPC
+        rpc_server = get_rpc_server()
+        result = rpc_server.get_available_slots_local(doctor_id, consultation_date)
+        
+        print(f"[GET_AVAILABLE_SLOTS] ✅ Résultat RPC: {result}")
+        
+        if isinstance(result, dict) and "slots" in result:
+            return jsonify(result)
+        elif isinstance(result, list):
+            return jsonify({"success": True, "slots": result})
+        else:
+            return jsonify({"success": False, "slots": []})
+
+    except Exception as e:
+        print(f"[GET_AVAILABLE_SLOTS] ❌ Erreur globale: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"success": False, "slots": []})
 
-    jours_en_fr = {
-        "Monday": "Lundi",
-        "Tuesday": "Mardi",
-        "Wednesday": "Mercredi",
-        "Thursday": "Jeudi",
-        "Friday": "Vendredi",
-        "Saturday": "Samedi",
-        "Sunday": "Dimanche"
-    }
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    try:
-        # Obtenir le jour de la semaine en français
-        date_obj = datetime.strptime(consultation_date, "%Y-%m-%d")
-        jour_semaine = jours_en_fr[date_obj.strftime("%A")]
-
-        print(f"Recherche des créneaux pour le {consultation_date} ({jour_semaine})")  # Débogage
-
-        # Récupérer les disponibilités du médecin pour ce jour
-        cursor.execute("""
-            SELECT heure_debut, heure_fin
-            FROM disponibilites
-            WHERE medecin_id=%s AND jour_semaine=%s
-        """, (doctor_id, jour_semaine))
-
-        dispo_list = cursor.fetchall()
-        slots = []
-
-        print(f"Disponibilités trouvées: {dispo_list}")  # Débogage
-
-        for dispo in dispo_list:
-            # Gérer les différents formats d'heure (timedelta ou string)
-            if isinstance(dispo[0], timedelta):
-                start_time = (datetime.min + dispo[0]).time()
-            else:
-                # Si c'est un string, le convertir en time
-                start_time = datetime.strptime(str(dispo[0]), "%H:%M:%S").time()
-            
-            if isinstance(dispo[1], timedelta):
-                end_time = (datetime.min + dispo[1]).time()
-            else:
-                end_time = datetime.strptime(str(dispo[1]), "%H:%M:%S").time()
-
-            print(f"Traitement créneau: {start_time} - {end_time}")  # Débogage
-
-            current_time = datetime.combine(date_obj, start_time)
-            end_datetime = datetime.combine(date_obj, end_time)
-
-            while current_time < end_datetime:  # < au lieu de <= pour éviter le chevauchement
-                slot_start_str = current_time.strftime("%Y-%m-%d %H:%M:%S")
-                slot_end_time = current_time + timedelta(minutes=30)
-                slot_end_str = slot_end_time.strftime("%Y-%m-%d %H:%M:%S")
-
-                # Vérifier les conflits de rendez-vous dans l'intervalle
-                cursor.execute("""
-                    SELECT COUNT(*) FROM rendezvous
-                    WHERE medecin_id=%s AND date_heure >= %s AND date_heure < %s
-                """, (doctor_id, slot_start_str, slot_end_str))
-                conflict = cursor.fetchone()[0]
-
-                if conflict == 0:
-                    slot_display = current_time.strftime("%H:%M")
-                    slots.append(slot_display)
-                    print(f"Créneau disponible: {slot_display}")  # Débogage
-
-                current_time += timedelta(minutes=30)
-
-        print(f"Créneaux disponibles: {slots}")  # Débogage
-        
-        cursor.close()
-        conn.close()
-        
-        return jsonify({"success": True, "slots": slots})
-
-    except Exception as e:
-        print(f"Erreur dans get_available_slots: {e}")  # Débogage
-        cursor.close()
-        conn.close()
-        return jsonify({"success": False, "slots": [], "error": str(e)})
 @patient.route("/book_appointment", methods=["POST"])
-def book_appointment():
-    jours_en_fr = {
-        "Monday": "Lundi",
-        "Tuesday": "Mardi",
-        "Wednesday": "Mercredi",
-        "Thursday": "Jeudi",
-        "Friday": "Vendredi",
-        "Saturday": "Samedi",
-        "Sunday": "Dimanche"
-    }
+def book_appointment_route():
+    patient_id = 1  # à remplacer par session['patient_id']
 
-    # Récupérer les données du formulaire
-    patient_id = 1  # À remplacer par l'ID du patient connecté
-    doctor_id = request.form.get("doctor_id")
-    consultation_date = request.form.get("consultation_date")
-    consultation_time = request.form.get("consultation_time")
-    reason = request.form.get("reason")
-
-    if not (doctor_id and consultation_date and consultation_time and reason):
-        return jsonify({"success": False, "message": "Tous les champs sont requis."})
-
-    # Combiner date et heure
-    date_heure_str = f"{consultation_date} {consultation_time}:00"
-    date_heure = datetime.strptime(date_heure_str, "%Y-%m-%d %H:%M:%S")
-    jour_semaine = jours_en_fr[date_heure.strftime("%A")]
-
-    # Connexion à la DB
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    # Vérifier disponibilité du médecin
-    cursor.execute("""
-        SELECT * 
-        FROM disponibilites
-        WHERE medecin_id = %s 
-          AND jour_semaine = %s
-          AND heure_debut <= %s
-          AND heure_fin >= %s
-    """, (doctor_id, jour_semaine, consultation_time, consultation_time))
-    dispo = cursor.fetchone()
-
-    if not dispo:
-        cursor.close()
-        conn.close()
-        return jsonify({"success": False, "message": "Le médecin n'est pas disponible à cette heure."})
-
-    # Vérifier conflit de rendez-vous
-    cursor.execute("""
-        SELECT COUNT(*) 
-        FROM rendezvous
-        WHERE medecin_id = %s AND date_heure = %s
-    """, (doctor_id, date_heure_str))
-    conflict = cursor.fetchone()[0]
-
-    if conflict > 0:
-        cursor.close()
-        conn.close()
-        return jsonify({"success": False, "message": "Ce créneau est déjà pris."})
-    #le patient ne peut pas prendre deux rendez vous meme day chez meme doctor
-    cursor.execute("""
-    SELECT COUNT(*) 
-    FROM rendezvous
-    WHERE patient_id = %s 
-      AND medecin_id = %s 
-      AND DATE(date_heure) = %s
-      AND statut != 'Annulé'
-""", (patient_id, doctor_id, consultation_date))
-
-    already_has = cursor.fetchone()[0]
-
-    if already_has > 0:
-     cursor.close()
-     conn.close()
-     return jsonify({
-        "success": False,
-        "message": "Vous avez déjà un rendez-vous ce jour-là avec ce médecin."
-    })
-    # Insérer le rendez-vous
     try:
-        cursor.execute("""
-            INSERT INTO rendezvous (date_heure, patient_id, medecin_id, statut, notes)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (date_heure_str, patient_id, doctor_id, "En attente", reason))
-        conn.commit()
-        cursor.close()
-        conn.close()
-        return jsonify({"success": True})
+        # Récupérer les données du formulaire
+        doctor_id = request.form.get("doctor_id")
+        consultation_date = request.form.get("consultation_date")
+        consultation_time = request.form.get("consultation_time")
+        reason = request.form.get("reason", "")
+
+        print("="*50)
+        print(f"[BOOK] Prise de RDV:")
+        print(f"  - Patient ID: {patient_id}")
+        print(f"  - Médecin ID: {doctor_id}")
+        print(f"  - Date: {consultation_date}")
+        print(f"  - Heure: {consultation_time}")
+        print(f"  - Motif: {reason[:50]}...")
+
+        # Validation
+        if not all([doctor_id, consultation_date, consultation_time]):
+            return jsonify({
+                "success": False, 
+                "message": "Tous les champs sont requis."
+            })
+
+        # Appel RPC
+        rpc_server = get_rpc_server()
+        result = rpc_server.book_appointment(
+            patient_id, 
+            doctor_id, 
+            consultation_date, 
+            consultation_time,
+            reason
+        )
+        
+        print(f"[BOOK] ✅ Résultat RPC: {result}")
+        return jsonify(result)
+
     except Exception as e:
-        cursor.close()
-        conn.close()
-        return jsonify({"success": False, "message": str(e)})
+        print(f"[BOOK] ❌ Erreur globale: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False, 
+            "message": f"Erreur de traitement: {str(e)}"
+        })
 
-
-#creer route honoraire
 @patient.route("/get_honoraires")
 def get_honoraires():
+    patient_id = 1  # à remplacer par session['patient_id']
     doctor_id = request.args.get('doctor_id')
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Récupérer l'honoraire du médecin
-    cursor.execute("""
-        SELECT id, tarif_consultation 
-        FROM medecins
-        WHERE id = %s
-    """, (doctor_id,))
-    
-    medecin = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    
-    print(f"Honoraire pour docteur {doctor_id}:", medecin)  # Débogage
-    
-    # Retourner en JSON (un seul honoraire)
-    if medecin:
-        return jsonify([{
-            "id": medecin[0], 
-            "montant": medecin[1]
-        }])
-    else:
+
+    try:
+        print("="*50)
+        print(f"[GET_HONORAIRES] Récupération honoraires:")
+        print(f"  - Patient: {patient_id}")
+        print(f"  - Médecin: {doctor_id}")
+
+        if not doctor_id:
+            return jsonify([])
+
+        # Appel RPC avec retry
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                print(f"[GET_HONORAIRES] Tentative {attempt + 1}/{max_retries}")
+                rpc_server = get_rpc_server()
+                result = rpc_server.get_honoraires_local(doctor_id)
+                
+                print(f"[GET_HONORAIRES] ✅ Résultat RPC: {result}")
+                
+                # Vérifier le type de retour
+                if isinstance(result, dict) and "honoraire" in result:
+                    return jsonify([{"id": doctor_id, "montant": result["honoraire"]}])
+                elif isinstance(result, list):
+                    return jsonify(result)
+                elif isinstance(result, dict) and result.get("success") is False:
+                    print(f"[GET_HONORAIRES] ⚠️ RPC échoué: {result.get('message')}")
+                    return jsonify([])
+                else:
+                    return jsonify([])
+                    
+            except Exception as rpc_error:
+                print(f"[GET_HONORAIRES] ⚠️ Erreur tentative {attempt + 1}: {rpc_error}")
+                if attempt == max_retries - 1:
+                    raise
+                import time
+                time.sleep(0.3)
+
+    except Exception as e:
+        print(f"[GET_HONORAIRES] ❌ Erreur globale: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify([])
-    
 
+@patient.route("/get_available_dates")
+def get_available_dates():
+    patient_id = 1  # à remplacer par session['patient_id']
+    doctor_id = request.args.get("doctor_id")
 
+    try:
+        print("="*50)
+        print(f"[GET_AVAILABLE_DATES] Récupération dates disponibles:")
+        print(f"  - Patient: {patient_id}")
+        print(f"  - Médecin: {doctor_id}")
+
+        if not doctor_id:
+            return jsonify({"success": False, "dates": []})
+
+        # Appel RPC avec retry
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                print(f"[GET_AVAILABLE_DATES] Tentative {attempt + 1}/{max_retries}")
+                rpc_server = get_rpc_server()
+                result = rpc_server.get_available_dates_local(doctor_id)
+                
+                print(f"[GET_AVAILABLE_DATES] ✅ Résultat RPC: {result}")
+                
+                if isinstance(result, dict) and "dates" in result:
+                    return jsonify(result)
+                else:
+                    return jsonify({"success": False, "dates": []})
+                    
+            except Exception as rpc_error:
+                print(f"[GET_AVAILABLE_DATES] ⚠️ Erreur tentative {attempt + 1}: {rpc_error}")
+                if attempt == max_retries - 1:
+                    raise
+                import time
+                time.sleep(0.3)
+
+    except Exception as e:
+        print(f"[GET_AVAILABLE_DATES] ❌ Erreur globale: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "dates": []})

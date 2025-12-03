@@ -2,7 +2,6 @@ from flask import Flask
 from app.routes import register_blueprints
 from app.routes.api_routes import init_api_routes
 
-
 def create_app():
     app = Flask(
         __name__,
@@ -16,6 +15,8 @@ def create_app():
 
     # Register API routes (non-blueprint simple functions)
     init_api_routes(app)
+
+
 
     @app.route("/")
     def root():
