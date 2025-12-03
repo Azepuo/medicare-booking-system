@@ -5,164 +5,206 @@
 {% block page_title %}Mon Compte{% endblock %}
 
 {% block header %}
-<!-- Cacher le header pour la page profil -->
 <div style="display: none;">
     {{ super() }}
 </div>
 {% endblock %}
 
+
+
 {% block content %}
-<div class="content" id="accountContent">
-    <div class="account-container">
-        <div class="account-header">
-            <h1 class="account-title">
-                <i class="fas fa-user-circle"></i>
-                Mon Compte
-            </h1>
-            <p class="account-subtitle">Gérez vos informations personnelles</p>
+<div class="profile-wrapper">
+    <!-- Flash Message -->
+    <div id="flashMessage" class="flash-message" style="display:none;">
+        <i class="fas fa-check-circle"></i>
+        <span></span>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="profile-hero">
+        <div class="profile-hero-content">
+            <div class="profile-avatar-large">
+                <div class="avatar-circle">
+                    {{ patient.nom[0]|upper if patient.nom else 'P' }}
+                </div>
+                <div class="avatar-badge">
+                    <i class="fas fa-camera"></i>
+                </div>
+            </div>
+            <div class="profile-hero-info">
+                <h1 class="profile-hero-name">{{ patient.nom }}</h1>
+                <p class="profile-hero-email">
+                    <i class="fas fa-envelope"></i>
+                    {{ patient.email }}
+                </p>
+                <span class="profile-hero-role">
+                    <i class="fas fa-user"></i>
+                    Patient
+                </span>
+            </div>
         </div>
-<div id="flashMessage" class="flash-message" style="display:none;"></div>
+    </div>
 
-        <div class="account-content">
+    <!-- Stats Grid -->
+   
+    <!-- Personal Info Section -->
+    <div class="info-section">
+        <div class="section-header">
+            <h3 class="section-title">
+                <i class="fas fa-id-card"></i>
+                Informations Personnelles
+            </h3>
+            <button class="btn-edit" id="btnEdit">
+                <i class="fas fa-edit"></i>
+                Modifier
+            </button>
+        </div>
 
-            <!-- Carte Profil -->
-            <div class="profile-section">
-                <div class="profile-card">
-                    <div class="profile-header">
-                        <div class="profile-avatar">
-                            <div class="avatar-large">{{ patient.nom[0]|upper }}</div>
-                            <button class="btn-change-avatar">
-                                <i class="fas fa-camera"></i>
-                            </button>
-                        </div>
-                        <div class="profile-info">
-                            <h2 class="profile-name">{{ patient.nom }}</h2>
-                            <p class="profile-email">{{ patient.email }}</p>
-                            <p class="profile-role">Patient</p>
-                        </div>
-                    </div>
-
-                    <div class="profile-stats">
-                        <div class="profile-stat">
-                            <span class="stat-number">{{ stats.rdv_count if stats else 0 }}</span>
-                            <span class="stat-label">Rendez-vous</span>
-                        </div>
-                    </div>
+        <form id="personalInfoForm" class="info-form" method="POST" action="{{ url_for('patient.update_profile') }}">
+            <div class="form-row1">
+                <div class="form-group1">
+                    <label for="nom">
+                        <i class="fas fa-user"></i>
+                        Nom Complet
+                    </label>
+                    <input type="text" id="nom" name="nom" class="form-control1"
+                           value="{{ patient.nom }}" readonly required>
                 </div>
             </div>
 
-            <!-- Informations Personnelles -->
-            <div class="personal-info-section">
-                <div class="section-card">
-                    <div class="section-header">
-                        <h3>
-                            <i class="fas fa-user"></i>
-                            Informations Personnelles
-                        </h3>
-                        <button class="btn-edit" id="btnEdit">
-                            <i class="fas fa-edit"></i> Modifier
-                        </button>
-                    </div>
-
-                    <form id="personalInfoForm" class="info-form" method="POST" action="{{ url_for('patient.update_profile') }}">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="nom">Nom Complet</label>
-                                <input type="text" id="nom" name="nom" class="form-control"
-                                       value="{{ patient.nom }}" readonly>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="email">Email</label>
-                                <input type="email" id="email" name="email" class="form-control"
-                                       value="{{ patient.email }}" readonly>
-                            </div>
-                            <div class="form-group">
-                                <label for="telephone">Téléphone</label>
-                                <input type="tel" id="telephone" name="telephone" class="form-control"
-                                       value="{{ patient.telephone }}" readonly>
-                            </div>
-                        </div>
-
-                        <div class="form-actions" id="personalInfoActions" style="display: none;">
-                            <button type="button" class="btn-cancel" onclick="cancelEdit('personalInfoForm')">Annuler</button>
-                            <button type="submit" class="btn-save">Enregistrer</button>
-                        </div>
-                    </form>
+            <div class="form-row1">
+                <div class="form-group1">
+                    <label for="email">
+                        <i class="fas fa-envelope"></i>
+                        Adresse Email
+                    </label>
+                    <input type="email" id="email" name="email" class="form-control"
+                           value="{{ patient.email }}" readonly required>
+                </div>
+                <div class="form-group1">
+                    <label for="telephone">
+                        <i class="fas fa-phone"></i>
+                        Téléphone
+                    </label>
+                    <input type="tel" id="telephone" name="telephone" class="form-control"
+                           value="{{ patient.telephone }}" readonly required>
                 </div>
             </div>
 
-        </div>
+            <div class="form-actions" id="personalInfoActions" style="display: none;">
+                <button type="button" class="btn-cancel" id="btnCancel">
+                    <i class="fas fa-times"></i>
+                    Annuler
+                </button>
+                <button type="submit" class="btn-save">
+                    <i class="fas fa-save"></i>
+                    Enregistrer
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}
+
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('personalInfoForm');
     const btnEdit = document.getElementById('btnEdit');
+    const btnCancel = document.getElementById('btnCancel');
     const actions = document.getElementById('personalInfoActions');
     const flashMessage = document.getElementById('flashMessage');
+    const inputs = form.querySelectorAll('input');
+
+    let originalValues = {};
+    inputs.forEach(input => {
+        originalValues[input.name] = input.value;
+    });
 
     function showMessage(message, type) {
-        flashMessage.textContent = message;
+        const icon = type === 'success' 
+            ? '<i class="fas fa-check-circle"></i>' 
+            : '<i class="fas fa-exclamation-circle"></i>';
+        
+        flashMessage.innerHTML = icon + '<span>' + message + '</span>';
         flashMessage.className = 'flash-message ' + (type === 'success' ? 'flash-success' : 'flash-error');
-        flashMessage.style.display = 'block';
+        flashMessage.style.display = 'flex';
+        
         setTimeout(() => {
-            flashMessage.style.opacity = 0;
-            setTimeout(() => { flashMessage.style.display = 'none'; flashMessage.style.opacity = 1; }, 500);
-        }, 3000);
+            flashMessage.style.opacity = '0';
+            setTimeout(() => { 
+                flashMessage.style.display = 'none'; 
+                flashMessage.style.opacity = '1'; 
+            }, 300);
+        }, 3500);
     }
 
     btnEdit.addEventListener('click', function() {
-        const inputs = form.querySelectorAll('input');
         inputs.forEach(input => input.removeAttribute('readonly'));
+        inputs[0].focus();
         actions.style.display = 'flex';
+        btnEdit.style.display = 'none';
     });
 
-    const btnCancel = actions.querySelector('.btn-cancel');
     btnCancel.addEventListener('click', function() {
-        const inputs = form.querySelectorAll('input');
-        inputs.forEach(input => input.setAttribute('readonly', true));
+        inputs.forEach(input => {
+            input.value = originalValues[input.name];
+            input.setAttribute('readonly', true);
+        });
         actions.style.display = 'none';
+        btnEdit.style.display = 'flex';
     });
 
-form.addEventListener('submit', function(e) {
-    e.preventDefault();
-    const nom = form.querySelector('#nom').value.trim();
-    const email = form.querySelector('#email').value.trim();
-    const telephone = form.querySelector('#telephone').value.trim();
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const nom = form.querySelector('#nom').value.trim();
+        const email = form.querySelector('#email').value.trim();
+        const telephone = form.querySelector('#telephone').value.trim();
 
-    if (!nom || !email || !telephone) {
-        showMessage("Tous les champs sont requis.", 'error');
-        return;
-    }
-
-    const formData = new FormData(form);
-
-    fetch(form.action, {
-        method: 'POST',
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            showMessage(data.message, 'success');
-            const inputs = form.querySelectorAll('input');
-            inputs.forEach(input => input.setAttribute('readonly', true));
-            actions.style.display = 'none';
-        } else {
-            showMessage(data.message, 'error');
+        if (!nom || !email || !telephone) {
+            showMessage("Tous les champs sont requis.", 'error');
+            return;
         }
-    })
-    .catch(err => {
-        console.error(err);
-        showMessage("Erreur serveur.", 'error');
-    });
-});
 
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showMessage("Veuillez entrer une adresse email valide.", 'error');
+            return;
+        }
+
+        const formData = new FormData(form);
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showMessage(data.message, 'success');
+                
+                inputs.forEach(input => {
+                    originalValues[input.name] = input.value;
+                    input.setAttribute('readonly', true);
+                });
+                
+                actions.style.display = 'none';
+                btnEdit.style.display = 'flex';
+                
+                document.querySelector('.profile-hero-name').textContent = nom;
+                document.querySelector('.profile-hero-email').innerHTML = 
+                    '<i class="fas fa-envelope"></i>' + email;
+                document.querySelector('.avatar-circle').textContent = nom[0].toUpperCase();
+            } else {
+                showMessage(data.message || "Erreur lors de la mise à jour.", 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showMessage("Erreur de connexion au serveur.", 'error');
+        });
+    });
 });
 </script>
 {% endblock %}

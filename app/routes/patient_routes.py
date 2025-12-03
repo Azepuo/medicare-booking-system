@@ -280,6 +280,8 @@ def cancel_appointment():
             "message": f"Erreur de traitement: {str(e)}"
         })
 
+
+
 @patient.route("/profile")
 def profile():
     patient_id = 1  # à remplacer par session['patient_id']
