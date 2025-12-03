@@ -1,7 +1,7 @@
 # app/rdv/api.py
 from flask import Blueprint, jsonify, request
 from datetime import date
-from app.rpc_medecin import rdv as rdv_module  # ⬅️ Renommez l'import
+from app.rpc_medecin_1 import rdv as rdv_module  # ⬅️ Renommez l'import
 
 bp = Blueprint('rdv_api', __name__, url_prefix='/rpc/rdv')
 
