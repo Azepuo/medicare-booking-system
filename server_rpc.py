@@ -23,8 +23,167 @@ class ServerRPC:
     def __init__(self):
         self.server = xmlrpc.server.SimpleXMLRPCServer(("localhost", 9000), allow_none=True)
         self.server.register_instance(self)
+
+    def save_patient_review(self, patient_id, medecin_id, appointment_id, rating, comment):
+     """
+    Enregistre un avis patient pour un médecin
+    Args:
+        patient_id: ID du patient
+        medecin_id: ID du médecin
+        appointment_id: ID du rendez-vous
+        rating: Note de 1 à 5
+        comment: Commentaire du patient
+    Returns:
+        dict: {"success": True/False, "message": "..."}
+    """
+     try:
+        print("="*50)
+        print(f"[RPC] save_patient_review appelée:")
+        print(f"  - Patient: {patient_id}")
+        print(f"  - Médecin: {medecin_id}")
+        print(f"  - RDV: {appointment_id}")
+        print(f"  - Note: {rating}")
+        print(f"  - Commentaire: {comment[:50]}...")
+
+        # Validation des données
+        if not all([patient_id, medecin_id, appointment_id, rating]):
+            return {
+                "success": False,
+                "message": "Tous les champs obligatoires doivent être renseignés"
+            }
+
+        try:
+            rating = int(rating)
+            if rating < 1 or rating > 5:
+                return {
+                    "success": False,
+                    "message": "La note doit être entre 1 et 5"
+                }
+        except (ValueError, TypeError):
+            return {
+                "success": False,
+                "message": "Note invalide"
+            }
+
+        # Valider le commentaire
+        if not comment or len(comment.strip()) < 10:
+            return {
+                "success": False,
+                "message": "Le commentaire doit contenir au moins 10 caractères"
+            }
+
+        if len(comment) > 500:
+            return {
+                "success": False,
+                "message": "Le commentaire ne peut pas dépasser 500 caractères"
+            }
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # 1. Vérifier que le rendez-vous existe et appartient au patient
+        cursor.execute("""
+            SELECT r.id, r.statut, r.medecin_id, r.patient_id
+            FROM rendezvous r
+            WHERE r.id = %s AND r.patient_id = %s
+        """, (appointment_id, patient_id))
+
+        rdv = cursor.fetchone()
+
+        if not rdv:
+            cursor.close()
+            conn.close()
+            return {
+                "success": False,
+                "message": "Rendez-vous introuvable ou non autorisé"
+            }
+
+        # Vérifier que le médecin correspond
+        if rdv[2] != int(medecin_id):
+            cursor.close()
+            conn.close()
+            return {
+                "success": False,
+                "message": "Le médecin ne correspond pas au rendez-vous"
+            }
+
+        # 2. Vérifier que le RDV est terminé
+        if rdv[1].lower() != 'terminé':
+            cursor.close()
+            conn.close()
+            return {
+                "success": False,
+                "message": "Vous ne pouvez donner un avis que pour un rendez-vous terminé"
+            }
+
+        # 3. Vérifier si un avis existe déjà pour ce RDV
+        cursor.execute("""
+            SELECT id FROM avis
+            WHERE patient_id = %s 
+              AND medecin_id = %s 
+              AND rendezvous_id = %s
+        """, (patient_id, medecin_id, appointment_id))
+
+        existing_avis = cursor.fetchone()
+
+        if existing_avis:
+            # Mise à jour de l'avis existant
+            cursor.execute("""
+                UPDATE avis
+                SET note = %s, 
+                    commentaire = %s, 
+                    date_avis = NOW()
+                WHERE id = %s
+            """, (rating, comment.strip(), existing_avis[0]))
+            
+            conn.commit()
+            message = "Votre avis a été mis à jour avec succès"
+            print(f"[RPC] ✅ Avis {existing_avis[0]} mis à jour")
+        else:
+            # Insertion d'un nouvel avis
+            cursor.execute("""
+                INSERT INTO avis (
+                    patient_id, 
+                    medecin_id, 
+                    note, 
+                    commentaire, 
+                    date_avis,
+                    rendezvous_id
+                )
+                VALUES (%s, %s, %s, %s, NOW(), %s)
+            """, (patient_id, medecin_id, rating, comment.strip(), appointment_id))
+            
+            conn.commit()
+            message = "Votre avis a été enregistré avec succès"
+            print(f"[RPC] ✅ Nouvel avis créé")
+
+        cursor.close()
+        conn.close()
+        print(f"[RPC] ✅ Avis enregistré avec succès")
+        print("="*50)
+
+        return {
+            "success": True,
+            "message": message
+        }
+
+     except Exception as e:
+        print(f"[RPC] ❌ Erreur inattendue: {e}")
+        import traceback
+        traceback.print_exc()
+        try:
+            conn.rollback()
+            cursor.close()
+            conn.close()
+        except:
+            pass
+        return {
+            "success": False,
+            "message": f"Erreur lors de l'enregistrement: {str(e)}"
+        }
+
     
-    
+
 
     # Méthode pour afficher la page d'accueil du patient
     def get_patient_info(self, patient_id):
@@ -294,6 +453,8 @@ class ServerRPC:
     # Méthode pour afficher la page de déconnexion
     def logout(self):
         return {"success": True, "message": "Déconnexion réussie"}
+    
+
 
     # Méthode pour récupérer les médecins par spécialisation
     def get_doctors_local(self, specialization_id):
@@ -654,6 +815,9 @@ class ServerRPC:
             print(f"[RPC] ❌ Erreur get_available_dates_local: {e}")
             return {"success": False, "dates": []}
      # Dans server_rpc.py - Ajouter cette méthode à votre classe RPC
+     # Ajouter UNIQUEMENT cette méthode dans votre classe ServerRPC dans server_rpc.py
+     # Ajouter UNIQUEMENT cette méthode dans votre classe ServerRPC dans server_rpc.py
+# Ajouter UNIQUEMENT cette méthode dans votre classe ServerRPC dans server_rpc.py
     def get_rendezvous_details(self, rdv_id):
         """
         Récupère les détails complets d'un rendez-vous

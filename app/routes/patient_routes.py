@@ -280,8 +280,6 @@ def cancel_appointment():
             "message": f"Erreur de traitement: {str(e)}"
         })
 
-
-
 @patient.route("/profile")
 def profile():
     patient_id = 1  # à remplacer par session['patient_id']
@@ -405,6 +403,151 @@ def get_doctors():
         traceback.print_exc()
         return jsonify([])
 
+# Ajouter UNIQUEMENT cette route dans votre fichier patient_routes.py
+# Ajouter UNIQUEMENT cette route dans votre fichier patient_routes.py
+
+@patient.route("/get_appointment_review/<int:appointment_id>")
+def get_appointment_review(appointment_id):
+    """
+    Récupère l'avis existant pour un rendez-vous (si existe)
+    """
+    try:
+        patient_id = 1  # À remplacer par session['patient_id']
+        
+        print(f"[GET_REVIEW] Vérification avis pour RDV {appointment_id}")
+        
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        cursor.execute("""
+            SELECT 
+                a.id,
+                a.note,
+                a.commentaire,
+                a.date_avis
+            FROM avis a
+            WHERE a.rendezvous_id = %s AND a.patient_id = %s
+        """, (appointment_id, patient_id))
+        
+        existing_review = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if existing_review:
+            # Formater la date
+            if isinstance(existing_review.get("date_avis"), datetime):
+                existing_review["date_avis"] = existing_review["date_avis"].strftime("%Y-%m-%d %H:%M")
+            
+            print(f"[GET_REVIEW] ✅ Avis existant trouvé (ID: {existing_review['id']})")
+            return jsonify({
+                "success": True,
+                "has_review": True,
+                "review": existing_review
+            })
+        else:
+            print(f"[GET_REVIEW] ℹ️ Aucun avis existant")
+            return jsonify({
+                "success": True,
+                "has_review": False
+            })
+        
+    except Exception as e:
+        print(f"[GET_REVIEW] ❌ Erreur: {e}")
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+
+@patient.route("/submit_review", methods=["POST"])
+def submit_review():
+    """
+    Route pour soumettre un avis patient
+    """
+    try:
+        patient_id = 1  # À remplacer par session['patient_id']
+        
+        # Récupérer les données JSON
+        data = request.get_json()
+        
+        appointment_id = data.get("appointment_id")
+        rating = data.get("rating")
+        comment = data.get("comment")
+        
+        print("="*50)
+        print(f"[SUBMIT_REVIEW] Soumission d'avis:")
+        print(f"  - Patient: {patient_id}")
+        print(f"  - RDV: {appointment_id}")
+        print(f"  - Note: {rating}")
+        print(f"  - Commentaire: {comment[:50] if comment else 'N/A'}...")
+        
+        # Validation côté serveur
+        if not appointment_id:
+            return jsonify({
+                "success": False,
+                "message": "ID du rendez-vous manquant"
+            }), 400
+        
+        if not rating:
+            return jsonify({
+                "success": False,
+                "message": "La note est obligatoire"
+            }), 400
+        
+        if not comment or len(comment.strip()) < 10:
+            return jsonify({
+                "success": False,
+                "message": "Le commentaire doit contenir au moins 10 caractères"
+            }), 400
+        
+        # Récupérer le médecin_id depuis le rendez-vous
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT medecin_id, statut 
+            FROM rendezvous 
+            WHERE id = %s AND patient_id = %s
+        """, (appointment_id, patient_id))
+        
+        rdv_info = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if not rdv_info:
+            return jsonify({
+                "success": False,
+                "message": "Rendez-vous introuvable"
+            }), 404
+        
+        medecin_id = rdv_info[0]
+        
+        # Appel RPC pour enregistrer l'avis
+        rpc_server = get_rpc_server()
+        result = rpc_server.save_patient_review(
+            patient_id,
+            medecin_id,
+            appointment_id,
+            rating,
+            comment
+        )
+        
+        print(f"[SUBMIT_REVIEW] ✅ Résultat RPC: {result}")
+        print("="*50)
+        
+        if result.get("success"):
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 400
+        
+    except Exception as e:
+        print(f"[SUBMIT_REVIEW] ❌ Erreur: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        return jsonify({
+            "success": False,
+            "message": f"Erreur serveur: {str(e)}"
+        }), 500
 @patient.route("/get_available_slots")
 def get_available_slots():
     patient_id = 1  # à remplacer par session['patient_id']
