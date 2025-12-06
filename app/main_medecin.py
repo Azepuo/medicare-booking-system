@@ -1,13 +1,13 @@
 from flask import Flask
 
 # Blueprints "pages"
-from app.routes.medecin_routes import medecin
+from app.routes.medcin.medecin_routes import medecin
 
 # Blueprints RPC
 from app.rpc_medecin.disponibilites_rpc import disponibilites_rpc
 
 # Routes disponibilités (normal)
-from app.routes.routes_disponibilites import dispo
+from app.routes.medcin.routes_disponibilites import dispo
 
 
 def create_app():
@@ -33,4 +33,4 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(debug=True)
+    app.run(debug=True,port=5001)  # Port 5001 pour éviter conflit avec d'autres services

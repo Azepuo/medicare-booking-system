@@ -1,7 +1,7 @@
 from app.routes.auth_routes import auth
 from app.routes.main_routes import main
 from app.routes.admin_routes import admin
-from app.routes.medecin_routes import medecin
+from app.routes.medcin.medecin_routes import medecin
 try:
     from app.routes.patient_routes import patient
 except Exception:
