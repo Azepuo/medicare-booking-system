@@ -1,6 +1,15 @@
 # database/seeders/insert_data.py
 
+import bcrypt
+
+DEFAULT_PASSWORD = "Pass1234"
+
+def hash_password(password):
+    hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    return hashed.decode('utf-8')
+
 def seed_all(cursor):
+    seed_admins(cursor)
     seed_patients(cursor)
     seed_medecins(cursor)
     seed_disponibilites(cursor)
@@ -8,6 +17,23 @@ def seed_all(cursor):
     seed_avis(cursor)
     seed_statistiques(cursor)
     print("Données marocaines insérées avec succès.")
+
+
+
+# NOUVEAU : Insérer l'Admin
+def seed_admins(cursor):
+    # Mot de passe haché pour 'admin@clinique.ma'
+    hashed_pass = hash_password(DEFAULT_PASSWORD) 
+    
+    admins = [
+        ("Super Admin", "admin@clinique.ma", hashed_pass, "0537000000"),
+    ]
+    for nom, email, password, tel in admins:
+        cursor.execute("""
+            INSERT INTO admins (nom, email, password, telephone) 
+            VALUES (%s, %s, %s, %s)
+        """, (nom, email, password, tel))
+    print("Admin inséré.")
 
 
 # Patients marocains

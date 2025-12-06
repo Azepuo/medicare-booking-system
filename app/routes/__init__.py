@@ -15,3 +15,11 @@ def register_blueprints(app):
     app.register_blueprint(medecin)
     if patient is not None:
         app.register_blueprint(patient)
+
+
+
+
+
+
+
+

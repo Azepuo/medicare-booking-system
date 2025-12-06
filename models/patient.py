@@ -1,103 +1,85 @@
 from database.connection import create_connection
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 
-class Patient:
-    def __init__(self, id=None, nom=None, email=None, telephone=None, date_inscription=None):
+class Patient(UserMixin):
+    def __init__(self, id=None, nom=None, email=None, telephone=None, password=None, date_inscription=None):
         self.id = id
         self.nom = nom
         self.email = email
         self.telephone = telephone
+        self.password = password  # hash du mot de passe
         self.date_inscription = date_inscription
-    
+
+    # ------------- Flask-Login -------------
+    def get_id(self):
+        return f"patient:{self.id}"
+
+    # Vérifier le mot de passe
+    def check_password(self, raw_password):
+        return check_password_hash(self.password, raw_password)
+
+    # Définir le mot de passe
+    def set_password(self, raw_password):
+        self.password = generate_password_hash(raw_password)
+
+    # ---------------- SQL METHODS ----------------
     @staticmethod
-    def get_all():
-        """Récupérer tous les patients"""
-        connection = create_connection()
-        if not connection:
-            return []
-        
+    def get_by_email(email):
+        conn = create_connection()
+        if not conn:
+            return None
         try:
-            cursor = connection.cursor(dictionary=True)
-            cursor.execute("SELECT * FROM patients")
-            patients = cursor.fetchall()
-            return [Patient(**p) for p in patients]
-        except Exception as e:
-            print(f"Erreur: {e}")
-            return []
+            cur = conn.cursor(dictionary=True)
+            cur.execute("SELECT * FROM patients WHERE email=%s", (email,))
+            row = cur.fetchone()
+            return Patient(**row) if row else None
         finally:
-            if connection.is_connected():
-                cursor.close()
-                connection.close()
-    
+            cur.close()
+            conn.close()
+
     @staticmethod
-    def get_by_id(patient_id):
-        """Récupérer un patient par son ID"""
-        connection = create_connection()
-        if not connection:
+    def get_by_id(pid):
+        conn = create_connection()
+        if not conn:
             return None
-        
         try:
-            cursor = connection.cursor(dictionary=True)
-            cursor.execute("SELECT * FROM patients WHERE id = %s", (patient_id,))
-            patient_data = cursor.fetchone()
-            return Patient(**patient_data) if patient_data else None
-        except Exception as e:
-            print(f"Erreur: {e}")
-            return None
+            cur = conn.cursor(dictionary=True)
+            cur.execute("SELECT * FROM patients WHERE id=%s", (pid,))
+            row = cur.fetchone()
+            return Patient(**row) if row else None
         finally:
-            if connection.is_connected():
-                cursor.close()
-                connection.close()
-    
+            cur.close()
+            conn.close()
+
     def save(self):
-        """Sauvegarder le patient (create or update)"""
-        connection = create_connection()
-        if not connection:
+        conn = create_connection()
+        if not conn:
             return False
         
         try:
-            cursor = connection.cursor()
+            cur = conn.cursor()
             if self.id:
-                # Update
-                cursor.execute(
-                    "UPDATE patients SET nom = %s, email = %s, telephone = %s WHERE id = %s",
-                    (self.nom, self.email, self.telephone, self.id)
+                cur.execute(
+                    "UPDATE patients SET nom=%s, email=%s, telephone=%s, password=%s WHERE id=%s",
+                    (self.nom, self.email, self.telephone, self.password, self.id)
                 )
             else:
-                # Create
-                cursor.execute(
-                    "INSERT INTO patients (nom, email, telephone) VALUES (%s, %s, %s)",
-                    (self.nom, self.email, self.telephone)
+                cur.execute(
+                    "INSERT INTO patients (nom, email, telephone, password) VALUES (%s, %s, %s, %s)",
+                    (self.nom, self.email, self.telephone, self.password)
                 )
-                self.id = cursor.lastrowid
-            
-            connection.commit()
-            return True
-        except Exception as e:
-            print(f"Erreur: {e}")
-            return False
-        finally:
-            if connection.is_connected():
-                cursor.close()
-                connection.close()
+                self.id = cur.lastrowid
 
-    def delete(self):
-        """Supprimer le patient"""
-        connection = create_connection()
-        if not connection:
-            return False
-        
-        try:
-            cursor = connection.cursor()
-            cursor.execute("DELETE FROM patients WHERE id = %s", (self.id,))
-            connection.commit()
+            conn.commit()
             return True
         except Exception as e:
-            print(f"Erreur: {e}")
+            print("Erreur save patient:", e)
+            conn.rollback()
             return False
         finally:
-            if connection.is_connected():
-                cursor.close()
-                connection.close()
+            cur.close()
+            conn.close()
 
     def __repr__(self):
         return f"<Patient {self.id}: {self.nom}>"

@@ -15,8 +15,8 @@
     <nav>
         <a href="#features">Fonctionnalités</a>
         <a href="#about">À propos</a>
-        <a href="{{ url_for('auth.login') }}" class="btn-nav">Se connecter</a>
-        <a href="{{ url_for('auth.register') }}" class="btn-nav register-btn">S'inscrire</a>
+        <a href="{{ url_for('auth.login_page') }}" class="btn-nav">Se connecter</a>
+        <a href="{{ url_for('auth.register_page') }}" class="btn-nav register-btn">S'inscrire</a>
     </nav>
 </header>
 
@@ -25,7 +25,7 @@
     <section class="hero">
         <h1 class="animated-title">Bienvenue sur Medicare Booking</h1>
         <p class="animated-text">Planifiez vos rendez-vous médicaux facilement avec vos médecins préférés. Simple, rapide et sécurisé !</p>
-        <a href="{{ url_for('auth.login') }}" class="btn-main">Prendre un rendez-vous</a>
+        <a href="{{ url_for('auth.login_page') }}" class="btn-main">Prendre un rendez-vous</a>
     </section>
 
     <!-- Fonctionnalités -->
@@ -84,7 +84,7 @@
     <section id="about" class="about">
         <h2>À propos de l'application</h2>
         <p>Medicare Booking est une plateforme conçue pour simplifier la gestion des rendez-vous médicaux. Notre objectif est de vous offrir une expérience fluide et sécurisée pour planifier vos consultations, suivre vos historiques et recevoir des notifications personnalisées.</p>
-        <a href="{{ url_for('auth.login') }}" class="btn-main">Commencer maintenant</a>
+        <a href="{{ url_for('auth.login_page') }}" class="btn-main">Commencer maintenant</a>
     </section>
 </main>
 
@@ -92,14 +92,7 @@
     &copy; 2025 Medicare Booking System. Tous droits réservés.
 </footer>
 
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-    const elements = document.querySelectorAll(".animated-title, .animated-text, .btn-main, .features h2, .about h2, .about p");
-    elements.forEach((el, index) => {
-        setTimeout(() => el.classList.add("active"), index * 150);
-    });
-});
-</script>
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
 
 </body>
 </html>
