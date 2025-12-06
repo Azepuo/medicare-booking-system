@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, make_response # 💡 CORRECTION: Ajoutez make_response
 from app.auth_rpc.decorators import role_required
 
 medecin = Blueprint("medecin", __name__, url_prefix="/medecin")
@@ -7,7 +7,17 @@ medecin = Blueprint("medecin", __name__, url_prefix="/medecin")
 @medecin.route("/dashboard")
 @role_required("medecin")
 def dashboard():
-    return render_template("medecin/dashboard.html")
+    # 1. Création d'un objet réponse
+    response = make_response(render_template("medecin/dashboard.html"))
+    
+    # 2. Ajout des en-têtes pour DÉSACTIVER le cache du navigateur
+    # C'est ce qui corrige la boucle de redirection après logout.
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    
+    # 3. Retourne l'objet réponse modifié
+    return response
 
 # 🔹 Gestion des patients
 @medecin.route("/patients")

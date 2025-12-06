@@ -6,11 +6,11 @@ from models.medecin import Medecin
 from models.admin import Admin
 import re
 
+EMAIL_REGEX = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+
 auth = Blueprint("auth", __name__, template_folder="templates/auth")
 
-EMAIL_REGEX = r"^[\w\.-]+@[\w\.-]+\.\w+$"
-
-# ------------------ LOGIN PAGE ------------------
+# ------------------ PAGES ------------------
 @auth.route("/login", methods=["GET"])
 def login_page():
     if current_user.is_authenticated:
@@ -19,15 +19,16 @@ def login_page():
     return render_template("auth/login.html")
 
 
-# ------------------ REGISTER PAGE ------------------
+
 @auth.route("/register", methods=["GET"])
 def register_page():
     if current_user.is_authenticated:
-        return redirect(url_for("patient.dashboard"))
+        role = current_user.get_id().split(":")[0]
+        return redirect(url_for(f"{role}.dashboard"))
     return render_template("auth/register.html")
 
 
-# ------------------ LOGOUT ------------------
+
 @auth.route("/logout")
 def logout():
     logout_user()
@@ -35,52 +36,62 @@ def logout():
     return redirect(url_for("auth.login_page"))
 
 
-# ------------------- Helper -------------------
-def get_user_by_email(email):
-    """Cherche un utilisateur dans les trois tables"""
-    return Patient.get_by_email(email) or Medecin.get_by_email(email) or Admin.get_by_email(email)
+# ------------------- Helpers -------------------
+ROLE_MAP = {
+    "patient": Patient,
+    "medecin": Medecin,
+    "admin": Admin
+}
+
+def get_user(role: str, email: str):
+    """Retourne l’utilisateur d’un rôle donné et un email donné"""
+    cls = ROLE_MAP.get(role)
+    return cls.get_by_email(email) if cls else None
+
+def create_user(role: str, nom: str, email: str, tele: str, password: str):
+    """Crée un utilisateur selon le rôle et retourne l’objet"""
+    cls = ROLE_MAP.get(role)
+    if not cls:
+        return None
+
+    if role == "medecin":
+        user = cls(nom=nom, email=email, telephone=tele, approved=False)
+    else:
+        user = cls(nom=nom, email=email, telephone=tele)
+
+    user.set_password(password)
+    return user if user.save() else None
 
 
-# ------------------- RPC LOGIN -------------------
+# ------------------- RPC -------------------
 def rpc_login(params):
     email = params.get("email", "").lower().strip()
     password = params.get("password", "")
     role = params.get("role", "patient").lower()
 
-    if role == "patient":
-        user = Patient.get_by_email(email)
-    elif role == "medecin":
-        user = Medecin.get_by_email(email)
-        if user and getattr(user, "approved", False) is False:
-            return {"success": False, "message": "Compte médecin en attente d'approbation"}
-    elif role == "admin":
-        user = Admin.get_by_email(email)
-    else:
-        return {"success": False, "message": "Rôle invalide"}
+    user = get_user(role, email)
+    
+    if role == "medecin" and user and getattr(user, "approved", False) is False:
+        return {"success": False, "message": "Compte médecin en attente d'approbation"}
 
-    # ✅ Vérification sécurisée du mot de passe
+    
     if not user or not user.check_password(password):
-
+        
         return {"success": False, "message": "Email ou mot de passe incorrect"}
 
     login_user(user)
-    redirect_map = {
-        "patient": "/patient/dashboard",
-        "medecin": "/medecin/dashboard",
-        "admin": "/admin/dashboard"
-    }
+    redirect_map = {r: f"/{r}/dashboard" for r in ROLE_MAP.keys()}
     return {"success": True, "redirect": redirect_map.get(role, "/")}
 
 
-# ------------------- RPC REGISTER PATIENT -------------------
-def rpc_register(params):
+def rpc_register(params, role="patient"):
     nom = params.get("fullname", "").strip()
     email = params.get("email", "").strip().lower()
     tele = params.get("tele", "").strip()
     password = params.get("password", "")
     confirm = params.get("confirm_password", "")
 
-    if not nom or not email or not tele or not password or not confirm:
+    if not all([nom, email, tele, password, confirm]):
         return {"success": False, "message": "Veuillez remplir tous les champs"}
 
     if password != confirm:
@@ -89,54 +100,24 @@ def rpc_register(params):
     if not re.match(EMAIL_REGEX, email):
         return {"success": False, "message": "Email invalide"}
 
-    if get_user_by_email(email):
+    if any(get_user(r, email) for r in ROLE_MAP.keys()):
         return {"success": False, "message": "Email déjà utilisé"}
 
-    user = Patient(nom=nom, email=email, telephone=tele)
-    user.set_password(password)
-    if not user.save():
+    user = create_user(role, nom, email, tele, password)
+    if not user:
         return {"success": False, "message": "Erreur lors de la création du compte"}
+
+    # Notification pour les admins si médecin
+    if role == "medecin":
+        for admin in Admin.get_all():
+            socketio.emit(
+                "notification",
+                {"user_type": "admin", "user_id": admin.id, "message": f"Nouveau médecin inscrit: {nom}"},
+                to=f"user_{admin.id}"
+            )
+        return {"success": True, "message": "Compte médecin créé avec succès, en attente d'approbation"}
 
     return {"success": True, "message": "Compte patient créé avec succès"}
-
-
-# ------------------- RPC REGISTER MÉDECIN -------------------
-def rpc_register_medecin(params):
-    nom = params.get("fullname", "").strip()
-    email = params.get("email", "").strip().lower()
-    tele = params.get("tele", "").strip()
-    password = params.get("password", "")
-    confirm = params.get("confirm_password", "")
-
-    if not nom or not email or not tele or not password or not confirm:
-        return {"success": False, "message": "Veuillez remplir tous les champs"}
-
-    if password != confirm:
-        return {"success": False, "message": "Les mots de passe ne correspondent pas"}
-
-    if not re.match(EMAIL_REGEX, email):
-        return {"success": False, "message": "Email invalide"}
-
-    if get_user_by_email(email):
-        return {"success": False, "message": "Email déjà utilisé"}
-
-    user = Medecin(nom=nom, email=email, telephone=tele, approved=False)
-    user.set_password(password)
-    if not user.save():
-        return {"success": False, "message": "Erreur lors de la création du compte"}
-
-    # Notification pour les admins
-    for admin in Admin.get_all():
-        socketio.emit(
-            "notification",
-            {"user_type": "admin", "user_id": admin.id, "message": f"Nouveau médecin inscrit: {nom}"},
-            to=f"user_{admin.id}"
-        )
-
-    return {"success": True, "message": "Compte médecin créé avec succès, en attente d'approbation"}
-
-
-# ------------------- RPC LOGOUT -------------------
 def rpc_logout(params):
     logout_user()
     return {"success": True, "redirect": "/login"}
@@ -152,9 +133,9 @@ def rpc_handler():
     if method == "login":
         return jsonify(rpc_login(params))
     elif method == "register":
-        return jsonify(rpc_register(params))
+        return jsonify(rpc_register(params, role="patient"))
     elif method == "register_medecin":
-        return jsonify(rpc_register_medecin(params))
+        return jsonify(rpc_register(params, role="medecin"))
     elif method == "logout":
         return jsonify(rpc_logout(params))
 
