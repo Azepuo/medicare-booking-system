@@ -883,7 +883,130 @@ class ServerRPC:
                 "success": False,
                 "message": str(e)
             }
-# Lancer le serveur RPC
+    def mark_notification_as_read(self, notification_id):
+        """
+        Marque une notification comme lue
+        Args:
+            notification_id: ID de la notification
+        Returns:
+            dict: {"success": True/False}
+        """
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                UPDATE notifications
+                SET lue = TRUE, date_lecture = NOW()
+                WHERE id = %s
+            """, (notification_id,))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            print(f"[RPC] ✅ Notification {notification_id} marquée comme lue")
+            return {"success": True}
+            
+        except Exception as e:
+            print(f"[RPC] ❌ Erreur mark_notification_as_read: {e}")
+            return {"success": False, "message": str(e)}
+    
+    def get_unread_count(self, patient_id):
+        """
+        Compte les notifications non lues
+        """
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT COUNT(*) 
+                FROM notifications
+                WHERE patient_id = %s AND lue = FALSE
+            """, (patient_id,))
+            
+            count = cursor.fetchone()[0]
+            
+            cursor.close()
+            conn.close()
+            
+            print(f"[RPC] ✅ Patient {patient_id} a {count} notifications non lues")
+            return {"success": True, "count": count}
+            
+        except Exception as e:
+            print(f"[RPC] ❌ Erreur get_unread_count: {e}")
+            return {"success": False, "count": 0}
+    def get_notifications(self, patient_id, limit):
+     """
+    Récupère les dernières notifications d'un patient
+    """
+     try:
+        print("="*70)
+        print(f"[DEBUG] 🚀 Entrée dans get_notifications(patient_id={patient_id}, limit={limit})")
+
+        # Vérifier la connexion à la base
+        conn = get_db_connection()
+        if conn is None:
+            print("[DEBUG] ❌ Connexion DB échouée !")
+            return {"success": False, "notifications": []}
+        else:
+            print("[DEBUG] ✅ Connexion DB établie")
+
+        cursor = conn.cursor(dictionary=True)
+
+        # Exécuter la requête SQL
+        print("[DEBUG] 🧾 Exécution de la requête SQL...")
+        cursor.execute("""
+            SELECT 
+                n.id,
+                n.titre,
+                n.message,
+                n.type,
+                n.lue,
+                n.date_creation,
+                n.rendezvous_id
+            FROM notifications n
+            WHERE n.patient_id = %s
+            ORDER BY n.date_creation DESC
+            LIMIT %s
+        """, (patient_id, limit))
+
+        notifications = cursor.fetchall()
+        print(f"[DEBUG] 📦 Résultats bruts récupérés: {len(notifications)} ligne(s)")
+
+        # Détail de chaque notification
+        for i, notif in enumerate(notifications, 1):
+            print(f"   🔹 Notification {i}: {notif}")
+
+        # Si aucune notification
+        if not notifications:
+            print("[DEBUG] ⚠️ Aucune notification trouvée pour ce patient !")
+
+        # Vérifier les types de données
+        for notif in notifications:
+            if isinstance(notif.get("date_creation"), datetime):
+                notif["date_creation"] = notif["date_creation"].strftime("%Y-%m-%d %H:%M:%S")
+            else:
+                print(f"[DEBUG] 🕓 Attention: date_creation n'est pas un datetime -> {notif.get('date_creation')}")
+
+        cursor.close()
+        conn.close()
+        print("[DEBUG] ✅ Connexion fermée proprement")
+
+        print(f"[DEBUG] ✅ Retour final: {len(notifications)} notifications")
+        print("="*70)
+
+        return {"success": True, "notifications": notifications}
+
+     except Exception as e:
+        print(f"[DEBUG] ❌ Erreur inattendue dans get_notifications: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "notifications": []}
+
+   
+    # Lancer le serveur RPC
 if __name__ == "__main__":
     server_rpc = ServerRPC()
     print("Serveur RPC démarré sur le port 9000")

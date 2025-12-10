@@ -549,5 +549,281 @@ document.addEventListener('keydown', function(e) {
         closeModal();
     }
 });
+/**
+ * Système de notifications complet
+ */
+
+// État du panneau (ouvert/fermé)
+let panelOpen = false;
+
+// Charger au démarrage
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('[NOTIF] Initialisation');
+    loadNotificationCount();
+    
+    // Rafraîchir toutes les 30 secondes
+    setInterval(loadNotificationCount, 30000);
+    
+    // Événement clic sur la cloche
+    const bell = document.querySelector('.notification-bell');
+    if (bell) {
+        bell.addEventListener('click', toggleNotificationPanel);
+    }
+    
+    // Fermer le panneau si clic en dehors
+    document.addEventListener('click', function(e) {
+        const panel = document.getElementById('notificationPanel');
+        const bell = document.querySelector('.notification-bell');
+        
+        if (panel && panelOpen && !panel.contains(e.target) && !bell.contains(e.target)) {
+            closeNotificationPanel();
+        }
+    });
+});
+
+/**
+ * Charge le nombre de notifications non lues
+ */
+function loadNotificationCount() {
+    fetch('/patient/get_unread_count')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.count > 0) {
+                updateNotificationBadge(data.count);
+            } else {
+                hideNotificationBadge();
+            }
+        })
+        .catch(error => console.error('[NOTIF] Erreur:', error));
+}
+
+/**
+ * Affiche le badge avec le nombre
+ */
+function updateNotificationBadge(count) {
+    const indicator = document.querySelector('.notification-indicator');
+    if (indicator) {
+        indicator.textContent = count;
+        indicator.style.display = 'flex';
+    }
+}
+
+/**
+ * Cache le badge
+ */
+function hideNotificationBadge() {
+    const indicator = document.querySelector('.notification-indicator');
+    if (indicator) {
+        indicator.style.display = 'none';
+    }
+}
+
+/**
+ * Ouvre/Ferme le panneau de notifications
+ */
+function toggleNotificationPanel() {
+    if (panelOpen) {
+        closeNotificationPanel();
+    } else {
+        openNotificationPanel();
+    }
+}
+
+/**
+ * Ouvre le panneau et charge les notifications
+ */
+function openNotificationPanel() {
+    console.log('[NOTIF] Ouverture du panneau');
+    
+    // Créer le panneau s'il n'existe pas
+    let panel = document.getElementById('notificationPanel');
+    if (!panel) {
+        panel = createNotificationPanel();
+        document.body.appendChild(panel);
+    }
+    
+    // Afficher le panneau
+    panel.style.display = 'block';
+    panelOpen = true;
+    
+    // Charger les notifications
+    loadNotifications();
+}
+
+/**
+ * Ferme le panneau
+ */
+function closeNotificationPanel() {
+    const panel = document.getElementById('notificationPanel');
+    if (panel) {
+        panel.style.display = 'none';
+        panelOpen = false;
+    }
+}
+
+/**
+ * Crée le panneau HTML
+ */
+function createNotificationPanel() {
+    const panel = document.createElement('div');
+    panel.id = 'notificationPanel';
+    panel.className = 'notification-panel';
+    panel.innerHTML = `
+        <div class="notification-header">
+            <h3>Notifications</h3>
+            <button class="close-btn" onclick="closeNotificationPanel()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="notification-list" id="notificationList">
+            <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i> Chargement...
+            </div>
+        </div>
+    `;
+    return panel;
+}
+
+/**
+ * Charge les notifications depuis le serveur
+ */
+function loadNotifications() {
+    const listContainer = document.getElementById('notificationList');
+    
+    fetch('/patient/get_notifications')
+        .then(response => response.json())
+        .then(data => {
+            console.log('[NOTIF] Notifications reçues:', data);
+            
+            if (data.success && data.notifications.length > 0) {
+                displayNotifications(data.notifications);
+            } else {
+                listContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-bell-slash"></i>
+                        <p>Aucune notification</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('[NOTIF] Erreur:', error);
+            listContainer.innerHTML = `
+                <div class="error-state">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Erreur de chargement</p>
+                </div>
+            `;
+        });
+}
+
+/**
+ * Affiche les notifications dans le panneau
+ */
+function displayNotifications(notifications) {
+    const listContainer = document.getElementById('notificationList');
+    listContainer.innerHTML = '';
+    
+    notifications.forEach(notif => {
+        const item = createNotificationItem(notif);
+        listContainer.appendChild(item);
+    });
+}
+
+/**
+ * Crée un élément de notification
+ */
+function createNotificationItem(notif) {
+    const item = document.createElement('div');
+    item.className = `notification-item ${notif.lue ? 'read' : 'unread'}`;
+    item.dataset.id = notif.id;
+    
+    const icon = getNotificationIcon(notif.type);
+    const timeAgo = getTimeAgo(notif.date_creation);
+    
+    item.innerHTML = `
+        <div class="notification-icon">
+            <i class="${icon}"></i>
+        </div>
+        <div class="notification-content">
+            <h4>${notif.titre}</h4>
+            <p>${notif.message}</p>
+            <span class="notification-time">${timeAgo}</span>
+        </div>
+        ${!notif.lue ? '<div class="unread-dot"></div>' : ''}
+    `;
+    
+    // Clic pour marquer comme lu
+    if (!notif.lue) {
+        item.addEventListener('click', () => markAsRead(notif.id));
+    }
+    
+    return item;
+}
+
+/**
+ * Retourne l'icône selon le type de notification
+ */
+function getNotificationIcon(type) {
+    const icons = {
+        'rdv_confirme': 'fas fa-check-circle text-success',
+        'rdv_annule': 'fas fa-times-circle text-danger',
+        'rdv_refuse': 'fas fa-ban text-warning',
+        'demande_avis': 'fas fa-star text-primary',
+        'rappel_rdv': 'fas fa-bell text-info'
+    };
+    return icons[type] || 'fas fa-info-circle';
+}
+
+/**
+ * Calcule le temps écoulé
+ */
+function getTimeAgo(dateStr) {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    
+    if (minutes < 1) return "À l'instant";
+    if (minutes < 60) return `Il y a ${minutes} min`;
+    
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `Il y a ${hours}h`;
+    
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `Il y a ${days}j`;
+    
+    return date.toLocaleDateString('fr-FR');
+}
+
+/**
+ * Marque une notification comme lue
+ */
+function markAsRead(notifId) {
+    fetch(`/patient/mark_notification_read/${notifId}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log(`[NOTIF] ✅ Notification ${notifId} marquée comme lue`);
+            
+            // Mettre à jour l'affichage
+            const item = document.querySelector(`.notification-item[data-id="${notifId}"]`);
+            if (item) {
+                item.classList.remove('unread');
+                item.classList.add('read');
+                const dot = item.querySelector('.unread-dot');
+                if (dot) dot.remove();
+            }
+            
+            // Rafraîchir le compteur
+            loadNotificationCount();
+        }
+    })
+    .catch(error => console.error('[NOTIF] Erreur:', error));
+}
 </script>
+
 {% endblock %}

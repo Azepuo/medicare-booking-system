@@ -29,7 +29,46 @@ def get_rpc_server():
 @patient.route("/accueil")
 def accueil():
     return render_template("patient/accueil.html")
- 
+@patient.route("/get_unread_count")
+def get_unread_count():
+    """Route pour récupérer le nombre de notifications non lues"""
+    patient_id = 1  # À remplacer par session['patient_id']
+    
+    try:
+        rpc_server = get_rpc_server()
+        result = rpc_server.get_unread_count(patient_id)
+        return jsonify(result)
+    except Exception as e:
+        print(f"[GET_UNREAD_COUNT] ❌ Erreur: {e}")
+        return jsonify({"success": False, "count": 0})
+@patient.route("/get_notifications")
+def get_notifications():
+    """Récupère les notifications du patient"""
+    patient_id = 1  # À remplacer par session['patient_id']
+    
+    try:
+        print(f"[GET_NOTIFICATIONS] Récupération pour patient {patient_id}")
+        
+        rpc_server = get_rpc_server()
+        result = rpc_server.get_notifications(patient_id,10)
+        
+        return jsonify(result)
+    except Exception as e:
+        print(f"[GET_NOTIFICATIONS] ❌ Erreur: {e}")
+        return jsonify({"success": False, "notifications": []})
+@patient.route("/mark_notification_read/<int:notif_id>", methods=["POST"])
+def mark_notification_read(notif_id):
+    """Marque une notification comme lue"""
+    try:
+        print(f"[MARK_READ] Notification {notif_id}")
+        
+        rpc_server = get_rpc_server()
+        result = rpc_server.mark_notification_as_read(notif_id)
+        
+        return jsonify(result)
+    except Exception as e:
+        print(f"[MARK_READ] ❌ Erreur: {e}")
+        return jsonify({"success": False})
 @patient.route("/dashboard")
 def dashboard():
     patient_id = 1  # à remplacer par session['patient_id']
