@@ -12,8 +12,7 @@ class Medecin(UserMixin):
         annees_experience=None, 
         tarif_consultation=None, 
         description=None,
-        password=None,
-        approved=False
+        password=None
     ):
         self.id = id
         self.nom = nom
@@ -23,8 +22,8 @@ class Medecin(UserMixin):
         self.tarif_consultation = tarif_consultation
         self.description = description
         self.password = password
-        self.approved = approved
 
+    
     # ------------------ Flask-Login ------------------
     def get_id(self):
         return f"medecin:{self.id}"
@@ -104,23 +103,21 @@ class Medecin(UserMixin):
                 cur.execute("""
                     UPDATE medecins 
                     SET nom=%s, specialite=%s, email=%s, annees_experience=%s, tarif_consultation=%s,
-                        description=%s, password=%s, approved=%s
+                        description=%s, password=%s
                     WHERE id=%s
                 """, (
                     self.nom, self.specialite, self.email, self.annees_experience,
-                    self.tarif_consultation, self.description, self.password,
-                    self.approved, self.id
+                    self.tarif_consultation, self.description, self.password,self.id
                 ))
             else:
                 # INSERT
                 cur.execute("""
                     INSERT INTO medecins 
-                        (nom, specialite, email, annees_experience, tarif_consultation, description, password, approved)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+                        (nom, specialite, email, annees_experience, tarif_consultation, description, password)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s)
                 """, (
                     self.nom, self.specialite, self.email, self.annees_experience,
-                    self.tarif_consultation, self.description, self.password,
-                    self.approved
+                    self.tarif_consultation, self.description, self.password
                 ))
                 self.id = cur.lastrowid
 

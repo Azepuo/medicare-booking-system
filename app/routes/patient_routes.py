@@ -38,6 +38,7 @@ def profile():
 def logout():
     return render_template("patient/logout.html")
 
+
 @patient.route("/prise_rdv")
 @role_required("patient")
 def prise_rdv():

@@ -66,3 +66,17 @@ def agenda():
 @role_required("medecin")
 def avis():
     return render_template("medecin/avis.html")
+
+
+from flask import session, redirect, url_for
+
+from flask import redirect, url_for, session
+from app.auth_rpc.decorators import role_required
+
+@medecin.route("/logout")
+@role_required("medecin")
+def logout():
+    session.clear()  # vide la session
+    return redirect(url_for("auth.login_page"))
+  # redirige vers la page de login
+

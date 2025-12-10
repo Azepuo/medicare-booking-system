@@ -89,3 +89,16 @@ def account():
 def update_admin():
     return render_template("admin/update_info_admin.html")
 
+
+from flask import session, redirect, url_for
+
+from flask import redirect, url_for, session
+from app.auth_rpc.decorators import role_required
+
+@admin.route("/logout")
+@role_required("admin")
+def logout():
+    session.clear()
+    return redirect(url_for("auth.login_page"))
+
+

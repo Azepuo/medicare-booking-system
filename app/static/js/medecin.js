@@ -328,7 +328,7 @@
 
   // Logout button behavior (calls gateway)
   $('#logoutBtn')?.addEventListener('click', async ()=>{
-    try{ await api('/logout', {method:'POST'}); window.location.href = '/auth/connexion.html'; } catch(e){}
+    try{ await api('/logout', {method:'POST'}); window.location.href = '/auth/login.html'; } catch(e){}
   });
 
 })();

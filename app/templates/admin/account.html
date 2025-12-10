@@ -23,7 +23,10 @@
             <li><a href="/admin/rendez_vous"><i class='bx bxs-calendar'></i> Rendez-vous</a></li>
             <li><a href="/admin/facturation"><i class='bx bxs-receipt'></i> Facturation</a></li>
             <li class="active"><a href="/admin/account"><i class='bx bxs-cog'></i> Mon Compte</a></li>
-            <li><a href="#"><i class='bx bxs-log-out-circle'></i> Déconnexion</a></li>
+            <li><a href="{{ url_for('admin.logout') }}"><i class='bx bxs-log-out-circle'></i> Déconnexion</a></li>
+
+
+
         </ul>
     </aside>
 
