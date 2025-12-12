@@ -1,32 +1,12 @@
-<!DOCTYPE html>
-<html lang="fr">
+{% extends 'admin/base.html' %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/account.css') }}">
+{% endblock %}
 
-    <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/account.css') }}">
+{% block title %}HealthAdmin - Mon compte{% endblock %}
 
-    <title>HealthAdmin - Mon compte</title>
-    <script>
-        // Ce script s'exécute immédiatement, AVANT le rendu
-        (function () {
-            // Dark Mode
-            if (localStorage.getItem('dark-mode') === 'enabled') {
-                document.documentElement.classList.add('dark');
-            }
-
-            // Sidebar (on ajoute un attribut pour le CSS)
-            if (localStorage.getItem('sidebar') === 'hidden') {
-                document.documentElement.setAttribute('data-sidebar', 'hidden');
-            }
-        })();
-    </script>
-</head>
-
-<body>
+{% block content %}
 
     {% set admin_photo = admin.photo if admin.photo else 'img/zainab_pic.jpeg' %}
 
@@ -62,9 +42,9 @@
 
             <form action="#">
                 <!-- <div class="form-input">
-					<input type="search" placeholder="Search...">
-					<button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
-				</div> -->
+                    <input type="search" placeholder="Search...">
+                    <button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
+                </div> -->
             </form>
             <input type="checkbox" id="switch-mode" hidden>
             <label for="switch-mode" class="switch-mode"></label>
@@ -205,25 +185,26 @@
         </main>
 
     </section>
-    <script>
-        const toggles = document.querySelectorAll('.toggle-pwd');
 
-        toggles.forEach(icon => {
-            icon.addEventListener('click', () => {
-                const targetId = icon.getAttribute('data-target');
-                const input = document.getElementById(targetId);
+{% endblock %}
 
-                if (input.type === "password") {
-                    input.type = "text";
-                    icon.classList.replace("bx-show", "bx-hide");
-                } else {
-                    input.type = "password";
-                    icon.classList.replace("bx-hide", "bx-show");
-                }
-            });
+{% block extra_js %}
+<script>
+    const toggles = document.querySelectorAll('.toggle-pwd');
+
+    toggles.forEach(icon => {
+        icon.addEventListener('click', () => {
+            const targetId = icon.getAttribute('data-target');
+            const input = document.getElementById(targetId);
+
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.replace("bx-show", "bx-hide");
+            } else {
+                input.type = "password";
+                icon.classList.replace("bx-hide", "bx-show");
+            }
         });
-    </script>
-    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-</body>
-
-</html>
+    });
+</script>
+{% endblock %}

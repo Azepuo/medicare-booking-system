@@ -1,33 +1,6 @@
-<!DOCTYPE html>
-<html lang="fr">
-
-<head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-	<!-- Boxicons -->
-	<link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
-	<!-- CSS principal du dashboard -->
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-
-	<title>HealthAdmin - Patients</title>
-	<script>
-		// Ce script s'exécute immédiatement, AVANT le rendu
-		(function () {
-			// Dark Mode
-			if (localStorage.getItem('dark-mode') === 'enabled') {
-				document.documentElement.classList.add('dark');
-			}
-
-			// Sidebar (on ajoute un attribut pour le CSS)
-			if (localStorage.getItem('sidebar') === 'hidden') {
-				document.documentElement.setAttribute('data-sidebar', 'hidden');
-			}
-		})();
-	</script>
-</head>
-
-<body>
+{% extends 'admin/base.html' %}
+{% block title %}HealthAdmin - Patients{% endblock %}
+{% block content %}
 
 	<!-- SIDEBAR -->
 	<section id="sidebar">
@@ -212,7 +185,4 @@
 	</section>
 	<!-- CONTENT -->
 
-	<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-</body>
-
-</html>
+{% endblock %}

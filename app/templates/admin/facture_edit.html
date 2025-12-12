@@ -1,43 +1,24 @@
-<!DOCTYPE html>
-<html lang="fr">
+{% extends 'admin/base.html' %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% block extra_css %}
+<style>
+    .service-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f7f8fa;
+        padding: 10px 14px;
+        border-radius: 6px;
+        margin-bottom: 8px;
+        font-size: 14px;
+        border: 1px solid #e1e4e8;
+    }
 
-    <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    .service-item span {
+        font-weight: 500;
+    }
 
-    <title>HealthAdmin - Modifier Facture</title>
-    <script>
-        // Avant le rendu → Dark mode + Sidebar
-        (function () {
-            if (localStorage.getItem('dark-mode') === 'enabled') {
-                document.documentElement.classList.add('dark');
-            }
-            if (localStorage.getItem('sidebar') === 'hidden') {
-                document.documentElement.setAttribute('data-sidebar', 'hidden');
-            }
-        })();
-    </script>
-    <style>
-        .service-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #f7f8fa;
-            padding: 10px 14px;
-            border-radius: 6px;
-            margin-bottom: 8px;
-            font-size: 14px;
-            border: 1px solid #e1e4e8;
-        }
-
-        .service-item span {
-            font-weight: 500;
-        }
-
-        .remove-btn {
+    .remove-btn {
             background: #ff4d4f;
             border: none;
             color: white;
@@ -51,9 +32,8 @@
             background: #d9363e;
         }
     </style>
-</head>
 
-<body>
+{% block content %}
 
     <!-- SIDEBAR -->
     <section id="sidebar">
@@ -202,8 +182,11 @@
         </main>
     </section>
 
-    <!-- SCRIPT -->
-  <script>
+        <!-- SCRIPT -->
+{% endblock %}
+
+{% block extra_js %}
+    <script>
     const CONSULTATION_PRICE = parseFloat(document.getElementById('consultation_price').value);
 
     const priceMap = {
@@ -267,10 +250,5 @@
     }
 
     initServices();
-</script>
-
-
-    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-</body>
-
-</html>
+  </script>
+{% endblock %}
