@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, jsonify, request
 from models.patient import Patient
 from models.rendezvous import Rendezvous
 from models.medecin import Medecin
-from database.connection import create_connection  # ✅ AJOUTEZ CET IMPORT
+from database.connection_m import create_connection  # ✅ AJOUTEZ CET IMPORT
 from datetime import datetime, date
 from models.disponibilite import Disponibilite
 from flask import session

@@ -18,6 +18,6 @@ git push origin nom-branche
 
 
 # 7 Tester la connexion
-python -c "from database.connection import test_connection; test_connection()"
+python -c "from database.connection_m import test_connection; test_connection()"
 # 8 Lancer la création complète de la base (migrations + seeders)
 python scripts/setup_database.py

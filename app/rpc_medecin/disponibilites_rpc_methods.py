@@ -1,6 +1,6 @@
 # app/rpc_medecin/disponibilites_rpc_methods.py
 
-from database.connection import get_cursor
+from database.connection_m import get_cursor
 
 # ========================================================
 # LISTE DE TOUTES LES DISPONIBILITÉS

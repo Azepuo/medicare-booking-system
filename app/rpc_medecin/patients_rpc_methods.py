@@ -1,5 +1,5 @@
 # app/rpc_medecin/patients_rpc_methods.py
-from database.connection import create_connection
+from database.connection_m import create_connection
 from contextlib import contextmanager
 from typing import Optional, Dict, Any, List
 from datetime import datetime
