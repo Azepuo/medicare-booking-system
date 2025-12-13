@@ -1,0 +1,38 @@
+{% extends "medecin/base.html" %}
+
+{% block title %}Disponibilités{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>Liste des disponibilités</h2>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Jour</th>
+        <th>Heure Début</th>
+        <th>Heure Fin</th>
+      </tr>
+    </thead>
+    <tbody id="dispoTableBody">
+      <!-- JS remplira le contenu -->
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadDisponibilites() {
+  const res = await fetch("/medecin/api/disponibilites");
+  const data = await res.json();
+  const tbody = document.getElementById("dispoTableBody");
+  tbody.innerHTML = "";
+  data.forEach(d => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${d.date}</td><td>${d.heure_debut}</td><td>${d.heure_fin}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+document.addEventListener("DOMContentLoaded", loadDisponibilites);
+</script>
+{% endblock %}

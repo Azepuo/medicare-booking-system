@@ -1,0 +1,40 @@
+{% extends "medecin/base.html" %}
+
+{% block title %}Supprimer Patient • Médecin{% endblock %}
+
+{% block content %}
+<div class="header-row">
+  <h1>Supprimer le patient</h1>
+</div>
+
+<div class="card" id="deletePatientCard" data-patient-id="{{ patient_id | tojson }}">
+  <p>Voulez-vous vraiment supprimer ce patient ?</p>
+  <button id="confirmDelete" class="btn danger">Supprimer</button>
+  <a href="{{ url_for('medecin.patients') }}" class="btn secondary">Annuler</a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const deleteCard = document.getElementById("deletePatientCard");
+const patientId = deleteCard.dataset.patientId;  // récupéré depuis l'attribut data-patient-id
+const btn = document.getElementById("confirmDelete");
+
+btn.addEventListener("click", async () => {
+  try {
+    const res = await fetch(`/medecin/rpc/patients/delete/${patientId}`, {
+      method: "DELETE"
+    });
+    const data = await res.json();
+    if(data.success){
+      alert("Patient supprimé avec succès !");
+      window.location.href = "/medecin/patients";
+    } else {
+      alert("Erreur: impossible de supprimer ce patient");
+    }
+  } catch(err) {
+    alert("Erreur serveur: " + err.message);
+  }
+});
+</script>
+{% endblock %}

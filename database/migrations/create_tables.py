@@ -121,7 +121,7 @@ def up(cursor):
             id INT AUTO_INCREMENT PRIMARY KEY,
             patient_id INT NOT NULL,
             medecin_id INT NOT NULL,
-            note INT CHECK(note BETWEEN 1 AND 5),
+            note INT CHECK (note BETWEEN 1 AND 5),
             commentaire TEXT,
             date_avis DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
@@ -175,17 +175,6 @@ def up(cursor):
             FOREIGN KEY (facture_id) REFERENCES factures(id) ON DELETE CASCADE,
             FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
         )
-    """)
-
-    # ---------- SEED SERVICES ----------
-    cursor.execute("""
-        INSERT INTO services (nom_service, prix_unitaire, description) VALUES
-        ('Consultation',350,'Consultation générale'),
-        ('Analyse laboratoire',450,'Analyses médicales'),
-        ('Radiologie',600,'Imagerie X-Ray'),
-        ('Échographie',500,'Ultrasons'),
-        ('Injection',120,'Injection médicale'),
-        ('Pansement',80,'Soin infirmier')
     """)
 
     print("✅ Base de données créée avec succès.")

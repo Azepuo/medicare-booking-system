@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Medicare - Espace Médecin{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='medcin/css/medcin.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app">
+        <!-- Sidebar Verticale -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">
+                    <i class="fas fa-stethoscope"></i>
+                </div>
+                <h1>Medicare</h1>
+            </div>
+
+            <nav>
+                <!-- DASHBOARD -->
+                <a href="{{ url_for('medecin.dashboard') }}" 
+                   class="nav-link {% if request.endpoint == 'medecin.dashboard' %}active{% endif %}">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </a>
+
+                <!-- MENU PATIENTS -->
+                <div class="nav-dropdown">
+                    <a href="#" class="nav-link dropdown-toggle
+                       {% if request.endpoint in ['medecin.patients', 'medecin.patient_add_page'] %}active{% endif %}">
+                        <i class="fas fa-users"></i> Patients 
+                        <i class="fas fa-chevron-down dropdown-arrow"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="{{ url_for('medecin.patients') }}"
+                           class="dropdown-link {% if request.endpoint == 'medecin.patients' %}active{% endif %}">
+                            <i class="fas fa-list"></i> Liste des patients
+                        </a>
+                        <a href="{{ url_for('medecin.patient_add_page') }}"
+                           class="dropdown-link {% if request.endpoint == 'medecin.patient_add_page' %}active{% endif %}">
+                            <i class="fas fa-user-plus"></i> Nouveau patient
+                        </a>
+                    </div>
+                </div>
+
+                <!-- MENU RENDEZ-VOUS -->
+                <div class="nav-dropdown">
+                    <a href="#" class="nav-link dropdown-toggle
+                       {% if request.endpoint in ['medecin.rdv_list', 'medecin.agenda', 'medecin.rdv_add_page'] %}active{% endif %}">
+                        <i class="fas fa-calendar-check"></i> Rendez-vous 
+                        <i class="fas fa-chevron-down dropdown-arrow"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="{{ url_for('medecin.rdv_list') }}"
+                           class="dropdown-link {% if request.endpoint == 'medecin.rdv_list' %}active{% endif %}">
+                            <i class="fas fa-calendar-day"></i> RDV du jour
+                        </a>
+                        <a href="{{ url_for('medecin.rdv_add_page') }}"
+                           class="dropdown-link {% if request.endpoint == 'medecin.rdv_add_page' %}active{% endif %}">
+                            <i class="fas fa-plus-circle"></i> Nouveau RDV
+                        </a>
+                    </div>
+                </div>
+
+                <!-- MENU DISPONIBILITÉS -->
+                <div class="nav-dropdown">
+                    <a href="#" class="nav-link dropdown-toggle
+                       {% if request.endpoint in ['medecin.dispo_list', 'medecin.dispo_add'] %}active{% endif %}">
+                        <i class="fas fa-clock"></i> Disponibilités
+                        <i class="fas fa-chevron-down dropdown-arrow"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="{{ url_for('medecin.dispo_list') }}"
+                           class="dropdown-link {% if request.endpoint == 'medecin.dispo_list' %}active{% endif %}">
+                            <i class="fas fa-list"></i> Liste des disponibilités
+                        </a>
+                        <a href="{{ url_for('medecin.dispo_add') }}"
+                           class="dropdown-link {% if request.endpoint == 'medecin.dispo_add' %}active{% endif %}">
+                            <i class="fas fa-plus-circle"></i> Nouvelle disponibilité
+                        </a>
+                    </div>
+                </div>
+
+                <!-- COMPTE -->
+                <a href="{{ url_for('medecin.profil') }}" 
+                   class="nav-link {% if request.endpoint == 'medecin.profil' %}active{% endif %}">
+                    <i class="fas fa-user-md"></i> Mon compte
+                </a>
+
+                <!-- LOGOUT -->
+                <button class="btn-ghost logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Se déconnecter
+                </button>
+            </nav>
+        </aside>
+
+        <!-- CONTENU PRINCIPAL -->
+        <main class="main">
+            {% block topbar %}
+            <div class="dashboard-header">
+                <div class="header-left">
+                    <h1 class="h1">{% block page_title %}Tableau de Bord{% endblock %}</h1>
+                </div>
+                <div class="header-center">
+                    <div class="search-bar">
+                        <input type="text" placeholder="Search..." id="searchInput">
+                        <button class="btn search-btn"><i class="fas fa-search"></i></button>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="icon-btn">
+                        <i class="fas fa-bell"></i>
+                        <span class="badge">8</span>
+                    </button>
+                    <button class="icon-btn profile-btn">
+                        <img src="/static/images/avatar.jpeg" alt="Profil">
+                    </button>
+                </div>
+            </div>
+            {% endblock %}
+
+            <section class="content">
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        <div class="flash-messages">
+                            {% for message in messages %}
+                                <div class="flash-message">{{ message }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </section>
+        </main>
+    </div>
+
+    <script>
+        function logout() {
+            if (confirm('Voulez-vous vraiment vous déconnecter ?')) {
+                window.location.href = '/logout';
+            }
+        }
+
+        // Gestion des dropdowns
+        document.addEventListener('DOMContentLoaded', function() {
+            function setupDropdown(dropdownElement) {
+                const dropdownToggle = dropdownElement.querySelector('.dropdown-toggle');
+                const dropdownMenu = dropdownElement.querySelector('.dropdown-menu');
+
+                dropdownToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const isOpen = dropdownMenu.style.display === 'block';
+                    dropdownMenu.style.display = isOpen ? 'none' : 'block';
+                    dropdownElement.classList.toggle('open', !isOpen);
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (!dropdownElement.contains(e.target)) {
+                        dropdownMenu.style.display = 'none';
+                        dropdownElement.classList.remove('open');
+                    }
+                });
+
+                dropdownElement.addEventListener('mouseenter', function() {
+                    dropdownMenu.style.display = 'block';
+                    dropdownElement.classList.add('open');
+                });
+
+                dropdownElement.addEventListener('mouseleave', function() {
+                    dropdownMenu.style.display = 'none';
+                    dropdownElement.classList.remove('open');
+                });
+            }
+
+            const dropdowns = document.querySelectorAll('.nav-dropdown');
+            dropdowns.forEach(setupDropdown);
+        });
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

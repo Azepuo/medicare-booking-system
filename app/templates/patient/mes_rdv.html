@@ -7,7 +7,11 @@
     <div class="container">
         <div class="heade">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+<<<<<<< HEAD
                 <h1>Mes Rendez-vous</h1>
+=======
+                <h1>Historique des Rendez-vous</h1>
+>>>>>>> Mariam_Moumen
                 <button class="btn-add-appointment" onclick="showAppointmentForm()">
                     <i class="fas fa-plus" style="color: white;"></i> Ajouter un Rendez-vous
                 </button>
@@ -22,25 +26,38 @@
                     <button class="filter-btn" data-filter="confirmé">Confirmés</button>
                     <button class="filter-btn" data-filter="terminé">Terminés</button>
                     <button class="filter-btn" data-filter="annulé">Annulés</button>
+<<<<<<< HEAD
                     <button class="filter-btn" data-filter="En attente">En Attente</button>
+=======
+>>>>>>> Mariam_Moumen
                 </div>
             </div>
         </div>
 
         <div id="stats" class="stats"></div>
+<<<<<<< HEAD
 
         <div id="appointmentsGrid" class="appointments-grid"></div>
 
         <div id="emptyState" class="empty-state" style="display:none;">
+=======
+        <div id="appointmentsGrid" class="appointments-grid"></div>
+
+        <div id="emptyState" class="empty-state" style="display: none;">
+>>>>>>> Mariam_Moumen
             <div class="empty-state-icon">📅</div>
             <h3>Aucun rendez-vous trouvé</h3>
             <p>Essayez de modifier vos critères de recherche</p>
         </div>
+<<<<<<< HEAD
 
+=======
+>>>>>>> Mariam_Moumen
     </div>
 </div>
 
 {% include "patient/prise_rdv.html" %}
+<<<<<<< HEAD
 
 {% endblock %}
 
@@ -71,3 +88,9 @@
 
 <script src="{{ url_for('static', filename='js/patient.js') }}"></script>
 {% endblock %}
+=======
+{% endblock %}
+<script>
+    document.getElementById("welcome-title")
+</script>
+>>>>>>> Mariam_Moumen

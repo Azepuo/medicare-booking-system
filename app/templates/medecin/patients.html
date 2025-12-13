@@ -1,0 +1,248 @@
+{% extends "medecin/base.html" %}
+
+{% block title %}Patients • Médecin{% endblock %}
+
+{% block content %}
+<div class="header-row">
+  <h1 class="h1">Gestion des Patients</h1>
+  <div>
+    <button class="btn primary" onclick="window.location.href='/medecin/patients/add'">
+      <i class="fas fa-plus"></i> Nouveau Patient
+    </button>
+    <button class="btn" onclick="loadPatients()">
+      <i class="fas fa-sync-alt"></i> Actualiser
+    </button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-responsive" style="margin-top:12px;">
+    <!-- Utilise les mêmes classes que la table RDV pour le style -->
+    <table class="table rdv-table" id="patientsTable" role="table">
+      <thead>
+        <tr>
+          <th class="col-patient">Nom</th>
+          <th class="col-email">Email</th>
+          <th class="col-contact">Téléphone</th>
+          <th class="col-date">Date Inscription</th>
+          <th class="col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="patientsTableBody">
+      </tbody>
+    </table>
+  </div>
+
+  <div id="noDataMessage" style="display: none; text-align: center; padding: 20px;">
+    <p>Aucun patient trouvé</p>
+  </div>
+
+  <div id="errorMessage" style="display: none; text-align: center; padding: 20px; color: #dc3545;">
+    <p id="errorText"></p>
+    <button class="btn small" onclick="loadPatients()">Réessayer</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Configuration CORRECTE - routes sous /medecin/api/
+const PATIENT_API_ROUTES = {
+    LIST: '/medecin/api/patients',
+    DELETE: '/medecin/api/patients'
+};
+
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function showLoading() {
+    document.getElementById("patientsTableBody").innerHTML = '<tr><td colspan="5" class="centered-cell">Chargement des patients...</td></tr>';
+    document.getElementById("noDataMessage").style.display = 'none';
+    document.getElementById("errorMessage").style.display = 'none';
+}
+
+function showNoData() {
+    document.getElementById("patientsTableBody").innerHTML = '';
+    document.getElementById("noDataMessage").style.display = 'block';
+    document.getElementById("errorMessage").style.display = 'none';
+}
+
+function showError(message) {
+    document.getElementById("patientsTableBody").innerHTML = '';
+    document.getElementById("noDataMessage").style.display = 'none';
+    document.getElementById("errorText").textContent = message;
+    document.getElementById("errorMessage").style.display = 'block';
+}
+
+async function loadPatients() {
+    showLoading();
+
+    try {
+        const response = await fetch(PATIENT_API_ROUTES.LIST);
+
+        if (!response.ok) {
+            throw new Error(`Erreur ${response.status}`);
+        }
+
+        const patients = await response.json();
+        const tableBody = document.getElementById("patientsTableBody");
+        tableBody.innerHTML = '';
+
+        if (!patients || patients.length === 0) {
+            showNoData();
+            return;
+        }
+
+        patients.forEach(patient => {
+            const tr = document.createElement("tr");
+            let dateDisplay = 'N/A';
+
+            if (patient.date_inscription) {
+                try {
+                    dateDisplay = new Date(patient.date_inscription).toLocaleDateString('fr-FR');
+                } catch (e) {
+                    dateDisplay = patient.date_inscription;
+                }
+            }
+
+            tr.innerHTML = `
+                <td class="cell-patient"><strong>${escapeHtml(patient.nom || '')}</strong></td>
+                <td class="cell-email">${escapeHtml(patient.email || '')}</td>
+                <td class="cell-contact">${escapeHtml(patient.telephone || '')}</td>
+                <td class="cell-date">${escapeHtml(dateDisplay)}</td>
+                <td class="cell-actions">
+                    <div class="actions">
+                      <button class="btn action-btn" onclick="editPatient(${patient.id})">
+                        <i class="fas fa-edit"></i> Modifier
+                      </button>
+                      <button class="btn action-btn danger" onclick="confirmDeletePatient(${patient.id})">
+                        <i class="fas fa-trash"></i> Supprimer
+                      </button>
+                    </div>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        });
+
+    } catch (error) {
+        console.error('Erreur loadPatients:', error);
+        showError(`Erreur lors du chargement: ${escapeHtml(error.message)}`);
+    }
+}
+
+async function deletePatient(id) {
+    try {
+        const response = await fetch(`${PATIENT_API_ROUTES.DELETE}/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(()=>({}));
+            throw new Error(errorData.error || `Erreur ${response.status}`);
+        }
+
+        const result = await response.json().catch(()=>({}));
+        alert('✅ ' + (result.message || 'Patient supprimé avec succès'));
+        await loadPatients();
+
+    } catch (error) {
+        console.error('Erreur deletePatient:', error);
+        alert(`❌ Erreur: ${error.message}`);
+    }
+}
+
+function editPatient(id) {
+    window.location.href = `/medecin/patients/edit/${id}`;
+}
+
+function confirmDeletePatient(id) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce patient ?')) {
+        return;
+    }
+    deletePatient(id);
+}
+
+document.addEventListener("DOMContentLoaded", loadPatients);
+</script>
+
+<!-- CSS identique à la table RDV pour un rendu identique -->
+<style>
+.table-responsive { width:100%; overflow-x:auto; }
+.rdv-table {
+  width:100%;
+  border-collapse:collapse;
+  table-layout: fixed; /* force les largeurs des colonnes */
+  min-width:720px;
+}
+.rdv-table thead th {
+  text-align:left;
+  padding:10px 12px;
+  background:#f7f7f7;
+  font-weight:700;
+  border-bottom:1px solid #e0e0e0;
+}
+.rdv-table tbody td {
+  padding:10px 12px;
+  vertical-align:middle;
+  border-bottom:1px solid #eee;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+/* colonnes : hints de largeur */
+.col-patient, .cell-patient { width:180px; }
+.col-email, .cell-email { width:220px; }
+.col-contact, .cell-contact { width:140px; }
+.col-date, .cell-date { width:140px; }
+.col-actions, .cell-actions { width:220px; }
+
+/* Badge de statut (utile si tu veux ajouter un statut visuel) */
+.status-badge {
+  display:inline-block;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:600;
+  text-transform:capitalize;
+}
+
+/* Actions (boutons) */
+.actions {
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  align-items:center;
+}
+.btn {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  border-radius:6px;
+  border:1px solid transparent;
+  background:#e9ecef;
+  cursor:pointer;
+  font-size:14px;
+}
+.btn.primary { background:#0d6efd; color:#fff; }
+.btn.danger, .btn.danger:hover { background:#dc3545; color:#fff; border-color:transparent; }
+.btn.action-btn { min-width:100px; padding:8px 14px; font-weight:600; }
+
+/* responsive */
+@media (max-width:640px) {
+  .rdv-table { min-width:600px; }
+  .btn.action-btn { min-width:80px; padding:6px 10px; font-size:13px; }
+  .rdv-table tbody td { white-space:normal; } /* permet le wrapping sur mobile */
+  .actions { justify-content:flex-start; }
+}
+
+/* helper cells */
+.centered-cell { text-align:center; padding:18px; }
+.error-cell { color:#dc3545; }
+</style>
+{% endblock %}

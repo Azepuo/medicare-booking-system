@@ -1,0 +1,72 @@
+{% extends "medecin/base.html" %}
+
+{% block title %}Modifier Disponibilité{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>Modifier une disponibilité</h2>
+
+  <form id="dispoEditForm">
+      <div class="form-group">
+        <label>Date *</label>
+        <input type="date" id="date" required class="input">
+      </div>
+
+      <div class="form-group">
+        <label>Heure Début *</label>
+        <input type="time" id="heure_debut" required class="input">
+      </div>
+
+      <div class="form-group">
+        <label>Heure Fin *</label>
+        <input type="time" id="heure_fin" required class="input">
+      </div>
+
+      <div style="display:flex;gap:10px;">
+        <button class="btn primary" type="submit">Modifier</button>
+        <a href="/medecin/disponibilites" class="btn">Annuler</a>
+      </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const dispoId = window.location.pathname.split("/").pop();
+
+async function loadDispo() {
+  const res = await fetch(`/medecin/api/disponibilites/${dispoId}`);
+  const d = await res.json();
+
+  date.value = d.date;
+  heure_debut.value = d.heure_debut;
+  heure_fin.value = d.heure_fin;
+}
+
+document.getElementById("dispoEditForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+
+  const payload = {
+    date: date.value,
+    heure_debut: heure_debut.value,
+    heure_fin: heure_fin.value
+  };
+
+  const res = await fetch(`/medecin/api/disponibilites/${dispoId}`, {
+    method: "PUT",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    alert("Erreur modification");
+    return;
+  }
+
+  alert("Disponibilité modifiée !");
+  window.location.href = "/medecin/disponibilites";
+});
+
+loadDispo();
+</script>
+{% endblock %}

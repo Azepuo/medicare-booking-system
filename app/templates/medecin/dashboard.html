@@ -1,0 +1,392 @@
+{% extends "medecin/base.html" %}
+
+{% block title %}Dashboard • Médecin{% endblock %}
+{% block body_id %}dashboard-page{% endblock %}
+{% block page_title %}Tableau de Bord{% endblock %}
+
+{% block content %}
+<!-- TWO DYNAMIC COUNTERS -->
+<div class="grid stats-grid mt-20">
+  <div class="stat-card">
+    <div class="stat-icon icon-blue"><i class="fas fa-user-injured"></i></div>
+    <div>
+      <p class="stat-number" id="totalPatients">0</p>
+      <p class="stat-label">Total Patients</p>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon icon-yellow"><i class="fas fa-calendar-check"></i></div>
+    <div>
+      <p class="stat-number" id="totalRDV">0</p>
+      <p class="stat-label">Total Rendez-vous (aujourd'hui)</p>
+    </div>
+  </div>
+</div>
+
+<!-- LISTE DES RENDEZ-VOUS -->
+<div class="card mt-20">
+  <div class="header-row" style="align-items:center;">
+    <h3>Rendez-vous Aujourd'hui</h3>
+    <div style="margin-left:auto;">
+      <button class="btn primary" onclick="window.location.href='/medecin/rdv/add'">
+        <i class="fas fa-plus"></i> Nouveau RDV
+      </button>
+      <button class="btn" onclick="renderRDV()">
+        <i class="fas fa-sync-alt"></i> Actualiser
+      </button>
+    </div>
+  </div>
+
+  <div class="table-responsive" style="margin-top:12px;">
+    <table class="table rdv-table" role="table">
+      <thead>
+        <tr>
+          <th class="col-hour">Heure</th>
+          <th class="col-patient">Patient</th>
+          <th class="col-motif">Motif</th>
+          <th class="col-contact">Contact</th>
+          <th class="col-status">Statut</th>
+          <th class="col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="rdvTable">
+        <!-- Rempli par JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <div id="noDataMessage" class="no-data" style="display:none; text-align:center; padding:18px;">
+    <p>Aucun rendez-vous aujourd'hui</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* ---------- Config API ---------- */
+const API = {
+  PATIENTS: '/medecin/api/patients',
+  RDV_TODAY: '/medecin/api/rendezvous/today',
+  RDV_DELETE: '/medecin/api/rendezvous'
+};
+
+/* ---------- Helpers ---------- */
+function escapeHtml(text){
+  if (text === null || text === undefined) return '';
+  return String(text).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c];
+  });
+}
+
+/* ---------- Refresh entrées ---------- */
+function refreshData(){
+  fetchPatientsCount();
+  renderRDV();
+}
+
+/* ---------- Patients count ---------- */
+async function fetchPatientsCount(){
+  try {
+    const res = await fetch(API.PATIENTS, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`Erreur ${res.status}`);
+    const patients = await res.json();
+    const count = Array.isArray(patients) ? patients.length : (patients && (patients.total || patients.count || 0));
+    document.getElementById('totalPatients').textContent = Number.isFinite(count) ? count : 0;
+  } catch(err) {
+    console.error('Erreur fetchPatientsCount:', err);
+    document.getElementById('totalPatients').textContent = '—';
+  }
+}
+
+/* ---------- RDV table helpers ---------- */
+function showLoadingRDV(){
+  const tbody = document.getElementById('rdvTable');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" class="centered-cell">Chargement...</td></tr>';
+  const noData = document.getElementById('noDataMessage');
+  if (noData) noData.style.display = 'none';
+  tbody.style.display = 'table-row-group';
+}
+
+function showNoData(){
+  const tbody = document.getElementById('rdvTable');
+  if (tbody) tbody.style.display = 'none';
+  const noData = document.getElementById('noDataMessage');
+  if (noData) noData.style.display = 'block';
+}
+
+function showTable(){
+  const tbody = document.getElementById('rdvTable');
+  if (tbody) tbody.style.display = 'table-row-group';
+  const noData = document.getElementById('noDataMessage');
+  if (noData) noData.style.display = 'none';
+}
+
+/* ---------- Render RDV ---------- */
+async function renderRDV(){
+  showLoadingRDV();
+  try {
+    const res = await fetch(API.RDV_TODAY, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`Erreur ${res.status}`);
+    const rdvs = await res.json();
+
+    const tbody = document.getElementById('rdvTable');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (!rdvs || (Array.isArray(rdvs) && rdvs.length === 0)) {
+      showNoData();
+      const totalEl = document.getElementById('totalRDV');
+      if (totalEl) totalEl.textContent = 0;
+      return;
+    }
+
+    showTable();
+
+    const list = Array.isArray(rdvs) ? rdvs : (rdvs.data && Array.isArray(rdvs.data) ? rdvs.data : []);
+    const finalList = list.length ? list : (rdvs.rows || rdvs.items || (Array.isArray(rdvs) ? rdvs : []));
+
+    finalList.forEach(rdv => {
+      const patientName = rdv.patient_nom || (rdv.patient && rdv.patient.nom) || 'N/A';
+      const patientPhone = rdv.patient_telephone || (rdv.patient && (rdv.patient.telephone || rdv.patient.phone)) || 'N/A';
+      const statut = rdv.statut || 'Inconnu';
+      const id = rdv.id !== undefined ? rdv.id : (rdv._id !== undefined ? rdv._id : '');
+
+      let heureDisplay = rdv.date_heure || rdv.date || '';
+      if (typeof heureDisplay === 'string' && heureDisplay.indexOf(' ') !== -1) {
+        const parts = heureDisplay.split(' ');
+        heureDisplay = parts[1] ? parts[1].substring(0,5) : parts[0].substring(0,5);
+      }
+
+      const tr = document.createElement('tr');
+      tr.setAttribute('data-status', statut);
+      tr.setAttribute('data-id', id);
+
+      tr.innerHTML = ''
+        + '<td class="cell-hour">' + escapeHtml(heureDisplay) + '</td>'
+        + '<td class="cell-patient"><strong>' + escapeHtml(patientName) + '</strong></td>'
+        + '<td class="cell-motif">' + escapeHtml(rdv.notes || rdv.motif || 'Non spécifié') + '</td>'
+        + '<td class="cell-contact">' + escapeHtml(patientPhone) + '</td>'
+        + '<td class="cell-status"><span class="status-badge">' + escapeHtml(statut) + '</span></td>'
+        + '<td class="cell-actions">'
+          + '<div class="actions">'
+            + '<button class="btn action-btn" onclick="goEdit(\'' + escapeHtml(id) + '\')">Modifier</button>'
+            + '<button class="btn action-btn danger" onclick="confirmDelete(\'' + escapeHtml(id) + '\')">Supprimer</button>'
+          + '</div>'
+        + '</td>';
+
+      tbody.appendChild(tr);
+    });
+
+    const totalEl = document.getElementById('totalRDV');
+    if (totalEl) totalEl.textContent = finalList.length;
+
+  } catch(err) {
+    console.error('Erreur renderRDV:', err);
+    const tbody = document.getElementById('rdvTable');
+    if (!tbody) return;
+    tbody.innerHTML = ''
+      + '<tr><td colspan="6" class="centered-cell error-cell">'
+      + '❌ Erreur: ' + escapeHtml(err.message || 'Erreur de chargement')
+      + '<br><br><button class="btn action-btn" onclick="renderRDV()">Réessayer</button>'
+      + '</td></tr>';
+    showTable();
+    const totalEl = document.getElementById('totalRDV');
+    if (totalEl) totalEl.textContent = '—';
+  }
+}
+
+/* ---------- Delete RDV ---------- */
+async function deleteRDV(id){
+  try {
+    if (!id && id !== 0) throw new Error('ID invalide');
+    const url = API.RDV_DELETE + '/' + encodeURIComponent(id);
+    const res = await fetch(url, { method: 'DELETE' });
+    if (!res.ok) {
+      const errData = await res.json().catch(()=>({}));
+      throw new Error(errData.error || 'Suppression échouée');
+    }
+    const result = await res.json().catch(()=>({}));
+    alert('✅ ' + (result.message || 'Rendez-vous supprimé'));
+    await renderRDV();
+    await fetchPatientsCount();
+  } catch(err) {
+    console.error('Erreur deleteRDV:', err);
+    alert('❌ ' + (err.message || 'Erreur'));
+  }
+}
+
+/* ---------- Helpers d'UI pour actions ---------- */
+function goEdit(id){
+  if (!id && id !== 0) return;
+  window.location.href = '/medecin/rdv/edit/' + encodeURIComponent(id);
+}
+
+function confirmDelete(id){
+  if (!id && id !== 0) return;
+  if (confirm('Êtes-vous sûr de supprimer ce rendez-vous ?')) deleteRDV(id);
+}
+
+/* ---------- Init ---------- */
+document.addEventListener('DOMContentLoaded', function(){
+  fetchPatientsCount();
+  renderRDV();
+  setInterval(function(){ fetchPatientsCount(); renderRDV(); }, 120000);
+});
+</script>
+
+<style>
+/* --- Stats grid --- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 18px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border: 1px solid #e5e7eb;
+}
+
+.stat-icon {
+  width: 55px;
+  height: 55px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+}
+.icon-blue { background:#d9e9ff; color:#3b82f6; }
+.icon-yellow { background:#fff2c6; color:#eab308; }
+
+.stat-number { font-size: 22px; font-weight:700; margin:0; color:#1f2937; }
+.stat-label { margin:0; font-size:14px; color:#6b7280; }
+
+@media (max-width:900px) {
+  .stats-grid { grid-template-columns: 1fr; }
+}
+
+/* --- Table styles --- */
+.table-responsive { width:100%; overflow-x:auto; }
+.rdv-table {
+  width:100%;
+  border-collapse:collapse;
+  table-layout: fixed;
+  min-width:720px;
+}
+.rdv-table thead th {
+  text-align:left;
+  padding:10px 12px;
+  background:#f7f7f7;
+  font-weight:700;
+  border-bottom:1px solid #e0e0e0;
+}
+.rdv-table tbody td {
+  padding:10px 12px;
+  vertical-align:middle;
+  border-bottom:1px solid #eee;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.col-hour, .cell-hour { width:90px; }
+.col-actions, .cell-actions { width:220px; }
+.col-status, .cell-status { width:140px; }
+.col-contact { width:140px; }
+.col-patient, .cell-patient { width:180px; }
+
+.rdv-table tbody tr[data-status="Confirmé"] .status-badge {
+  background:#d1e7dd; color:#0f5132;
+}
+.rdv-table tbody tr[data-status="En attente"] .status-badge {
+  background:#fff3cd; color:#664d03;
+}
+.rdv-table tbody tr[data-status="Annulé"] .status-badge {
+  background:#f8d7da; color:#721c24;
+}
+.status-badge {
+  display:inline-block;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:600;
+  text-transform:capitalize;
+}
+
+.actions {
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  align-items:center;
+}
+.btn {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  border-radius:6px;
+  border:1px solid transparent;
+  background:#e9ecef;
+  cursor:pointer;
+  font-size:14px;
+  transition: all 0.2s ease;
+}
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.btn.primary { background:#0d6efd; color:#fff; }
+.btn.primary:hover { background:#0b5ed7; }
+.btn.danger { background:#dc3545; color:#fff; border-color:transparent; }
+.btn.danger:hover { background:#bb2d3b; }
+.btn.action-btn { min-width:100px; padding:8px 14px; font-weight:600; }
+
+@media (max-width:640px) {
+  .rdv-table { min-width:600px; }
+  .btn.action-btn { min-width:80px; padding:6px 10px; font-size:13px; }
+  .rdv-table tbody td { white-space:normal; }
+  .actions { justify-content:flex-start; }
+}
+
+.centered-cell { text-align:center; padding:18px; }
+.error-cell { color:#dc3545; }
+
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.header-row h3 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 18px;
+}
+
+.mt-20 {
+  margin-top: 20px;
+}
+
+.no-data {
+  color: #6b7280;
+  font-style: italic;
+  padding: 20px;
+}
+
+/* --- Dashboard Header Styles --- */
+
+</style>
+{% endblock %}

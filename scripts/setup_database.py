@@ -16,26 +16,26 @@ def setup_database():
     conn = create_connection()
 
     if conn is None:
-        print(" Erreur : impossible de se connecter à la base de données.")
+        print("❌ Erreur : impossible de se connecter à la base de données.")
         return
 
     cursor = conn.cursor()
 
-    print("\n Suppression des anciennes tables...")
+    print("\n🧹 Suppression des anciennes tables...")
     create_tables.down(cursor)
     conn.commit()
 
-    print("\n Création des nouvelles tables...")
+    print("\n🧱 Création des nouvelles tables...")
     create_tables.up(cursor)
     conn.commit()
 
-    print("\n Insertion des données de test...")
+    print("\n🌱 Insertion des données de test...")
     insert_data.seed_all(cursor)
     conn.commit()
 
     cursor.close()
     conn.close()
-    print("\n Base de données initialisée avec succès !")
+    print("\n✅ Base de données initialisée avec succès !")
 
 
 if __name__ == "__main__":

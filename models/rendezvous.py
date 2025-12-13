@@ -1,142 +1,190 @@
 from database.connection_p import create_connection
-from datetime import datetime
 
-class RendezVous:
-    def __init__(self, id=None, patient_id=None, medecin_id=None, date_heure=None, statut=None, notes=None):
+
+class Rendezvous:
+    def __init__(
+        self,
+        id=None,
+        patient_id=None,
+        medecin_id=None,
+        date_rdv=None,
+        heure_rdv=None,
+        statut="en_attente",
+        notes=None,
+        patient_nom=None,
+        medecin_nom=None
+    ):
         self.id = id
         self.patient_id = patient_id
         self.medecin_id = medecin_id
-        self.date_heure = date_heure
-        self.statut = statut or 'confirmé'
+        self.date_rdv = date_rdv
+        self.heure_rdv = heure_rdv
+        self.statut = statut
         self.notes = notes
-    
+        self.patient_nom = patient_nom
+        self.medecin_nom = medecin_nom
+
+    # ================= Utils =================
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "date_rdv": str(self.date_rdv) if self.date_rdv else None,
+            "heure_rdv": str(self.heure_rdv) if self.heure_rdv else None,
+            "patient_id": self.patient_id,
+            "patient_nom": self.patient_nom,
+            "medecin_id": self.medecin_id,
+            "medecin_nom": self.medecin_nom,
+            "statut": self.statut,
+            "notes": self.notes,
+        }
+
+    # ================= Getters =================
     @staticmethod
     def get_all():
-        """Récupérer tous les rendez-vous"""
-        connection = create_connection()
-        if not connection:
+        conn = create_connection()
+        if not conn:
             return []
-        
         try:
-            cursor = connection.cursor(dictionary=True)
-            cursor.execute("""
-                SELECT r.*, p.nom as patient_nom, m.nom as medecin_nom 
+            cur = conn.cursor(dictionary=True)
+            cur.execute("""
+                SELECT r.*, p.nom AS patient_nom, m.nom AS medecin_nom
                 FROM rendezvous r
                 JOIN patients p ON r.patient_id = p.id
                 JOIN medecins m ON r.medecin_id = m.id
+                ORDER BY r.date_rdv, r.heure_rdv
             """)
-            rendezvous = cursor.fetchall()
-            return [RendezVous(**r) for r in rendezvous]
-        except Exception as e:
-            print(f"Erreur: {e}")
-            return []
+            rows = cur.fetchall()
+            return [Rendezvous(**r) for r in rows]
         finally:
-            if connection.is_connected():
-                cursor.close()
-                connection.close()
-    
+            cur.close()
+            conn.close()
+
     @staticmethod
-    def get_by_id(rdv_id):
-        """Récupérer un rendez-vous par son ID"""
-        connection = create_connection()
-        if not connection:
+    def get_by_id(rid):
+        conn = create_connection()
+        if not conn:
             return None
-        
         try:
-            cursor = connection.cursor(dictionary=True)
-            cursor.execute("""
-                SELECT r.*, p.nom as patient_nom, m.nom as medecin_nom 
+            cur = conn.cursor(dictionary=True)
+            cur.execute("""
+                SELECT r.*, p.nom AS patient_nom, m.nom AS medecin_nom
                 FROM rendezvous r
                 JOIN patients p ON r.patient_id = p.id
                 JOIN medecins m ON r.medecin_id = m.id
                 WHERE r.id = %s
-            """, (rdv_id,))
-            rdv_data = cursor.fetchone()
-            return RendezVous(**rdv_data) if rdv_data else None
-        except Exception as e:
-            print(f"Erreur: {e}")
-            return None
+            """, (rid,))
+            row = cur.fetchone()
+            return Rendezvous(**row) if row else None
         finally:
-            if connection.is_connected():
-                cursor.close()
-                connection.close()
+            cur.close()
+            conn.close()
 
     @staticmethod
     def get_by_patient(patient_id):
-        """Récupérer les rendez-vous d'un patient"""
-        connection = create_connection()
-        if not connection:
+        conn = create_connection()
+        if not conn:
             return []
-        
         try:
-            cursor = connection.cursor(dictionary=True)
-            cursor.execute("SELECT * FROM rendezvous WHERE patient_id = %s", (patient_id,))
-            rendezvous = cursor.fetchall()
-            return [RendezVous(**r) for r in rendezvous]
-        except Exception as e:
-            print(f"Erreur: {e}")
-            return []
+            cur = conn.cursor(dictionary=True)
+            cur.execute("""
+                SELECT * FROM rendezvous
+                WHERE patient_id = %s
+                ORDER BY date_rdv, heure_rdv
+            """, (patient_id,))
+            rows = cur.fetchall()
+            return [Rendezvous(**r) for r in rows]
         finally:
-            if connection.is_connected():
-                cursor.close()
-                connection.close()
+            cur.close()
+            conn.close()
 
     @staticmethod
     def get_by_medecin(medecin_id):
-        """Récupérer les rendez-vous d'un médecin"""
-        connection = create_connection()
-        if not connection:
+        conn = create_connection()
+        if not conn:
             return []
-        
         try:
-            cursor = connection.cursor(dictionary=True)
-            cursor.execute("SELECT * FROM rendezvous WHERE medecin_id = %s", (medecin_id,))
-            rendezvous = cursor.fetchall()
-            return [RendezVous(**r) for r in rendezvous]
-        except Exception as e:
-            print(f"Erreur: {e}")
-            return []
+            cur = conn.cursor(dictionary=True)
+            cur.execute("""
+                SELECT * FROM rendezvous
+                WHERE medecin_id = %s
+                ORDER BY date_rdv, heure_rdv
+            """, (medecin_id,))
+            rows = cur.fetchall()
+            return [Rendezvous(**r) for r in rows]
         finally:
-            if connection.is_connected():
-                cursor.close()
-                connection.close()
+            cur.close()
+            conn.close()
 
+    # ================= Save / Delete =================
     def save(self):
-        """Sauvegarder le rendez-vous"""
-        connection = create_connection()
-        if not connection:
+        conn = create_connection()
+        if not conn:
             return False
-        
         try:
-            cursor = connection.cursor()
+            cur = conn.cursor()
             if self.id:
-                # Update
-                cursor.execute(
-                    "UPDATE rendezvous SET patient_id = %s, medecin_id = %s, date_heure = %s, statut = %s, notes = %s WHERE id = %s",
-                    (self.patient_id, self.medecin_id, self.date_heure, self.statut, self.notes, self.id)
-                )
+                cur.execute("""
+                    UPDATE rendezvous
+                    SET patient_id=%s, medecin_id=%s,
+                        date_rdv=%s, heure_rdv=%s,
+                        statut=%s, notes=%s
+                    WHERE id=%s
+                """, (
+                    self.patient_id,
+                    self.medecin_id,
+                    self.date_rdv,
+                    self.heure_rdv,
+                    self.statut,
+                    self.notes,
+                    self.id
+                ))
             else:
-                # Create
-                cursor.execute(
-                    "INSERT INTO rendezvous (patient_id, medecin_id, date_heure, statut, notes) VALUES (%s, %s, %s, %s, %s)",
-                    (self.patient_id, self.medecin_id, self.date_heure, self.statut, self.notes)
-                )
-                self.id = cursor.lastrowid
-            
-            connection.commit()
+                cur.execute("""
+                    INSERT INTO rendezvous
+                        (patient_id, medecin_id, date_rdv, heure_rdv, statut, notes)
+                    VALUES (%s,%s,%s,%s,%s,%s)
+                """, (
+                    self.patient_id,
+                    self.medecin_id,
+                    self.date_rdv,
+                    self.heure_rdv,
+                    self.statut,
+                    self.notes
+                ))
+                self.id = cur.lastrowid
+
+            conn.commit()
             return True
         except Exception as e:
-            print(f"Erreur: {e}")
+            print("Erreur Rendezvous.save():", e)
+            conn.rollback()
             return False
         finally:
-            if connection.is_connected():
-                cursor.close()
-                connection.close()
+            cur.close()
+            conn.close()
+
+    def delete(self):
+        if not self.id:
+            return False
+        conn = create_connection()
+        if not conn:
+            return False
+        try:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM rendezvous WHERE id=%s", (self.id,))
+            conn.commit()
+            return True
+        except Exception as e:
+            print("Erreur Rendezvous.delete():", e)
+            conn.rollback()
+            return False
+        finally:
+            cur.close()
+            conn.close()
 
     def annuler(self):
-        """Annuler le rendez-vous"""
-        self.statut = 'annulé'
+        self.statut = "annulé"
         return self.save()
 
     def __repr__(self):
-        return f"<RendezVous {self.id}: Patient {self.patient_id} avec Medecin {self.medecin_id}>"
+        return f"<Rendezvous {self.id}: Patient {self.patient_id} - Medecin {self.medecin_id}>"

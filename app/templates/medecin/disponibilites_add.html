@@ -1,0 +1,29 @@
+{% extends "medecin/base.html" %}
+
+{% block title %}Ajouter Disponibilité{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>Ajouter une disponibilité</h2>
+  <form id="dispoAddForm">
+      <div class="form-group">
+        <label>Date *</label>
+        <input type="date" id="date" required class="input">
+      </div>
+      <div class="form-group">
+        <label>Heure Début *</label>
+        <input type="time" id="heure_debut" required class="input">
+      </div>
+      <div class="form-group">
+        <label>Heure Fin *</label>
+        <input type="time" id="heure_fin" required class="input">
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn primary" type="submit">Enregistrer</button>
+        <a href="{{ url_for('medecin.dispo_list') }}" class="btn">Annuler</a>
+      </div>
+  </form>
+</div>
+
+
+{% endblock %}
