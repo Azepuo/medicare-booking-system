@@ -1,0 +1,172 @@
+{% extends 'admin/base.html' %}
+{% block title %}HealthAdmin - Modifier rendez-vous{% endblock %}
+{% block content %}
+
+	<!-- SIDEBAR -->
+	<section id="sidebar">
+		<a href="#" class="brand">
+			<i class='bx bxs-smile'></i>
+			<span class="text">HealthAdmin</span>
+		</a>
+		<ul class="side-menu top">
+			<li>
+				<a href="/admin/dashboard">
+					<i class='bx bxs-dashboard'></i>
+					<span class="text">Dashboard</span>
+				</a>
+			</li>
+			<li>
+				<a href="/admin/medecins">
+					<i class='bx bxs-user-pin'></i>
+					<span class="text">Médecin</span>
+				</a>
+			</li>
+			<li>
+				<a href="/admin/patients">
+					<i class='bx bx-user'></i>
+					<span class="text">Patients</span>
+				</a>
+			</li>
+			<li class="active">
+				<a href="/admin/rendez_vous">
+					<i class='bx bxs-calendar'></i>
+					<span class="text">Rendez-vous</span>
+				</a>
+			</li>
+			<li>
+				<a href="/admin/facturation">
+					<i class='bx bxs-calendar'></i>
+					<span class="text">Facturation</span>
+				</a>
+			</li>
+		</ul>
+		<ul class="side-menu">
+			<li>
+				<a href="/admin/account">
+					<i class='bx bxs-id-card'></i>
+					<span class="text">Mon compte</span>
+				</a>
+			</li>
+			<li>
+				<a href="#" class="logout">
+					<i class='bx bxs-log-out-circle'></i>
+					<span class="text">Déconnexion</span>
+				</a>
+			</li>
+		</ul>
+	</section>
+
+	<!-- CONTENT -->
+	<section id="content">
+
+		<!-- NAVBAR -->
+		<nav>
+			<i class='bx bx-menu'></i>
+			<form action="#">
+				<!-- <div class="form-input">
+                    <input type="search" placeholder="Search...">
+                    <button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
+                </div> -->
+			</form>
+			<input type="checkbox" id="switch-mode" hidden>
+			<label for="switch-mode" class="switch-mode"></label>
+			<a href="#" class="profile">
+				<img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
+
+			</a>
+		</nav>
+
+		<!-- MAIN -->
+		<main>
+
+			<div class="head-title">
+				<div class="left">
+					<h1>Modifier un rendez-vous</h1>
+					<ul class="breadcrumb">
+						<li><a href="/admin/dashboard">Dashboard</a></li>
+						<li><i class='bx bx-chevron-right'></i></li>
+						<li><a href="/admin/rendez_vous">Rendez-vous</a></li>
+						<li><i class='bx bx-chevron-right'></i></li>
+						<li><a class="active" href="#">Modifier</a></li>
+					</ul>
+				</div>
+			</div>
+
+			<!-- ✅ FORMULAIRE -->
+			<div class="form-wrapper">
+				<div class="form-card form-card-medium">
+
+					<form action="{{ form_action }}" method="post">
+						<div class="form-grid">
+
+							<!-- Patient -->
+							<div class="field">
+								<label>Patient</label>
+								<select name="patient_id" required>
+									{% for p in patients %}
+									<option value="{{ p.id }}" {% if rdv.patient_id==p.id %}selected{% endif %}>
+										{{ p.nom }}
+									</option>
+									{% endfor %}
+								</select>
+							</div>
+
+							<!-- Médecin -->
+							<div class="field">
+								<label>Médecin</label>
+								<select name="medecin_id" required>
+									{% for m in medecins %}
+									<option value="{{ m.id }}" {% if rdv.medecin_id==m.id %}selected{% endif %}>
+										{{ m.nom }}
+									</option>
+									{% endfor %}
+								</select>
+							</div>
+
+							<!-- Date -->
+							<div class="field">
+								<label>Date</label>
+								<input type="date" name="date_rdv" value="{{ rdv.date_rdv }}" required>
+							</div>
+
+							<!-- Heure -->
+							<div class="field">
+								<label>Heure</label>
+								<input type="time" name="heure_rdv" value="{{ rdv.heure_rdv }}" required>
+							</div>
+							<!-- Statut -->
+							<div class="field">
+								<label>Statut</label>
+								<select name="statut">
+									<option value="en_attente" {% if rdv.statut=='en_attente' %}selected{% endif %}>En
+										attente</option>
+									<option value="terminé" {% if rdv.statut=='terminé' %}selected{% endif %}>Terminé
+									</option>
+									<option value="annulé" {% if rdv.statut=='annulé' %}selected{% endif %}>Annulé
+									</option>
+								</select>
+							</div>
+
+							<!-- Notes -->
+							<div class="field field-full">
+								<label>Motif / Notes</label>
+								<textarea name="notes" rows="3">{{ rdv.notes }}</textarea>
+							</div>
+
+						</div>
+
+						<div class="form-actions">
+							<a href="/admin/rendez_vous" class="btn-secondary">Annuler</a>
+							<button type="submit" class="btn-primary">Enregistrer</button>
+						</div>
+
+					</form>
+
+				</div>
+			</div>
+
+		</main>
+
+	</section>
+
+{% endblock %}

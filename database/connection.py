@@ -12,6 +12,7 @@ def create_connection():
             host=os.getenv('DB_HOST', 'localhost'),
             port=os.getenv('DB_PORT', '3306'),
             database=os.getenv('DB_NAME', 'db_m'),
+            ## admin database=os.getenv('DB_NAME', 'medicare'),
             user=os.getenv('DB_USER', 'root'),
             password=os.getenv('DB_PASSWORD', '')
         )

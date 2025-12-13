@@ -10,6 +10,7 @@ def hash_password(password):
 
 def seed_all(cursor):
     seed_admins(cursor)
+def seed_all(cursor):
     seed_patients(cursor)
     seed_medecins(cursor)
     seed_disponibilites(cursor)

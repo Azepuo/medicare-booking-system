@@ -1,0 +1,264 @@
+{% extends 'admin/base.html' %}
+{% block title %}HealthAdmin - Dashboard{% endblock %}
+
+{% block content %}
+
+
+	<!-- SIDEBAR -->
+	<section id="sidebar">
+		<a href="#" class="brand">
+			<i class='bx bxs-smile'></i>
+			<span class="text">HealthAdmin</span>
+		</a>
+		<ul class="side-menu top">
+			<li class="active">
+				<a href="/admin/dashboard">
+					<i class='bx bxs-dashboard'></i>
+					<span class="text">Dashboard</span>
+				</a>
+			</li>
+			<li>
+				<a href="/admin/medecins">
+					<i class='bx bxs-user-pin'></i>
+					<span class="text">Médecin</span>
+				</a>
+			</li>
+			<li>
+				<a href="/admin/patients">
+					<i class='bx bx-user'></i>
+					<span class="text">Patients</span>
+				</a>
+			</li>
+			<li>
+				<a href="/admin/rendez_vous">
+					<i class='bx bxs-calendar'></i>
+					<span class="text">Rendez-vous</span>
+				</a>
+			</li>
+			<li>
+				<a href="/admin/facturation/">
+					<i class='bx bxs-receipt'></i>
+					<span class="text">Facturation</span>
+				</a>
+			</li>
+		</ul>
+		<ul class="side-menu">
+			<li>
+				<a href="/admin/account">
+					<i class='bx bxs-id-card'></i>
+					<span class="text">Mon compte</span>
+				</a>
+			</li>
+			<li>
+				<a href="#" class="logout">
+					<i class='bx bxs-log-out-circle'></i>
+					<span class="text">Déconnexion</span>
+				</a>
+			</li>
+		</ul>
+	</section>
+	<!-- SIDEBAR -->
+
+
+
+	<!-- CONTENT -->
+	<section id="content">
+		<!-- NAVBAR -->
+		<nav>
+			<i class='bx bx-menu'></i>
+
+			<form action="#">
+				<!-- <div class="form-input">
+					<input type="search" placeholder="Search...">
+					<button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
+				</div> -->
+			</form>
+			<input type="checkbox" id="switch-mode" hidden>
+			<label for="switch-mode" class="switch-mode"></label>
+			<!--  -->
+			<a href="#" class="profile">
+				<img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
+				<!-- <img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
+ -->
+			</a>
+		</nav>
+		<!-- NAVBAR -->
+
+		<!-- MAIN -->
+		<main>
+			<div class="head-title">
+				<div class="left">
+					<h1>Dashboard</h1>
+					<ul class="breadcrumb">
+						<li>
+							<a href="#">Dashboard</a>
+						</li>
+						<li><i class='bx bx-chevron-right'></i></li>
+						<li>
+							<a class="active" href="#">Accueil</a>
+						</li>
+					</ul>
+				</div>
+				<!-- <a href="#" class="btn-download">
+					<i class='bx bxs-cloud-download'></i>
+					<span class="text">Télécharger PDF</span>
+				</a> -->
+			</div>
+
+			<ul class="box-info">
+				<li>
+					<i class='bx bx-user-voice'></i>
+					<span class="text">
+						<h3>{{ stats.total_medecins }}</h3>
+						<p>Médecins</p>
+					</span>
+				</li>
+				<li>
+					<i class='bx bx-user'></i>
+					<span class="text">
+						<h3>{{ stats.total_patients }}</h3>
+
+						<p>Patients</p>
+					</span>
+				</li>
+				<li>
+					<i class='bx bx-calendar-check'></i>
+					<span class="text">
+						<h3>{{ stats.rdv_aujourd_hui }}</h3>
+						<p>Rendez-vous Aujourd’hui</p>
+					</span>
+				</li>
+			</ul>
+
+			<!-- tst -->
+			<!-- tst -->
+			<div class="table-data">
+				<div class="order">
+					<div class="head" style="display:flex; justify-content:space-between; align-items:center;">
+						<h3>Rendez-vous d’aujourd’hui</h3>
+						<form method="GET" style="display:flex; gap:8px;">
+							<input type="search" name="search" placeholder="Rechercher..." value="{{ search }}"
+								style="padding:6px 10px; border-radius:6px; border:1px solid var(--grey);">
+							<button type="submit" style="background:none; border:none; cursor:pointer;">
+								<i class='bx bx-search' style="font-size:20px;"></i>
+							</button>
+						</form>
+					</div>
+
+					<table>
+						<thead>
+							<tr>
+							<tr>
+								<th>Patient</th>
+								<th>Médecin</th>
+								<th>Heure</th>
+								<th>Statut</th>
+							</tr>
+							</tr>
+						</thead>
+						<tbody>
+							{% for r in rdv_aujourdhui %}
+							<tr>
+								<td>{{ r.patient_nom }}</td>
+								<td>{{ r.medecin_nom }}</td>
+								<td>{{ r.heure_rdv }}</td>
+								<td>
+									{% set class = "" %}
+									{% set label = "" %}
+
+									{% if r.statut == "terminé" %}
+									{% set class = "completed" %}
+									{% set label = "terminé" %}
+									{% elif r.statut == "en_attente" %}
+									{% set class = "pending" %}
+									{% set label = "En Attente" %}
+									{% elif r.statut == "annulé" %}
+									{% set class = "process" %}
+									{% set label = "Annulé" %}
+									{% else %}
+									{% set class = "pending" %}
+									{% set label = r.statut %}
+									{% endif %}
+
+									<span class="status {{ class }}">
+										{{ label }}
+									</span>
+								</td>
+							</tr>
+							{% endfor %}
+
+							{% if rdv_aujourdhui|length == 0 %}
+							<tr>
+								<td colspan="4" style="text-align:center; opacity:0.7;">
+									Aucun rendez-vous prévu aujourd’hui
+								</td>
+							</tr>
+							{% endif %}
+						</tbody>
+
+					</table>
+				</div>
+				<!-- <div class="todo"> -->
+				<div class="todo">
+					<div class="head">
+						<h3>Tâches Administratives</h3>
+						<i class='bx bx-plus' id="todoAddBtn"></i>
+					</div>
+
+					<ul class="todo-list" id="todoList">
+						{% for t in taches %}
+						<li class="{{ 'completed' if t.statut == 'complétée' else 'not-completed' }}"
+							data-id="{{ t.id }}">
+							<p>{{ t.titre }}</p>
+							<div style="display:flex;gap:6px;align-items:center">
+								<i class='bx bx-edit-alt' title="Modifier"></i>
+								<i class='bx bx-trash' title="Supprimer"></i>
+							</div>
+						</li>
+						{% endfor %}
+						{% if taches|length == 0 %}
+						<li style="text-align:center; padding:15px; opacity:0.7;">
+							Aucune tâche pour le moment
+						</li>
+						{% endif %}
+					</ul>
+				</div>
+
+
+		</main>
+		<!-- MAIN -->
+	</section>
+	<!-- Modal d'ajout/édition de tâche -->
+	<dialog id="taskDialog">
+		<form id="taskForm" method="dialog">
+			<div
+				style="padding:16px 18px;border-bottom:1px solid var(--grey);display:flex;justify-content:space-between;align-items:center">
+				<strong id="dialogTitle">Ajouter une tâche</strong>
+				<button type="button" id="closeDialog" class="icon-close" aria-label="Fermer">✕</button>
+			</div>
+
+			<div style="padding:16px 18px">
+				<input type="hidden" id="taskId">
+				<div class="field">
+					<label for="taskTitle">Titre</label>
+					<input id="taskTitle" placeholder="Ex : Vérifier les nouveaux médecins" required>
+				</div>
+				<div class="field">
+					<label for="taskStatus">Statut</label>
+					<select id="taskStatus">
+						<option value="complétée">Complétée (barre bleue)</option>
+						<option value="non_complétée">Non complétée (barre orange)</option>
+					</select>
+				</div>
+			</div>
+
+			<div
+				style="display:flex;gap:10px;justify-content:flex-end;padding:12px 18px;border-top:1px solid var(--grey)">
+				<button type="button" id="cancelDialog" class="btn-secondary">Annuler</button>
+				<button class="btn-primary" id="saveTaskBtn">Enregistrer</button>
+			</div>
+		</form>
+	</dialog>
+	<!-- CONTENT -->
+
+{% endblock %}

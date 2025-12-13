@@ -1,0 +1,210 @@
+{% extends 'admin/base.html' %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/account.css') }}">
+{% endblock %}
+
+{% block title %}HealthAdmin - Mon compte{% endblock %}
+
+{% block content %}
+
+    {% set admin_photo = admin.photo if admin.photo else 'img/zainab_pic.jpeg' %}
+
+    <!-- SIDEBAR -->
+    <section id="sidebar">
+        <a class="brand">
+            <i class='bx bxs-smile'></i>
+            <span class="text">HealthAdmin</span>
+        </a>
+        <ul class="side-menu top">
+            <li><a href="/admin/dashboard"><i class='bx bxs-dashboard'></i><span class="text">Dashboard</span></a></li>
+            <li><a href="/admin/medecins"><i class='bx bxs-user-pin'></i><span class="text">Médecin</span></a></li>
+            <li><a href="/admin/patients"><i class='bx bx-user'></i><span class="text">Patients</span></a></li>
+            <li><a href="/admin/rendez_vous"><i class='bx bxs-calendar'></i><span class="text">Rendez-vous</span></a>
+            </li>
+            <li><a href="/admin/facturation"><i class='bx bxs-receipt'></i><span class="text">Facturation</span></a>
+            </li>
+        </ul>
+        <ul class="side-menu top">
+            <li class="active"><a href="/admin/account"><i class='bx bxs-id-card'></i><span class="text">Mon
+                        compte</span></a></li>
+            <li><a href="#" class="logout"><i class='bx bxs-log-out-circle'></i><span
+                        class="text">Déconnexion</span></a></li>
+        </ul>
+    </section>
+
+    <!-- CONTENT -->
+    <section id="content">
+
+        <!-- NAVBAR -->
+        <nav>
+            <i class='bx bx-menu'></i>
+
+            <form action="#">
+                <!-- <div class="form-input">
+                    <input type="search" placeholder="Search...">
+                    <button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
+                </div> -->
+            </form>
+            <input type="checkbox" id="switch-mode" hidden>
+            <label for="switch-mode" class="switch-mode"></label>
+            <a href="#" class="notification">
+                <i class='bx bxs-bell'></i>
+                <span class="num">8</span>
+            </a>
+            <a href="#" class="profile">
+                <img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
+                <!-- <img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
+ -->
+            </a>
+        </nav>
+
+        <!-- MAIN -->
+        <main>
+            <!-- ✅ Messages Flash -->
+            <!-- {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="flash-container">
+                {% for category, message in messages %}
+                <div class="flash-message {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %} -->
+            <!-- {% endwith %} -->
+
+            <div class="head-title">
+                <div class="left">
+                    <h1>Mon compte</h1>
+                    <ul class="breadcrumb">
+                        <li><a href="/admin/dashboard">Dashboard</a></li>
+                        <li><i class='bx bx-chevron-right'></i></li>
+                        <li><a class="active" href="#">Mon compte</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="account-layout">
+
+                <!-- ✅ PROFIL -->
+                <section class="account-card">
+
+                    <div class="account-avatar">
+                        <img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
+                    </div>
+                    <h2 class="account-name">{{ admin.nom_complet }}</h2>
+                    <p class="account-role">Administrateur</p>
+
+                    <div class="account-info-list">
+                        <p><span>Email :</span> {{ admin.email }}</p>
+                        <p><span>Téléphone :</span> {{ admin.telephone }}</p>
+                        <p><span>Identifiant :</span> {{ admin.username }}</p>
+                    </div>
+
+                    <div class="account-meta">
+                        <p>Compte créé le : <strong>{{ admin.date_creation }}</strong></p>
+                    </div>
+                </section>
+
+                <!-- ✅ FORMULAIRE INFOS -->
+                <section class="account-form-card">
+                    <h2 class="account-form-title">Modifier mes informations</h2>
+
+                    <form action="{{ url_for('admin_bp.update_admin_account') }}" method="POST"
+                        enctype="multipart/form-data">
+                        <div class="form-grid">
+                            <div class="field">
+                                <label>Nom complet</label>
+                                <input type="text" name="nom_complet" value="{{ admin.nom_complet }}" required>
+                            </div>
+
+                            <div class="field">
+                                <label>Email</label>
+                                <input type="email" name="email" value="{{ admin.email }}" required>
+                            </div>
+
+                            <div class="field">
+                                <label>Téléphone</label>
+                                <input type="text" name="telephone" value="{{ admin.telephone }}">
+                            </div>
+
+                            <div class="field">
+                                <label>Nom d’utilisateur</label>
+                                <input type="text" name="username" value="{{ admin.username }}" required>
+                            </div>
+
+                            <div class="field field-full">
+                                <label>Photo de profil</label>
+                                <input type="file" name="photo" accept="image/*">
+                                <small>Si vous ne choisissez pas de fichier, la photo actuelle sera conservée.</small>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <a href="/admin/account" class="btn-secondary">Annuler</a>
+                            <button type="submit" class="btn-primary">Enregistrer</button>
+                        </div>
+                    </form>
+
+                    <hr style="margin:25px 0;">
+
+                    <!-- ✅ FORMULAIRE MOT DE PASSE -->
+                    <h2 class="account-form-title">Changer le mot de passe</h2>
+
+                    <form action="{{ url_for('admin_bp.update_admin_password') }}" method="POST">
+                        <div class="form-grid password-grid">
+
+                            <div class="field password-field">
+                                <label>Mot de passe actuel</label>
+                                <input type="password" name="current_pwd" id="pwd_current" required>
+                                <i class='bx bx-show toggle-pwd' data-target="pwd_current"></i>
+                            </div>
+
+                            <div class="field password-field">
+                                <label>Nouveau mot de passe</label>
+                                <input type="password" name="new_pwd" id="pwd_new" required>
+                                <i class='bx bx-show toggle-pwd' data-target="pwd_new"></i>
+                            </div>
+
+                            <div class="field password-field">
+                                <label>Confirmer le mot de passe</label>
+                                <input type="password" name="confirm_password" id="pwd_confirm" required>
+                                <i class='bx bx-show toggle-pwd' data-target="pwd_confirm"></i>
+                            </div>
+
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">Modifier le mot de passe</button>
+                        </div>
+                    </form>
+
+
+                </section>
+
+            </div>
+        </main>
+
+    </section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const toggles = document.querySelectorAll('.toggle-pwd');
+
+    toggles.forEach(icon => {
+        icon.addEventListener('click', () => {
+            const targetId = icon.getAttribute('data-target');
+            const input = document.getElementById(targetId);
+
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.replace("bx-show", "bx-hide");
+            } else {
+                input.type = "password";
+                icon.classList.replace("bx-hide", "bx-show");
+            }
+        });
+    });
+</script>
+{% endblock %}

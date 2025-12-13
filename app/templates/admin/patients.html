@@ -1,0 +1,188 @@
+{% extends 'admin/base.html' %}
+{% block title %}HealthAdmin - Patients{% endblock %}
+{% block content %}
+
+	<!-- SIDEBAR -->
+	<section id="sidebar">
+		<a href="#" class="brand">
+			<i class='bx bxs-smile'></i>
+			<span class="text">HealthAdmin</span>
+		</a>
+		<ul class="side-menu top">
+			<li>
+				<a href="/admin/dashboard">
+					<i class='bx bxs-dashboard'></i>
+					<span class="text">Dashboard</span>
+				</a>
+			</li>
+			<li>
+				<a href="/admin/medecins">
+					<i class='bx bxs-user-pin'></i>
+					<span class="text">Médecin</span>
+				</a>
+			</li>
+			<li class="active">
+				<a href="/admin/patients">
+					<i class='bx bx-user'></i>
+					<span class="text">Patients</span>
+				</a>
+			</li>
+			<li>
+				<a href="/admin/rendez_vous">
+					<i class='bx bxs-calendar'></i>
+					<span class="text">Rendez-vous</span>
+				</a>
+			</li>
+			<li>
+				<a href="/admin/facturation/">
+					<i class='bx bxs-receipt'></i>
+					<span class="text">Facturation</span>
+				</a>
+			</li>
+		</ul>
+		<ul class="side-menu">
+			<li>
+				<a href="/admin/account">
+					<i class='bx bxs-id-card'></i>
+					<span class="text">Mon compte</span>
+				</a>
+			</li>
+			<li>
+				<a href="#" class="logout">
+					<i class='bx bxs-log-out-circle'></i>
+					<span class="text">Déconnexion</span>
+				</a>
+			</li>
+		</ul>
+	</section>
+	<!-- SIDEBAR -->
+
+	<!-- CONTENT -->
+	<section id="content">
+		<!-- NAVBAR -->
+		<nav>
+			<i class='bx bx-menu'></i>
+
+			<form method="GET" class="search-bar">
+				<div class="form-input">
+					<input type="search" name="search" placeholder="Rechercher..." value="{{ search }}">
+					<button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
+				</div>
+			</form>
+			<input type="checkbox" id="switch-mode" hidden>
+			<label for="switch-mode" class="switch-mode"></label>
+			
+			<a href="#" class="profile">
+				<img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
+
+			</a>
+		</nav>
+		<!-- NAVBAR -->
+
+		<!-- MAIN -->
+		<main>
+			<div class="head-title">
+				<div class="left">
+					<h1>Gestion des Patients</h1>
+					<ul class="breadcrumb">
+						<li>
+							<a href="/admin/dashboard">Dashboard</a>
+						</li>
+						<li><i class='bx bx-chevron-right'></i></li>
+						<li>
+							<a class="active" href="#">Patients</a>
+						</li>
+					</ul>
+				</div>
+
+			</div>
+
+			<!-- Cartes d’info (tu peux changer les chiffres) -->
+			<ul class="box-info">
+				<li>
+					<i class='bx bx-user-voice'></i>
+					<span class="text">
+						<h3>{{ stats.total_medecins }}</h3>
+
+						<p>Médecins</p>
+					</span>
+				</li>
+				<li>
+					<i class='bx bx-user'></i>
+					<span class="text">
+						<h3>{{ stats.total_patients }}</h3>
+
+						<p>Patients</p>
+					</span>
+				</li>
+				<li>
+					<i class='bx bx-calendar-check'></i>
+					<span class="text">
+						<h3>{{ stats.rdv_aujourd_hui }}</h3>
+
+						<p>Rendez-vous Aujourd’hui</p>
+					</span>
+				</li>
+			</ul>
+
+			<!-- ZONE CRUD PATIENTS (remplace les rendez-vous + tâches) -->
+			<div class="table-data">
+				<div class="order">
+					<div class="head">
+						<h3>Liste des patients</h3>
+						<a href="{{ url_for('patients_bp.ajouter_patient') }}" class="btn-add-medecin">
+							<i class='bx bx-plus'></i>
+							<span>Ajouter un patient</span>
+						</a>
+					</div>
+
+					<table>
+						<thead>
+							<tr>
+								<th>Nom complet</th>
+								<th>CIN</th>
+								<th>Email</th>
+								<th>Téléphone</th>
+								<th>Sexe</th>
+								<th>Date Naissance</th>
+								<th>Date d'inscription</th>
+								<th>Action</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for p in patients %}
+							<tr>
+								<td>{{ p.nom }}</td>
+								<td>{{ p.cin }}</td>
+								<td>{{ p.email }}</td>
+								<td>{{ p.telephone }}</td>
+								<td>{{ p.sexe }}</td>
+								<td>{{ p.date_naissance }}</td>
+								<td>{{ p.date_inscription[:10] }}</td>
+
+								<td class="actions">
+									<a href="{{ url_for('patients_bp.editer_patient', patient_id=p.id) }}"
+										class="btn-icon edit">
+										<i class='bx bx-edit-alt'></i>
+									</a>
+
+									<a href="{{ url_for('patients_bp.supprimer_patient', patient_id=p.id) }}"
+										class="btn-icon delete"
+										onclick="return confirm('Voulez-vous supprimer ce patient ?');">
+										<i class='bx bx-trash'></i>
+									</a>
+								</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+
+					</table>
+				</div>
+			</div>
+
+		</main>
+		<!-- MAIN -->
+	</section>
+	<!-- CONTENT -->
+
+{% endblock %}

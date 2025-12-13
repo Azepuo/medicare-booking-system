@@ -1,0 +1,254 @@
+{% extends 'admin/base.html' %}
+
+{% block extra_css %}
+<style>
+    .service-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f7f8fa;
+        padding: 10px 14px;
+        border-radius: 6px;
+        margin-bottom: 8px;
+        font-size: 14px;
+        border: 1px solid #e1e4e8;
+    }
+
+    .service-item span {
+        font-weight: 500;
+    }
+
+    .remove-btn {
+            background: #ff4d4f;
+            border: none;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .remove-btn:hover {
+            background: #d9363e;
+        }
+    </style>
+
+{% block content %}
+
+    <!-- SIDEBAR -->
+    <section id="sidebar">
+        <a href="#" class="brand">
+            <i class='bx bxs-smile'></i>
+            <span class="text">HealthAdmin</span>
+        </a>
+        <ul class="side-menu top">
+            <li><a href="/admin/dashboard"><i class='bx bxs-dashboard'></i><span class="text">Dashboard</span></a></li>
+            <li><a href="/admin/medecins"><i class='bx bxs-user-pin'></i><span class="text">Médecin</span></a></li>
+            <li><a href="/admin/patients"><i class='bx bx-user'></i><span class="text">Patients</span></a></li>
+            <li><a href="/admin/rendez_vous"><i class='bx bxs-calendar'></i><span class="text">Rendez-vous</span></a>
+            </li>
+            <li class="active"><a href="/admin/facturation"><i class='bx bxs-receipt'></i><span
+                        class="text">Facturation</span></a></li>
+        </ul>
+        <ul class="side-menu">
+            <li><a href="/admin/account"><i class='bx bxs-id-card'></i><span class="text">Mon compte</span></a></li>
+            <li><a href="#" class="logout"><i class='bx bxs-log-out-circle'></i><span
+                        class="text">Déconnexion</span></a></li>
+        </ul>
+    </section>
+
+    <!-- CONTENT -->
+    <section id="content">
+
+        <nav>
+            <i class='bx bx-menu'></i>
+            <form action="#"></form>
+            <input type="checkbox" id="switch-mode" hidden>
+            <label for="switch-mode" class="switch-mode"></label>
+
+            <a href="#" class="profile">
+                <img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
+            </a>
+        </nav>
+
+        <main>
+
+            <div class="head-title">
+                <div class="left">
+                    <h1>Modifier une facture</h1>
+                    <ul class="breadcrumb">
+                        <li><a href="/admin/dashboard">Dashboard</a></li>
+                        <li><i class='bx bx-chevron-right'></i></li>
+                        <li><a href="/admin/facturation">Facturation</a></li>
+                        <li><i class='bx bx-chevron-right'></i></li>
+                        <li><a class="active" href="#">Modifier</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="form-wrapper">
+                <div class="form-card form-card-medium">
+
+                    <form method="POST" action="{{ form_action }}">
+
+                        <input type="hidden" name="facture_id" value="{{ facture.id }}">
+                        <input type="hidden" id="consultation_price" value="{{ facture.tarif_consultation }}">
+                        <div class="form-grid">
+
+                            <!-- Patient -->
+                            <div class="field">
+                                <label>Patient</label>
+                                <input type="text" value="{{ facture.patient_nom }}" readonly>
+                            </div>
+
+                            <!-- Date -->
+                            <div class="field">
+                                <label>Date du rendez-vous</label>
+                                <input type="date" value="{{ facture.date_rdv }}" readonly>
+                            </div>
+
+                            <!-- Statut -->
+                            <div class="field">
+                                <label>Statut</label>
+                                <select name="statut">
+                                    <option value="non_payé" {% if facture.statut=='non_payé' %}selected{% endif %}>Non
+                                        payé</option>
+                                    <option value="payé" {% if facture.statut=='payé' %}selected{% endif %}>Payé
+                                    </option>
+                                    <option value="en_attente" {% if facture.statut=='en_attente' %}selected{% endif %}>
+                                        En attente</option>
+                                </select>
+                            </div>
+
+                            <!-- Paiement -->
+                            <div class="field">
+                                <label>Moyen de paiement</label>
+                                <select name="moyen_paiement">
+                                    <option value="non_defini" {% if facture.moyen_paiement=='non_defini' %}selected{%
+                                        endif %}>Non défini</option>
+                                    <option value="especes" {% if facture.moyen_paiement=='especes' %}selected{% endif
+                                        %}>Espèces</option>
+                                    <option value="carte" {% if facture.moyen_paiement=='carte' %}selected{% endif %}>
+                                        Carte bancaire</option>
+                                    <option value="virement" {% if facture.moyen_paiement=='virement' %}selected{% endif
+                                        %}>Virement</option>
+                                </select>
+                            </div>
+
+                            <!-- Ajouter un service -->
+                            <div class="field field-full">
+                                <label>Ajouter un service</label>
+
+                                <div style="display:flex; gap:10px;">
+                                    <select id="service-select">
+                                        {% for s in services %}
+                                        <option value="{{ s.nom_service }}">{{ s.nom_service }}</option>
+                                        {% endfor %}
+                                    </select>
+
+                                    <input type="number" id="qty" value="1" min="1">
+                                    <button type="button" class="btn-primary" onclick="addService()">+ Ajouter</button>
+                                </div>
+                            </div>
+
+                            <!-- Liste services -->
+                            <div class="field field-full">
+                                <label>Services sélectionnés</label>
+
+                                <div id="services-container"></div>
+
+                                <input type="hidden" id="services-input" name="services" value="{{ facture.services }}">
+                            </div>
+
+                            <!-- Total -->
+                            <div class="field">
+                                <label>Montant total (DH)</label>
+                                <input type="number" id="total" name="montant_total" value="{{ facture.montant_total }}"
+                                    readonly>
+                            </div>
+
+                        </div>
+
+                        <div class="form-actions">
+                            <a href="/admin/facturation" class="btn-secondary">Annuler</a>
+                            <button type="submit" class="btn-primary">Mettre à jour</button>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+
+        </main>
+    </section>
+
+        <!-- SCRIPT -->
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+    const CONSULTATION_PRICE = parseFloat(document.getElementById('consultation_price').value);
+
+    const priceMap = {
+        "Consultation": CONSULTATION_PRICE,
+        {% for s in services %}
+        {% if s.nom_service != "Consultation" %}
+        "{{ s.nom_service }}": {{ s.prix_unitaire }}{% if not loop.last %},{% endif %}
+        {% endif %}
+        {% endfor %}
+    };
+
+    let services = [];
+
+    function initServices() {
+        const raw = document.getElementById('services-input').value;
+        if (!raw.trim()) return;
+
+        raw.split(',').forEach(item => {
+            const [name, qty] = item.trim().split(':');
+            services.push({ name, qty: parseInt(qty) });
+        });
+
+        renderServices();
+    }
+
+    function addService() {
+        const name = document.getElementById('service-select').value;
+        const qty = parseInt(document.getElementById('qty').value);
+
+        services.push({ name, qty });
+        renderServices();
+    }
+
+    function removeService(index) {
+        services.splice(index, 1);
+        renderServices();
+    }
+
+    function renderServices() {
+        const container = document.getElementById('services-container');
+        container.innerHTML = "";
+
+        let total = 0;
+
+        services.forEach((srv, index) => {
+            const price = priceMap[srv.name] * srv.qty;
+            total += price;
+
+            container.innerHTML += `
+                <div class="service-item">
+                    <span>${srv.name} (x${srv.qty}) - ${price} DH</span>
+                    <button class="remove-btn" onclick="removeService(${index})">❌</button>
+                </div>
+            `;
+        });
+
+        document.getElementById('total').value = total;
+
+        document.getElementById('services-input').value =
+            services.map(s => `${s.name}:${s.qty}`).join(', ');
+    }
+
+    initServices();
+  </script>
+{% endblock %}

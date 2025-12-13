@@ -1,0 +1,201 @@
+{% extends 'admin/base.html' %}
+{% block title %}HealthAdmin - Facturation{% endblock %}
+
+{% block content %}
+
+	<!-- SIDEBAR -->
+	<section id="sidebar">
+		<a href="#" class="brand">
+			<i class='bx bxs-smile'></i>
+			<span class="text">HealthAdmin</span>
+		</a>
+		<ul class="side-menu top">
+			<li>
+				<a href="/admin/dashboard">
+					<i class='bx bxs-dashboard'></i>
+					<span class="text">Dashboard</span>
+				</a>
+			</li>
+			<li>
+				<a href="/admin/medecins">
+					<i class='bx bxs-user-pin'></i>
+					<span class="text">Médecin</span>
+				</a>
+			</li>
+			<li>
+				<a href="/admin/patients">
+					<i class='bx bx-user'></i>
+					<span class="text">Patients</span>
+				</a>
+			</li>
+			<li>
+				<a href="/admin/rendez_vous">
+					<i class='bx bxs-calendar'></i>
+					<span class="text">Rendez-vous</span>
+				</a>
+			</li>
+			<li class="active">
+				<a href="/admin/facturation/">
+					<i class='bx bxs-receipt'></i>
+					<span class="text">Facturation</span>
+				</a>
+			</li>
+		</ul>
+		<ul class="side-menu">
+			<li>
+				<a href="/admin/account">
+					<i class='bx bxs-id-card'></i>
+					<span class="text">Mon compte</span>
+				</a>
+			</li>
+			<li>
+				<a href="#" class="logout">
+					<i class='bx bxs-log-out-circle'></i>
+					<span class="text">Déconnexion</span>
+				</a>
+			</li>
+		</ul>
+	</section>
+	<!-- SIDEBAR -->
+
+	<!-- CONTENT -->
+
+	<section id="content">
+		<!-- NAVBAR -->
+		<nav>
+			<i class='bx bx-menu'></i>
+
+			<form method="GET" class="search-bar">
+				<div class="form-input">
+					<input type="search" name="search" placeholder="Rechercher..." value="{{ search }}">
+					<button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
+				</div>
+			</form>
+			<input type="checkbox" id="switch-mode" hidden>
+			<label for="switch-mode" class="switch-mode"></label>
+            
+			<a href="#" class="profile">
+				<img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
+
+			</a>
+		</nav>
+		<!-- NAVBAR -->
+
+		<!-- MAIN -->
+		<main>
+			<div class="head-title">
+				<div class="left">
+					<h1>Gestion des factures</h1>
+					<ul class="breadcrumb">
+						<li>
+							<a href="/admin/dashboard">Dashboard</a>
+						</li>
+						<li><i class='bx bx-chevron-right'></i></li>
+						<li>
+							<a class="active" href="#">Facturation</a>
+						</li>
+					</ul>
+				</div>
+
+			</div>
+
+			<!-- Cartes d’info (optionnel, comme sur le dashboard) -->
+			<ul class="box-info">
+				<li>
+					<i class='bx bx-receipt'></i>
+					<span class="text">
+						<h3>{{ stats.factures_totales }}</h3>
+						<p>Factures totales</p>
+					</span>
+				</li>
+				<li>
+					<i class='bx bx-check-circle'></i>
+					<span class="text">
+						<h3>{{ stats.factures_payees }}</h3>
+						<p>Factures payées</p>
+					</span>
+				</li>
+				<li>
+					<i class='bx bx-error-circle'></i>
+					<span class="text">
+						<h3>{{ stats.factures_en_attente }}</h3>
+						<p>En attente de paiement</p>
+					</span>
+				</li>
+			</ul>
+
+			<!-- ZONE CRUD FACTURATION -->
+			<div class="table-data">
+				<div class="order">
+					<div class="head">
+						<h3>Liste des factures</h3>
+					</div>
+
+					<table>
+						<thead>
+							<tr>
+								<th>Numéro Facture</th>
+								<th>Patient</th>
+								<th>Date</th>
+								<th>Services</th>
+								<th>Montant total</th>
+								<th>Moyen de paiement</th>
+								<th>Statut</th>
+								<th>Action</th>
+							</tr>
+						</thead>
+						<tbody>
+							<!-- Version dynamique Jinja -->
+							{% for f in factures %}
+							<tr>
+								<td>{{ f.id }}</td>
+								<td>{{ f.patient_nom }}</td>
+								<td>{{ f.date_facture }}</td>
+								<td
+									style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+									{{ f.services }}
+								</td>
+
+								<td>{{ f.montant_total }} DH</td>
+								<td>{{ f.moyen_paiement }}</td>
+								<td>
+									{% if f.statut == 'payé' %}
+									<span class="status completed">Payé</span>
+									{% elif f.statut == 'non_payé' %}
+									<span class="status pending">Non payé</span>
+									{% else %}
+									<span class="status process">En attente</span>
+									{% endif %}
+								</td>
+								<td class="actions">
+									<!-- Voir -->
+									<a href="/admin/facturation/details/{{ f.id }}" class="btn-icon" title="Voir">
+										<i class='bx bx-show-alt'></i>
+									</a>
+
+									<!-- Modifier -->
+									<a href="/admin/facturation/edit/{{ f.id }}" class="btn-icon edit" title="Modifier">
+										<i class='bx bx-edit-alt'></i>
+									</a>
+
+									<!-- Supprimer -->
+									<a href="/admin/facturation/delete/{{ f.id }}" class="btn-icon delete"
+										title="Supprimer"
+										onclick="return confirm('Voulez-vous supprimer cette facture ?');">
+										<i class='bx bx-trash'></i>
+									</a>
+								</td>
+
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+		</main>
+		<!-- MAIN -->
+	</section>
+	<!-- CONTENT -->
+
+{% endblock %}

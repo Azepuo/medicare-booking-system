@@ -1,0 +1,210 @@
+{% extends 'admin/base.html' %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/facture.css') }}">
+{% endblock %}
+
+{% block title %}HealthAdmin - Facture{% endblock %}
+
+{% block content %}
+
+    <!-- SIDEBAR -->
+    <section id="sidebar">
+        <a href="#" class="brand">
+            <i class='bx bxs-smile'></i>
+            <span class="text">HealthAdmin</span>
+        </a>
+        <ul class="side-menu top">
+            <li>
+                <a href="/admin/dashboard">
+                    <i class='bx bxs-dashboard'></i>
+                    <span class="text">Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="/admin/medecins">
+                    <i class='bx bxs-user-pin'></i>
+                    <span class="text">Médecin</span>
+                </a>
+            </li>
+            <li>
+                <a href="/admin/patients">
+                    <i class='bx bx-user'></i>
+                    <span class="text">Patients</span>
+                </a>
+            </li>
+            <li>
+                <a href="/admin/rendez_vous">
+                    <i class='bx bxs-calendar'></i>
+                    <span class="text">Rendez-vous</span>
+                </a>
+            </li>
+            <li class="active">
+                <a href="/admin/facturation/">
+                    <i class='bx bxs-receipt'></i>
+                    <span class="text">Facturation</span>
+                </a>
+            </li>
+        </ul>
+        <ul class="side-menu">
+            <li>
+                <a href="/admin/account">
+                    <i class='bx bxs-id-card'></i>
+                    <span class="text">Mon compte</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="logout">
+                    <i class='bx bxs-log-out-circle'></i>
+                    <span class="text">Déconnexion</span>
+                </a>
+            </li>
+        </ul>
+    </section>
+    <!-- SIDEBAR -->
+
+    <!-- CONTENT -->
+    <section id="content">
+
+        <!-- NAVBAR -->
+        <nav>
+            <i class='bx bx-menu'></i>
+
+            <form action="#">
+                <!-- <div class="form-input">
+                    <input type="search" placeholder="Search...">
+                    <button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
+                </div> -->
+            </form>
+            <input type="checkbox" id="switch-mode" hidden>
+            <label for="switch-mode" class="switch-mode"></label>
+            <a href="#" class="notification">
+                <i class='bx bxs-bell'></i>
+                <span class="num">8</span>
+            </a>
+            <a href="#" class="profile">
+                <img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
+
+            </a>
+        </nav>
+        <!-- NAVBAR -->
+
+        <!-- MAIN -->
+        <main>
+            <div class="head-title">
+                <div class="left">
+                    <h1>Facture médicale</h1>
+                    <ul class="breadcrumb">
+                        <li><a href="/admin/dashboard">Dashboard</a></li>
+                        <li><i class='bx bx-chevron-right'></i></li>
+                        <li><a href="/admin/facturation">Facturation</a></li>
+                        <li><i class='bx bx-chevron-right'></i></li>
+                        <li><a class="active" href="#">Détail</a></li>
+                    </ul>
+                </div>
+
+                <div class="invoice-actions">
+                    <a href="/admin/facturation" class="btn-secondary">Retour</a>
+                    <button type="button" class="btn-primary" onclick="window.print()">
+                        Imprimer
+                    </button>
+                </div>
+            </div>
+
+            <div class="invoice-simple-wrapper">
+                <div class="invoice-simple-card">
+
+                    <h2 class="invoice-simple-title">Facture Médicale</h2>
+
+                    <!-- INFOS FACTURE -->
+                    <div class="invoice-simple-top">
+                        <p><strong>Numéro Facture :</strong> {{ facture.id }}</p>
+                        <p><strong>Date :</strong> {{ facture.date_facture }}</p>
+                    </div>
+                    <hr class="invoice-simple-separator">
+
+                    <div class="invoice-simple-section-title-green">
+                        Informations Médecin
+                    </div>
+
+                    <div class="invoice-simple-patient">
+                        <p><strong>Nom :</strong> {{ facture.medecin_nom }}</p>
+                        <p><strong>Spécialité :</strong> {{ facture.medecin_specialite }}</p>
+                        <p><strong>Email :</strong> {{ facture.medecin_email }}</p>
+                        <p><strong>Téléphone :</strong> {{ facture.medecin_telephone }}</p>
+                    </div>
+
+                    <hr class="invoice-simple-separator">
+
+                    <!-- INFOS PATIENT -->
+                    <div class="invoice-simple-section-title-green">
+                        Informations Patient
+                    </div>
+
+                    <div class="invoice-simple-patient">
+                        <p><strong>Nom :</strong> {{ facture.patient_nom }}</p>
+                        <p><strong>Email :</strong> {{ facture.patient_email }}</p>
+                        <p><strong>Téléphone :</strong> {{ facture.patient_telephone }}</p>
+                    </div>
+
+                    <hr class="invoice-simple-separator">
+
+                    <!-- TABLEAU DES SERVICES -->
+                    <table class="invoice-simple-table">
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th>Quantité</th>
+                                <th>Prix Unitaire (DH)</th>
+                                <th>Total (DH)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in services %}
+                            <tr>
+                                <td>{{ s.nom }}</td>
+                                <td>{{ s.quantite }}</td>
+                                <td>
+                                    {% set service = services_all | selectattr('nom_service', 'equalto', s.nom) | first
+                                    %}
+                                    {{ service.prix_unitaire if service else '?' }}
+                                </td>
+                                <td>
+                                    {% set service = services_all | selectattr('nom_service', 'equalto', s.nom) | first
+                                    %}
+                                    {{ (service.prix_unitaire * s.quantite) if service else '?' }} DH
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+
+                    </table>
+
+                    <!-- TOTAL -->
+                    <p class="invoice-simple-total"><strong>Montant Total :</strong> {{ facture.montant_total }} DH</p>
+
+                    <!-- STATUT -->
+                    <p class="invoice-simple-status">
+                        <strong>Statut :</strong>
+                        {% if facture.statut == 'payé' %}
+                        <span class="invoice-status-paid">Payé</span>
+                        {% else %}
+                        <span class="invoice-status-unpaid">Non Payé</span>
+                        {% endif %}
+                    </p>
+
+                    <!-- REMERCIEMENT -->
+                    <div class="invoice-simple-thanks">
+                        <p>Merci d’avoir fait confiance à notre centre médical.</p>
+                        <p>Pour toute question concernant cette facture, n'hésitez pas à contacter notre secrétariat.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+    </section>
+    <!-- CONTENT -->
+
+{% endblock %}

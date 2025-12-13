@@ -1,0 +1,165 @@
+/*facture visualisation 
+/* ===== Facture simple (style capture bleue) ===== */
+
+.invoice-simple-wrapper {
+	margin-top: 24px;
+	display: flex;
+	justify-content: center;
+}
+
+.invoice-simple-card {
+	background: #ffffff;
+	border-radius: 8px;
+	padding: 24px 28px 28px;
+	width: 100%;
+	max-width: 900px;
+	box-shadow: 0 0 0 1px #eee, 0 12px 25px rgba(0,0,0,0.04);
+	font-size: 14px;
+	color: #000;
+}
+
+.invoice-simple-title {
+	text-align: center;
+	color: var(--blue);
+	font-size: 18px;
+	margin-bottom: 16px;
+}
+
+.invoice-simple-top p {
+	margin-bottom: 4px;
+}
+
+.invoice-simple-separator {
+	border: none;
+	border-top: 1px solid #ddd;
+	margin: 12px 0;
+}
+
+.invoice-simple-patient-title {
+	color: #1e9d49; /* vert pour "Informations Patient" */
+	font-weight: 600;
+	margin-bottom: 8px;
+}
+
+.invoice-simple-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 16px;
+}
+
+.invoice-simple-table th,
+.invoice-simple-table td {
+	border: 1px solid #000;
+	padding: 10px 8px;
+	text-align: center;
+	font-size: 14px;
+}
+
+.invoice-simple-table thead th {
+	background: var(--blue);
+	color: #fff;
+	font-weight: 600;
+}
+
+.invoice-simple-table tbody td:first-child {
+	text-align: left;
+}
+
+/* Total + statut */
+
+.invoice-simple-total {
+	margin-top: 16px;
+	font-weight: 700;
+	font-size: 15px;
+}
+
+.invoice-simple-status {
+	margin-top: 6px;
+	font-size: 14px;
+}
+
+.invoice-status-unpaid {
+	color: #d32f2f;
+	font-weight: 600;
+}
+
+/* bouton en bas à droite */
+
+.invoice-simple-print {
+	margin-top: 22px;
+	display: flex;
+	justify-content: flex-end;
+}
+
+/* on garde aussi le groupe de boutons du header */
+.invoice-actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+/* impression : on cache sidebar + navbar + header, on garde juste la carte */
+
+@media print {
+	#sidebar,
+	#content nav,
+	.head-title {
+		display: none !important;
+	}
+
+	html, body {
+		background: #ffffff !important;
+		overflow: visible !important;
+	}
+
+	#content {
+		width: 100% !important;
+		left: 0 !important;
+	}
+
+	#content main {
+		padding: 0 !important;
+		max-height: none !important;
+		overflow: visible !important;
+	}
+
+	.invoice-simple-wrapper {
+		margin: 0;
+	}
+
+	.invoice-simple-card {
+		box-shadow: none;
+		border-radius: 0;
+		padding: 0;
+		max-width: 100%;
+	}
+}
+
+/* ====== TITRES DE SECTIONS ====== */
+
+.invoice-simple-section-title-green {
+	font-weight: 700;
+	color: #1e9d49;
+	font-size: 15px;
+	margin-bottom: 8px;
+}
+
+.invoice-simple-section-title-blue {
+	font-weight: 700;
+	color: var(--blue);
+	font-size: 15px;
+	margin-bottom: 8px;
+}
+
+/* ====== MESSAGE DE REMERCIEMENT ====== */
+
+.invoice-simple-thanks {
+	margin-top: 20px;
+	padding-top: 10px;
+	text-align: center;
+	font-size: 13px;
+	color: #444;
+}
+.invoice-simple-thanks p {
+	margin-bottom: 4px;
+}
