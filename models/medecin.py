@@ -1,6 +1,7 @@
-from database.connection import create_connection
+
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+from database.connection_p import create_connection
 
 class Medecin(UserMixin):
     def __init__(
