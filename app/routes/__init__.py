@@ -1,31 +1,15 @@
-
 from app.routes.main_routes import main
 
-<<<<<<< HEAD
-
-
-=======
 try:
     from app.routes.patient_routes import patient
-except Exception:
+except ImportError:
     patient = None
->>>>>>> Patient_rpc_TM
+
+
 def register_blueprints(app):
-    
+    # Blueprint principal
     app.register_blueprint(main)
-  
-<<<<<<< HEAD
-    
 
-
-
-
-
-
-
-
-=======
-   
-    if patient is not None:
+    # Blueprint patient (optionnel)
+    if patient:
         app.register_blueprint(patient)
->>>>>>> Patient_rpc_TM
