@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Medicare Booking - Accueil</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth/index.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -15,20 +15,24 @@
     <nav>
         <a href="#features">Fonctionnalités</a>
         <a href="#about">À propos</a>
-        
-        <a href="{% if current_user.is_authenticated %}{{ url_for(current_user.get_id().split(':')[0] + '.dashboard') }}{% else %}{{ url_for('auth.register_page') }}{% endif %}" class="btn-nav register-btn">S'inscrire</a>
 
-        <a href="{% if current_user.is_authenticated %}{{ url_for(current_user.get_id().split(':')[0] + '.dashboard') }}{% else %}{{ url_for('auth.login_page') }}{% endif %}" class="btn-nav">Se connecter</a>
+        {% if is_authenticated %}
+            <a href="/dashboard" class="btn-nav">Dashboard</a>
+            <a href="{{ url_for('auth.logout') }}" class="btn-nav register-btn">Déconnexion</a>
+        {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn-nav">Se connecter</a>
+            <a href="{{ url_for('auth.register') }}" class="btn-nav register-btn">S'inscrire</a>
+        {% endif %}
     </nav>
 </header>
+
 
 <main>
     <!-- Hero -->
     <section class="hero">
         <h1 class="animated-title">Bienvenue sur Medicare Booking</h1>
         <p class="animated-text">Planifiez vos rendez-vous médicaux facilement avec vos médecins préférés. Simple, rapide et sécurisé !</p>
-        <a href="{% if current_user.is_authenticated %}{{ url_for(current_user.get_id().split(':')[0] + '.dashboard') }}{% else %}{{ url_for('auth.login_page') }}{% endif %}" class="btn-main">Prendre un rendez-vous</a>
-
+        <a href="{{ url_for('auth.login') }}" class="btn-main">Prendre un rendez-vous</a>
     </section>
 
     <!-- Fonctionnalités -->
@@ -87,8 +91,7 @@
     <section id="about" class="about">
         <h2>À propos de l'application</h2>
         <p>Medicare Booking est une plateforme conçue pour simplifier la gestion des rendez-vous médicaux. Notre objectif est de vous offrir une expérience fluide et sécurisée pour planifier vos consultations, suivre vos historiques et recevoir des notifications personnalisées.</p>
-        <a href="{% if current_user.is_authenticated %}{{ url_for(current_user.get_id().split(':')[0] + '.dashboard') }}{% else %}{{ url_for('auth.login_page') }}{% endif %}" class="btn-main">Commencer maintenant</a>
-
+        <a href="{{ url_for('auth.login') }}" class="btn-main">Commencer maintenant</a>
     </section>
 </main>
 
@@ -96,7 +99,14 @@
     &copy; 2025 Medicare Booking System. Tous droits réservés.
 </footer>
 
-<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const elements = document.querySelectorAll(".animated-title, .animated-text, .btn-main, .features h2, .about h2, .about p");
+    elements.forEach((el, index) => {
+        setTimeout(() => el.classList.add("active"), index * 150);
+    });
+});
+</script>
 
 </body>
 </html>

@@ -7,6 +7,6 @@ from flask_socketio import SocketIO
 db = SQLAlchemy()
 bcrypt = Bcrypt()
 login_manager = LoginManager()
-login_manager.login_view = "auth.login_page"
+login_manager.login_view = "auth.login"
 login_manager.login_message = "Veuillez vous connecter pour accéder à cette page."
 socketio = SocketIO()
