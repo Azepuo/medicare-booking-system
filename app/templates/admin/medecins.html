@@ -2,191 +2,184 @@
 {% block title %}HealthAdmin - Médecins{% endblock %}
 {% block content %}
 
-	<!-- SIDEBAR -->
-	<section id="sidebar">
-		<a href="#" class="brand">
-			<i class='bx bxs-smile'></i>
-			<span class="text">HealthAdmin</span>
-		</a>
-		<ul class="side-menu top">
-			<li>
-				<a href="/admin/dashboard">
-					<i class='bx bxs-dashboard'></i>
-					<span class="text">Dashboard</span>
-				</a>
-			</li>
-			<li class="active">
-				<a href="/admin/medecins">
-					<i class='bx bxs-user-pin'></i>
-					<span class="text">Médecin</span>
-				</a>
-			</li>
-			<li>
-				<a href="/admin/patients">
-					<i class='bx bx-user'></i>
-					<span class="text">Patients</span>
-				</a>
-			</li>
-			<li>
-				<a href="/admin/rendez_vous">
-					<i class='bx bxs-calendar'></i>
-					<span class="text">Rendez-vous</span>
-				</a>
-			</li>
-			<li>
-				<a href="/admin/facturation/">
-					<i class='bx bxs-receipt'></i>
-					<span class="text">Facturation</span>
-				</a>
-			</li>
-		</ul>
-		<ul class="side-menu">
-			<li>
-				<a href="/admin/account">
-					<i class='bx bxs-id-card'></i>
-					<span class="text">Mon compte</span>
-				</a>
-			</li>
-			<li>
-				<a href="#" class="logout">
-					<i class='bx bxs-log-out-circle'></i>
-					<span class="text">Déconnexion</span>
-				</a>
-			</li>
-		</ul>
-	</section>
-	<!-- SIDEBAR -->
-
-	<!-- CONTENT -->
-	<section id="content">
-		<!-- NAVBAR -->
-		<nav>
-			<i class='bx bx-menu'></i>
-
-			<form method="GET" class="search-bar">
-				<div class="form-input">
-					<input type="search" name="search" placeholder="Rechercher..." value="{{ search }}">
-					<button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
-				</div>
-			</form>
-			<input type="checkbox" id="switch-mode" hidden>
-			<label for="switch-mode" class="switch-mode"></label>
-			
-			<a href="#" class="profile">
-				<img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
-
+<!-- SIDEBAR -->
+<section id="sidebar">
+	<a href="#" class="brand">
+		<i class='bx bxs-smile'></i>
+		<span class="text">HealthAdmin</span>
+	</a>
+	<ul class="side-menu top">
+		<li>
+			<a href="/admin/dashboard">
+				<i class='bx bxs-dashboard'></i>
+				<span class="text">Dashboard</span>
 			</a>
-		</nav>
-		<!-- NAVBAR -->
+		</li>
+		<li class="active">
+			<a href="/admin/medecins">
+				<i class='bx bxs-user-pin'></i>
+				<span class="text">Médecin</span>
+			</a>
+		</li>
+		<li>
+			<a href="/admin/patients">
+				<i class='bx bx-user'></i>
+				<span class="text">Patients</span>
+			</a>
+		</li>
+		<li>
+			<a href="/admin/rendez_vous">
+				<i class='bx bxs-calendar'></i>
+				<span class="text">Rendez-vous</span>
+			</a>
+		</li>
+		<li>
+			<a href="/admin/facturation/">
+				<i class='bx bxs-receipt'></i>
+				<span class="text">Facturation</span>
+			</a>
+		</li>
+	</ul>
+	<ul class="side-menu">
+		<li>
+			<a href="/admin/account">
+				<i class='bx bxs-id-card'></i>
+				<span class="text">Mon compte</span>
+			</a>
+		</li>
+		<li>
+			<a href="#" class="logout">
+				<i class='bx bxs-log-out-circle'></i>
+				<span class="text">Déconnexion</span>
+			</a>
+		</li>
+	</ul>
+</section>
+<!-- SIDEBAR -->
 
-		<!-- MAIN -->
-		<main>
-			<div class="head-title">
-				<div class="left">
-					<h1>Gestion des Médecins</h1>
-					<ul class="breadcrumb">
-						<li>
-							<a href="/admin/dashboard">Dashboard</a>
-						</li>
-						<li><i class='bx bx-chevron-right'></i></li>
-						<li>
-							<a class="active" href="#">Médecins</a>
-						</li>
-					</ul>
-				</div>
-				<!-- Bouton optionnel, tu peux le laisser ou enlever -->
+<!-- CONTENT -->
+<section id="content">
+	<!-- NAVBAR -->
+	<nav>
+		<i class='bx bx-menu'></i>
 
+		<form method="GET" class="search-bar">
+			<div class="form-input">
+				<input type="search" name="search" placeholder="Rechercher..." value="{{ search }}">
+				<button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
 			</div>
+		</form>
+		<input type="checkbox" id="switch-mode" hidden>
+		<label for="switch-mode" class="switch-mode"></label>
 
-			<!-- Petites cartes d’info (tu peux ajuster les chiffres) -->
-			<ul class="box-info">
-				<li>
-					<i class='bx bx-user-voice'></i>
-					<span class="text">
-						<h3>{{ stats.total_medecins }}</h3>
+		<a href="#" class="profile">
+			<img src="{{ url_for('static', filename='uploads/' ~ admin.photo) }}">
 
-						<p>Médecins</p>
-					</span>
-				</li>
-				<li>
-					<i class='bx bx-user'></i>
-					<span class="text">
-						<h3>{{ stats.total_patients }}</h3>
+		</a>
+	</nav>
+	<!-- NAVBAR -->
 
-						<p>Patients</p>
-					</span>
-				</li>
-				<li>
-					<i class='bx bx-calendar-check'></i>
-					<span class="text">
-						<h3>{{ stats.rdv_aujourd_hui }}</h3>
-
-						<p>Rendez-vous Aujourd’hui</p>
-					</span>
-				</li>
-			</ul>
-
-			<!-- ICI on remplace les rendez-vous + tâches par ton CRUD -->
-			<div class="table-data">
-				<div class="order">
-					<div class="head">
-						<h3>Liste des médecins</h3>
-						<a href="{{ url_for('medecins_bp.ajouter_medecin') }}" class="btn-add-medecin">
-							<i class='bx bx-plus'></i>
-							<span class="text">Ajouter un médecin</span>
-						</a>
-					</div>
-
-					<table>
-						<thead>
-							<tr>
-								<th>Nom complet</th>
-								<th>Spécialité</th>
-								<th>Email</th>
-								<th>Telephone</th>
-								<th>Années d'expérience</th>
-								<th>Date d'inscription</th>
-								<th>Tarif consultation</th>
-								<th>Description</th>
-								<th>Statut</th>
-								<th>Action</th>
-							</tr>
-						</thead>
-						<tbody>
-							{% for m in medecins %}
-							<tr>
-								<td>{{ m.nom }}</td>
-								<td>{{ m.specialite }}</td>
-								<td>{{ m.email }}</td>
-								<td>{{ m.telephone }}</td>
-								<td>{{ m.annees_experience }} ans</td>
-								<td>{{ m.date_inscription[:10] }}</td>
-								<td>{{ m.tarif_consultation }} DH</td>
-								<td>{{ m.description }}</td>
-								<td>{{ m.statut }}</td>
-								<td class="actions">
-									<a href="{{ url_for('medecins_bp.editer_medecin', medecin_id=m.id) }}"
-										class="btn-icon edit">
-										<i class='bx bx-edit-alt'></i>
-									</a>
-									<a href="{{ url_for('medecins_bp.supprimer_medecin', medecin_id=m.id) }}"
-										class="btn-icon delete"
-										onclick="return confirm('Voulez-vous supprimer ce médecin ?');">
-										<i class='bx bx-trash'></i>
-									</a>
-
-								</td>
-							</tr>
-							{% endfor %}
-						</tbody>
-					</table>
-				</div>
+	<!-- MAIN -->
+	<main>
+		<div class="head-title">
+			<div class="left">
+				<h1>Gestion des Médecins</h1>
+				<ul class="breadcrumb">
+					<li>
+						<a href="/admin/dashboard">Dashboard</a>
+					</li>
+					<li><i class='bx bx-chevron-right'></i></li>
+					<li>
+						<a class="active" href="#">Médecins</a>
+					</li>
+				</ul>
 			</div>
+			<!-- Bouton optionnel, tu peux le laisser ou enlever -->
 
-		</main>
-		<!-- MAIN -->
-	</section>
-	<!-- CONTENT -->
+		</div>
+
+		<!-- Petites cartes d’info (tu peux ajuster les chiffres) -->
+		<ul class="box-info">
+			<li>
+				<i class='bx bx-user-voice'></i>
+				<span class="text">
+					<h3>{{ stats.total_medecins }}</h3>
+
+					<p>Médecins</p>
+				</span>
+			</li>
+			<li>
+				<i class='bx bx-user'></i>
+				<span class="text">
+					<h3>{{ stats.total_patients }}</h3>
+
+					<p>Patients</p>
+				</span>
+			</li>
+			<li>
+				<i class='bx bx-calendar-check'></i>
+				<span class="text">
+					<h3>{{ stats.rdv_aujourd_hui }}</h3>
+
+					<p>Rendez-vous Aujourd’hui</p>
+				</span>
+			</li>
+		</ul>
+
+		<!-- ICI on remplace les rendez-vous + tâches par ton CRUD -->
+		<div class="table-data">
+			<div class="order">
+				<div class="head">
+					<h3>Liste des médecins</h3>
+					<a href="{{ url_for('medecins_bp.ajouter_medecin') }}" class="btn-add-medecin">
+						<i class='bx bx-plus'></i>
+						<span class="text">Ajouter un médecin</span>
+					</a>
+				</div>
+
+				<table>
+					<thead>
+						<tr>
+							<th>Nom complet</th>
+							<th>Spécialité</th>
+							<th>Email</th>
+							<th>Téléphone</th>
+							<th>Tarif consultation</th>
+							<th>Statut</th>
+							<th>Action</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for m in medecins %}
+						<tr>
+							<td>{{ m.nom }}</td>
+							<td>{{ m.specialisation or '—' }}</td>
+							<td>{{ m.email }}</td>
+							<td>{{ m.telephone }}</td>
+							<td>{{ m.tarif_consultation }} DH</td>
+							<td>{{ m.statut }}</td>
+							<td class="actions">
+								<a href="{{ url_for('medecins_bp.editer_medecin', medecin_id=m.id) }}"
+									class="btn-icon edit">
+									<i class='bx bx-edit-alt'></i>
+								</a>
+								<a href="{{ url_for('medecins_bp.supprimer_medecin', medecin_id=m.id) }}"
+									class="btn-icon delete"
+									onclick="return confirm('Voulez-vous supprimer ce médecin ?');">
+									<i class='bx bx-trash'></i>
+								</a>
+							</td>
+						</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+	</main>
+	<!-- MAIN -->
+</section>
+<!-- CONTENT -->
 
 {% endblock %}
 

@@ -6,7 +6,27 @@ import bcrypt
 import datetime
 from datetime import date
 
+import secrets
+import string
 
+def generate_password(length=10):
+    chars = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(chars) for _ in range(length))
+
+# =====================================================
+# ✅ liste SPECIALISATIONS
+# =====================================================
+def liste_specialisations():
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT id, nom FROM specialisations ORDER BY nom")
+    rows = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return rows
 
 # =====================================================
 # ✅ NORMALISATION MEDECINS
@@ -18,9 +38,9 @@ def normalize_medecin(row):
 
     data = dict(row)
 
-    for key, value in data.items():
-        if isinstance(value, Decimal):
-            data[key] = float(value)
+    for k, v in data.items():
+        if isinstance(v, Decimal):
+            data[k] = float(v)
 
     if data.get("date_inscription"):
         data["date_inscription"] = data["date_inscription"].isoformat()
@@ -36,78 +56,162 @@ def liste_medecins(search=""):
     conn = create_connection()
     cursor = conn.cursor(dictionary=True)
 
-    if search:
-        cursor.execute("""
-            SELECT * FROM medecins
-            WHERE nom LIKE %s
-               OR email LIKE %s
-               OR telephone LIKE %s
-        """, (f"%{search}%", f"%{search}%", f"%{search}%"))
-    else:
-        cursor.execute("SELECT * FROM medecins")
+    sql = """
+        SELECT
+            m.id,
+            u.nom,
+            u.email,
+            u.telephone,
+            u.created_at AS date_inscription,
+            s.nom AS specialisation,
+            m.tarif_consultation,
+            m.statut
+        FROM medecins m
+        JOIN users u ON m.user_id = u.id
+        LEFT JOIN specialisations s ON m.id_specialisation = s.id
+    """
 
+    params = ()
+
+    if search:
+        sql += """
+            WHERE u.nom LIKE %s
+               OR u.email LIKE %s
+               OR u.telephone LIKE %s
+               OR s.nom LIKE %s
+        """
+        params = (
+            f"%{search}%",
+            f"%{search}%",
+            f"%{search}%",
+            f"%{search}%"
+        )
+
+    cursor.execute(sql, params)
     rows = cursor.fetchall()
     cursor.close()
     conn.close()
-    return [normalize_medecin(row) for row in rows]
 
+    return [normalize_medecin(r) for r in rows]
 
 
 def get_medecin(medecin_id):
     conn = create_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM medecins WHERE id = %s", (medecin_id,))
+
+    cursor.execute("""
+        SELECT
+            m.id,
+            u.nom,
+            u.email,
+            u.telephone,
+            u.created_at AS date_inscription,
+            m.id_specialisation,
+            s.nom AS specialisation,
+            m.tarif_consultation,
+            m.statut
+        FROM medecins m
+        JOIN users u ON m.user_id = u.id
+        LEFT JOIN specialisations s ON m.id_specialisation = s.id
+        WHERE m.id = %s
+    """, (medecin_id,))
+
     row = cursor.fetchone()
     cursor.close()
     conn.close()
+
     return normalize_medecin(row)
 
 
 def ajouter_medecin(data):
+    if not data.get("nom_complet") or not data.get("email"):
+        raise Exception("DONNEES_INCOMPLETES")
+
     conn = create_connection()
     cursor = conn.cursor()
 
+    # 🔐 mot de passe généré
+    plain_password = generate_password()
+    hashed_password = bcrypt.hashpw(
+        plain_password.encode(),
+        bcrypt.gensalt()
+    ).decode()
+
+    # 1️⃣ USER (authentification)
     cursor.execute("""
-        INSERT INTO medecins
-        (nom, email, telephone, specialite,
-         annees_experience, tarif_consultation,
-         description, statut)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO users (nom, email, telephone, password, role)
+        VALUES (%s, %s, %s, %s, 'MEDECIN')
     """, (
-        data.get("nom"),
-        data.get("email"),
+        data["nom_complet"],
+        data["email"],
         data.get("telephone"),
-        data.get("specialite"),
-        data.get("annees_experience"),
+        hashed_password
+    ))
+
+    user_id = cursor.lastrowid
+
+    # 2️⃣ MEDECIN (profil)
+    cursor.execute("""
+        INSERT INTO medecins (
+            user_id,
+            nom,
+            email,
+            telephone,
+            id_specialisation,
+            tarif_consultation,
+            statut
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """, (
+        user_id,
+        data["nom_complet"],
+        data["email"],
+        data.get("telephone"),
+        data.get("id_specialisation"),
         data.get("tarif_consultation"),
-        data.get("description"),
-        data.get("statut"),
+        data.get("statut", "Actif")
     ))
 
     conn.commit()
     cursor.close()
     conn.close()
-    return True
+
+    return {
+        "success": True,
+        "generated_password": plain_password
+    }
 
 
 def editer_medecin(medecin_id, data):
     conn = create_connection()
     cursor = conn.cursor()
 
+    # récupérer user_id
+    cursor.execute("SELECT user_id FROM medecins WHERE id = %s", (medecin_id,))
+    user_id = cursor.fetchone()[0]
+
+    # update users
     cursor.execute("""
-        UPDATE medecins
-        SET nom=%s, email=%s, telephone=%s, specialite=%s,
-            annees_experience=%s, tarif_consultation=%s,
-            description=%s, statut=%s
+        UPDATE users
+        SET nom=%s, email=%s, telephone=%s
         WHERE id=%s
     """, (
         data.get("nom"),
         data.get("email"),
         data.get("telephone"),
-        data.get("specialite"),
-        data.get("annees_experience"),
+        user_id
+    ))
+
+    # update medecins
+    cursor.execute("""
+        UPDATE medecins
+        SET id_specialisation=%s,
+            tarif_consultation=%s,
+            statut=%s
+        WHERE id=%s
+    """, (
+        data.get("id_specialisation"),
         data.get("tarif_consultation"),
-        data.get("description"),
         data.get("statut"),
         medecin_id
     ))
@@ -121,11 +225,19 @@ def editer_medecin(medecin_id, data):
 def supprimer_medecin(medecin_id):
     conn = create_connection()
     cursor = conn.cursor()
+
+    cursor.execute("SELECT user_id FROM medecins WHERE id = %s", (medecin_id,))
+    user_id = cursor.fetchone()[0]
+
     cursor.execute("DELETE FROM medecins WHERE id = %s", (medecin_id,))
+    cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+
     conn.commit()
     cursor.close()
     conn.close()
     return True
+
+
 
 
 # =====================================================
@@ -1227,4 +1339,5 @@ if __name__ == "__main__":
     # Rdv_du_jour
     server.register_function(liste_rdv_aujourdhui, "liste_rdv_aujourdhui")
 
+    server.register_function(liste_specialisations, "liste_specialisations")
     server.serve_forever()

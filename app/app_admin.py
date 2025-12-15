@@ -1,11 +1,11 @@
-from flask import Flask, render_template, g, request
+from flask import Flask, render_template, g, request, url_for
 from app.routes.admin_rt.medecin_routes import medecins_bp
 from app.routes.admin_rt.patient_routes import patients_bp
 from app.routes.admin_rt.rdv_routes import rdv_bp
 from app.routes.admin_rt.factures_routes import facture_bp
 from app.routes.admin_rt.account_routes import admin_bp
 from app.routes.admin_rt.tasks_routes import tasks_bp
-
+from flask import redirect, url_for
 import xmlrpc.client
 import subprocess
 import sys
@@ -74,8 +74,7 @@ app.register_blueprint(tasks_bp)
 # ==========================================================
 @app.route("/")
 def accueil():
-    return "<h1>Bienvenue sur le portail administratif de la clinique</h1>"
-
+    return redirect(url_for("dashboard"))
 # ==========================================================
 # 🙍 Injecter admin dans tous les templates
 # ==========================================================
@@ -105,4 +104,4 @@ def inject_stats():
 if __name__ == "__main__":
     start_rpc_server()  # 🚀 Démarrage automatique du RPC
     print("🔥 Serveur Flask admin démarré sur http://localhost:5000")
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=True, use_reloader=False)
