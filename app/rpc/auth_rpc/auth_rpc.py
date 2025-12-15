@@ -31,10 +31,10 @@ def create_user(nom, email, password, role, telephone=None):
 def rpc_login(params):
     email = params.get("email", "").strip().lower()
     password = params.get("password", "")
-    role = ROLE_MAP.get(params.get("role", "patient").lower(), "PATIENT")
+
 
     user = get_user_by_email(email)
-    if not user or not check_password_hash(user.password, password) or user.role != role:
+    if not user or not check_password_hash(user.password, password):
         return jsonify({"success": False, "message": "Email ou mot de passe incorrect"}), 401
 
     access_token = jwt.encode({
@@ -55,7 +55,10 @@ def rpc_login(params):
         "ADMIN": "http://localhost:5003/admin/dashboard"
     }
 
-    response = make_response(jsonify({"success": True, "redirect": redirect_map[role]}))
+    response = make_response(jsonify({
+        "success": True,
+        "redirect": redirect_map[user.role]
+    }))
     response.set_cookie("access_token", access_token, httponly=True, samesite="Lax")
     response.set_cookie("refresh_token", refresh_token, httponly=True, samesite="Lax")
     return response
