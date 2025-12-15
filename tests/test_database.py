@@ -6,14 +6,14 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 try:
-    from app.database.connection import create_connection
+    from app.database.connection_p import create_connection
     from app.models.medecin import Medecin
 except ImportError as e:
     print(f"❌ Erreur d'import: {e}")
     print("💡 Essayons avec des chemins relatifs...")
     try:
         # Essaye avec des imports relatifs
-        from database.connection import create_connection
+        from database.connection_p import create_connection
         from models.medecin import Medecin
     except ImportError:
         print("❌ Impossible de charger les modules")
