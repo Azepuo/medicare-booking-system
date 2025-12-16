@@ -14,7 +14,7 @@ def get_db_connection():
     try:
         connection = mysql.connector.connect(
             host=os.getenv("DB_HOST", "localhost"),
-            port=int(os.getenv("DB_PORT", 3307)),  # Vérifie le port correct
+            port=int(os.getenv("DB_PORT", 3306)),  # Vérifie le port correct
             database=os.getenv("DB_NAME", "medicare_unified"),
             user=os.getenv("DB_USER", "root"),
             password=os.getenv("DB_PASSWORD", "")
