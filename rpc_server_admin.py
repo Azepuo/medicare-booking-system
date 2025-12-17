@@ -238,128 +238,194 @@ def supprimer_medecin(medecin_id):
     return True
 
 
-
-
-# =====================================================
-# ✅ NORMALISATION PATIENTS
-# =====================================================
-
+# =========================
+# NORMALISATION PATIENT
+# =========================
 def normalize_patient(row):
-    if row is None:
+    if not row:
         return None
-
     data = dict(row)
-
-    if data.get("date_naissance"):
-        data["date_naissance"] = data["date_naissance"].isoformat()
-
     if data.get("date_inscription"):
         data["date_inscription"] = data["date_inscription"].isoformat()
-
     return data
 
 
-# =====================================================
-# ✅ FONCTIONS PATIENTS
-# =====================================================
-
+# =========================
+# LISTE PATIENTS
+# =========================
 def liste_patients(search=""):
-    try:
-        conn = create_connection()
-        if not conn:
-            print("Erreur: Connexion BD impossible")
-            return []
-        
-        cursor = conn.cursor(dictionary=True)
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
 
-        if search:
-            cursor.execute("""
-                SELECT * FROM patients
-                WHERE nom LIKE %s
-                   OR email LIKE %s
-                   OR telephone LIKE %s
-                   OR cin LIKE %s
-            """, (f"%{search}%", f"%{search}%", f"%{search}%", f"%{search}%"))
-        else:
-            cursor.execute("SELECT * FROM patients")
+    sql = """
+        SELECT
+            p.id,
+            u.nom,
+            u.email,
+            u.telephone,
+            u.created_at AS date_inscription,
+            p.sexe
+        FROM patients p
+        JOIN users u ON p.user_id = u.id
+        WHERE u.role = 'PATIENT'
+    """
 
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        return [normalize_patient(row) for row in rows]
-    except Exception as e:
-        print(f"Erreur liste_patients: {e}")
-        import traceback
-        traceback.print_exc()
-        return []
+    params = ()
+
+    if search:
+        sql += """
+            AND (
+                u.nom LIKE %s OR
+                u.email LIKE %s OR
+                u.telephone LIKE %s
+            )
+        """
+        params = (f"%{search}%", f"%{search}%", f"%{search}%")
+
+    cursor.execute(sql, params)
+    rows = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return [normalize_patient(r) for r in rows]
 
 
+# =========================
+# GET PATIENT
+# =========================
 def get_patient(patient_id):
     conn = create_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM patients WHERE id = %s", (patient_id,))
+
+    cursor.execute("""
+        SELECT
+            p.id,
+            u.nom,
+            u.email,
+            u.telephone,
+            u.created_at AS date_inscription,
+            p.sexe
+        FROM patients p
+        JOIN users u ON p.user_id = u.id
+        WHERE p.id = %s
+    """, (patient_id,))
+
     row = cursor.fetchone()
     cursor.close()
     conn.close()
+
     return normalize_patient(row)
 
 
+# =========================
+# AJOUT PATIENT (COMME MEDECIN)
+# =========================
 def ajouter_patient(data):
+    if not data.get("nom") or not data.get("email"):
+        raise Exception("DONNEES_INCOMPLETES")
+
     conn = create_connection()
     cursor = conn.cursor()
 
+    # 🔐 mot de passe généré
+    plain_password = generate_password()
+    hashed_password = bcrypt.hashpw(
+        plain_password.encode(),
+        bcrypt.gensalt()
+    ).decode()
+
+    # 1️⃣ USER
     cursor.execute("""
-        INSERT INTO patients
-        (nom, cin, email, telephone, sexe, date_naissance)
-        VALUES (%s, %s, %s, %s, %s, %s)
+        INSERT INTO users (nom, email, telephone, password, role)
+        VALUES (%s, %s, %s, %s, 'PATIENT')
     """, (
-        data.get("nom"),
-        data.get("cin"),
-        data.get("email"),
+        data["nom"],
+        data["email"],
         data.get("telephone"),
-        data.get("sexe"),
-        data.get("date_naissance"),
+        hashed_password
+    ))
+
+    user_id = cursor.lastrowid
+
+    # 2️⃣ PATIENT - Include nom, email, telephone to match table structure
+    cursor.execute("""
+        INSERT INTO patients (user_id, nom, email, telephone, sexe)
+        VALUES (%s, %s, %s, %s, %s)
+    """, (
+        user_id,
+        data["nom"],
+        data["email"],
+        data.get("telephone"),
+        data.get("sexe")
     ))
 
     conn.commit()
     cursor.close()
     conn.close()
-    return True
+
+    return {
+        "success": True,
+        "generated_password": plain_password
+    }
 
 
+# =========================
+# EDIT PATIENT
+# =========================
 def editer_patient(patient_id, data):
     conn = create_connection()
     cursor = conn.cursor()
 
+    cursor.execute("SELECT user_id FROM patients WHERE id = %s", (patient_id,))
+    user_id = cursor.fetchone()[0]
+
     cursor.execute("""
-        UPDATE patients
-        SET nom=%s, cin=%s, email=%s, telephone=%s, sexe=%s,
-            date_naissance=%s
+        UPDATE users
+        SET nom=%s, email=%s, telephone=%s
         WHERE id=%s
     """, (
         data.get("nom"),
-        data.get("cin"),
         data.get("email"),
         data.get("telephone"),
+        user_id
+    ))
+
+    cursor.execute("""
+        UPDATE patients
+        SET sexe=%s
+        WHERE id=%s
+    """, (
         data.get("sexe"),
-        data.get("date_naissance"),
         patient_id
     ))
 
     conn.commit()
     cursor.close()
     conn.close()
-    return True
+
+    return {"success": True}
 
 
+# =========================
+# DELETE PATIENT
+# =========================
 def supprimer_patient(patient_id):
     conn = create_connection()
     cursor = conn.cursor()
+
+    cursor.execute("SELECT user_id FROM patients WHERE id = %s", (patient_id,))
+    user_id = cursor.fetchone()[0]
+
     cursor.execute("DELETE FROM patients WHERE id = %s", (patient_id,))
+    cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+
     conn.commit()
     cursor.close()
     conn.close()
-    return True
+
+    return {"success": True}
+
 
 
 # =====================================================

@@ -140,12 +140,12 @@
 						<thead>
 							<tr>
 								<th>Nom complet</th>
-								<th>CIN</th>
+								<!-- <th>CIN</th> -->
 								<th>Email</th>
 								<th>Téléphone</th>
 								<th>Sexe</th>
-								<th>Date Naissance</th>
-								<th>Date d'inscription</th>
+								<!-- <th>Date Naissance</th> -->
+								<!-- <th>Date d'inscription</th> -->
 								<th>Action</th>
 							</tr>
 						</thead>
@@ -153,12 +153,12 @@
 							{% for p in patients %}
 							<tr>
 								<td>{{ p.nom }}</td>
-								<td>{{ p.cin }}</td>
+								<!-- <td>{{ p.cin }}</td> -->
 								<td>{{ p.email }}</td>
 								<td>{{ p.telephone }}</td>
 								<td>{{ p.sexe }}</td>
-								<td>{{ p.date_naissance }}</td>
-								<td>{{ p.date_inscription[:10] }}</td>
+								<!-- <td>{{ p.date_naissance }}</td> -->
+								<!-- <td>{{ p.date_inscription[:10] }}</td> -->
 
 								<td class="actions">
 									<a href="{{ url_for('patients_bp.editer_patient', patient_id=p.id) }}"
