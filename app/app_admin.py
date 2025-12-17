@@ -32,7 +32,7 @@ def start_rpc_server():
 # ==========================================================
 # 🔗 Connexion au serveur RPC
 # ==========================================================
-rpc = xmlrpc.client.ServerProxy("http://localhost:8000", allow_none=True)
+rpc = xmlrpc.client.ServerProxy("http://localhost:8002", allow_none=True)
 
 # ==========================================================
 # 📊 Tableau de bord admin
@@ -103,5 +103,5 @@ def inject_stats():
 # ==========================================================
 if __name__ == "__main__":
     start_rpc_server()  # 🚀 Démarrage automatique du RPC
-    print("🔥 Serveur Flask admin démarré sur http://localhost:5000")
+    print("🔥 Serveur Flask admin démarré sur http://localhost:5001")
     app.run(debug=True, use_reloader=False)

@@ -4,7 +4,7 @@ import xmlrpc.client
 tasks_bp = Blueprint('tasks_bp', __name__, url_prefix="/admin/taches")
 
 # ✅ Connexion au serveur RPC
-rpc = xmlrpc.client.ServerProxy("http://localhost:8000", allow_none=True)
+rpc = xmlrpc.client.ServerProxy("http://localhost:8002", allow_none=True)
 
 
 # ✅ 1️⃣ LISTE DES TÂCHES (Affichage Dashboard)

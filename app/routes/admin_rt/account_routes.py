@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 admin_bp = Blueprint("admin_bp", __name__)
 
 # ✅ Client RPC
-rpc = xmlrpc.client.ServerProxy("http://localhost:8000", allow_none=True)
+rpc = xmlrpc.client.ServerProxy("http://localhost:8002", allow_none=True)
 
 
 # ✅ 1) AFFICHAGE DU COMPTE ADMIN

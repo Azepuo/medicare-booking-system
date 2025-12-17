@@ -5,7 +5,7 @@ from datetime import date
 facture_bp = Blueprint("facture_bp", __name__, url_prefix="/admin/facturation")
 
 # ✅ Connexion RPC
-rpc = xmlrpc.client.ServerProxy("http://localhost:8000", allow_none=True)
+rpc = xmlrpc.client.ServerProxy("http://localhost:8002", allow_none=True)
 
 
 # ✅ 1️⃣ LISTE DES FACTURES

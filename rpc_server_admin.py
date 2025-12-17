@@ -1353,8 +1353,8 @@ def liste_rdv_aujourdhui():
 # =====================================================
 
 if __name__ == "__main__":
-    server = SimpleXMLRPCServer(("localhost", 8000), allow_none=True)
-    print("Serveur RPC lance sur http://localhost:8000")
+    server = SimpleXMLRPCServer(("localhost", 8002), allow_none=True)
+    print("Serveur RPC lance sur http://localhost:8002")
 
     # Médecins
     server.register_function(liste_medecins, "liste_medecins")

@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 import xmlrpc.client
 
 patients_bp = Blueprint("patients_bp", __name__)
-rpc = xmlrpc.client.ServerProxy("http://localhost:8000", allow_none=True)
+rpc = xmlrpc.client.ServerProxy("http://localhost:8002", allow_none=True)
 
 # ======================
 # LISTE DES PATIENTS

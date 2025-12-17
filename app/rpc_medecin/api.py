@@ -174,7 +174,7 @@ class AdminRPCMethods:
         return {"success": True}
 
 
-def run_server(port=8000):
+def run_server(port=8002):
     """Démarre le serveur RPC"""
     server = SimpleXMLRPCServer(
         ("localhost", port),

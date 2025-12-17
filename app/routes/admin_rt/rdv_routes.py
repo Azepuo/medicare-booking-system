@@ -5,7 +5,7 @@ from datetime import date
 rdv_bp = Blueprint("rdv_bp", __name__)
 
 # ✅ Client RPC
-rpc = xmlrpc.client.ServerProxy("http://localhost:8000", allow_none=True)
+rpc = xmlrpc.client.ServerProxy("http://localhost:8002", allow_none=True)
 
 
 # ✅ 1️⃣ LISTE DES RDV
