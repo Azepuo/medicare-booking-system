@@ -8,6 +8,7 @@ from app.rpc_medecin.disponibilites_rpc import disponibilites_rpc
 
 # Routes disponibilités (normal)
 from app.routes.routes_disponibilites import dispo
+from app.rpc_medecin.patients_rpc import patients_rpc
 
 
 def create_app():
@@ -22,6 +23,11 @@ def create_app():
 
     # Blueprint des Disponibilités normales
     app.register_blueprint(dispo, url_prefix="/medecin")
+
+    # Importez le blueprint RP
+
+# Enregistrez-le
+    app.register_blueprint(patients_rpc)
 
     # Route d'accueil
     @app.route('/')
