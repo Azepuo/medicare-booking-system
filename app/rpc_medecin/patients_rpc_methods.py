@@ -1,4 +1,9 @@
+<<<<<<< HEAD
 from database.connection import create_connection
+=======
+# app/rpc_medecin/patients_rpc_methods.py
+from database.connection_m import create_connection
+>>>>>>> 6c2dca7c2628f3fc9bc2215a8b8d61b7666885da
 from contextlib import contextmanager
 from typing import Optional, Dict, Any, List
 

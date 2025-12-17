@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import mysql.connector
 from mysql.connector import Error
 from contextlib import contextmanager
@@ -12,10 +11,8 @@ def create_connection():
     try:
         connection = mysql.connector.connect(
             host=os.getenv('DB_HOST', 'localhost'),
-            port=int
-            
-            (os.getenv('DB_PORT', 3306)),
-            database=os.getenv('DB_NAME', 'medicare_unified'),
+            port=int(os.getenv('DB_PORT', 3306)),
+            database=os.getenv('DB_NAME', 'medicare_booking'),
             user=os.getenv('DB_USER', 'root'),
             password=os.getenv('DB_PASSWORD', '')
         )
@@ -53,6 +50,3 @@ def test_connection():
 
 if __name__ == "__main__":
     test_connection()
-=======
-## hada howa li diro fih lcode dyalk
->>>>>>> 6c2dca7c2628f3fc9bc2215a8b8d61b7666885da

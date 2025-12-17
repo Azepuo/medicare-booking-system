@@ -6,7 +6,7 @@ import os
 # Ajout du dossier parent (racine du projet) au path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from database.connection import create_connection
+from database.connection_m import create_connection
 from database.migrations import create_tables
 from database.seeders import insert_data
 

@@ -8,7 +8,7 @@ def create_app():
     app.config['SECRET_KEY'] = 'votre-cle-secrete'
     
     # Enregistrement des blueprints
-    from app.routes.medecin_routes import medecin
+    from app.routes.medcin.medecin_routes import medecin
     app.register_blueprint(medecin, url_prefix='/medecin')
     
     return app

@@ -1,5 +1,5 @@
 
-from database.connection import get_cursor
+from database.connection_m import get_cursor
 
 
 class Disponibilite:
