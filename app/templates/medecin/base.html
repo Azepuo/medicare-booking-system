@@ -28,13 +28,13 @@
                 <!-- MENU PATIENTS -->
                 <div class="nav-dropdown">
                     <a href="#" class="nav-link dropdown-toggle
-                       {% if request.endpoint in ['medecin.patients', 'medecin.patient_add_page'] %}active{% endif %}">
+                       {% if request.endpoint in ['medecin.patients_page', 'medecin.patient_add_page'] %}active{% endif %}">
                         <i class="fas fa-users"></i> Patients 
                         <i class="fas fa-chevron-down dropdown-arrow"></i>
                     </a>
                     <div class="dropdown-menu">
-                        <a href="{{ url_for('medecin.patients') }}"
-                           class="dropdown-link {% if request.endpoint == 'medecin.patients' %}active{% endif %}">
+                        <a href="{{ url_for('medecin.patients_page') }}"
+                           class="dropdown-link {% if request.endpoint == 'medecin.patients_page' %}active{% endif %}">
                             <i class="fas fa-list"></i> Liste des patients
                         </a>
                         <a href="{{ url_for('medecin.patient_add_page') }}"
@@ -47,7 +47,7 @@
                 <!-- MENU RENDEZ-VOUS -->
                 <div class="nav-dropdown">
                     <a href="#" class="nav-link dropdown-toggle
-                       {% if request.endpoint in ['medecin.rdv_list', 'medecin.agenda', 'medecin.rdv_add_page'] %}active{% endif %}">
+                       {% if request.endpoint in ['medecin.rdv_list', 'medecin.rdv_add_page'] %}active{% endif %}">
                         <i class="fas fa-calendar-check"></i> Rendez-vous 
                         <i class="fas fa-chevron-down dropdown-arrow"></i>
                     </a>
