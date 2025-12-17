@@ -3,11 +3,10 @@ from flask import Blueprint, render_template, jsonify, request
 from models.patient import Patient
 from models.rendezvous import Rendezvous
 from models.medecin import Medecin
-from database.connection import create_connection  # ✅ AJOUTEZ CET IMPORT
-from datetime import datetime, date
+from database.connection import create_connection
+from datetime import date
 from models.disponibilite import Disponibilite
 from flask import session
-
 
 medecin = Blueprint('medecin', __name__)
 
@@ -17,22 +16,26 @@ def dashboard():
     return render_template('medecin/dashboard.html')
 
 @medecin.route('/patients')
-def patients():
+def patients_page():  # ✅ CORRECT : patients_page
     return render_template('medecin/patients.html')
 
 @medecin.route('/patients/add')
 def patient_add_page():
     return render_template('medecin/patient_add.html')
 
+# Dans medecin_routes.py
 @medecin.route('/patients/edit/<int:pid>')
 def patient_edit_page(pid):
-    return render_template('medecin/patient_edit.html', pid=pid)
+    patient = Patient.get_by_id(pid)
+    if not patient:
+        return "Patient non trouvé", 404
+    return render_template('medecin/patient_edit.html', patient=patient.to_dict())
+
 
 @medecin.route('/patients/delete/<int:pid>')
 def patient_delete_page(pid):
     return render_template('medecin/patient_delete.html', pid=pid)
 
-# ------------------ RENDEZ-VOUS PAGES ------------------
 @medecin.route('/rdv')
 def rdv_list():
     return render_template('medecin/rdv_list.html')
@@ -49,17 +52,13 @@ def rdv_edit_page(rid):
 def rdv_delete_page(rid):
     return render_template('medecin/rdv_delete.html', rid=rid)
 
-# ---------------- LISTE DES DISPONIBILITÉS ----------------
-@medecin.route("/disponibilites")
+@medecin.route('/disponibilites')
 def dispo_list():
-    return render_template("medecin/disponibilites.html")  # correspond au fichier réel
+    return render_template('medecin/disponibilites.html')
 
-# ---------------- AJOUT D’UNE DISPONIBILITÉ ----------------
-@medecin.route("/disponibilites/add")
+@medecin.route('/disponibilites/add')
 def dispo_add():
-    return render_template("medecin/disponibilites_add.html")  # correspond au fichier réel
-
-
+    return render_template('medecin/disponibilites_add.html')
 
 @medecin.route('/chat')
 def chat():
@@ -69,160 +68,107 @@ def chat():
 def profil():
     return render_template('medecin/profil.html')
 
-# ------------------ API ROUTES ------------------
-# Routes API pour les patients
+
+# ------------------ API PATIENTS ------------------
 @medecin.route('/api/patients', methods=['GET'])
-def get_patients():
-    """Récupérer tous les patients"""
+def get_patients_api():
     try:
         patients = Patient.get_all()
-        patients_data = []
-        for p in patients:
-            patients_data.append({
-                'id': p.id,
-                'nom': p.nom,
-                'email': p.email,
-                'telephone': p.telephone,
-                'date_inscription': str(p.date_inscription) if p.date_inscription else None
-            })
-        return jsonify(patients_data)
+        return jsonify([p.to_dict() for p in patients])
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @medecin.route('/api/patients/<int:patient_id>', methods=['GET'])
-def get_patient(patient_id):
-    """Récupérer un patient par ID"""
+def get_patient_api(patient_id):
     try:
-        patient = Patient.get_by_id(patient_id)
-        if patient:
-            return jsonify({
-                'id': patient.id,
-                'nom': patient.nom,
-                'email': patient.email,
-                'telephone': patient.telephone,
-                'date_inscription': str(patient.date_inscription) if patient.date_inscription else None
-            })
-        return jsonify({'error': 'Patient non trouvé'}), 404
+        p = Patient.get_by_id(patient_id)
+        if not p:
+            return jsonify({'error': 'Patient non trouvé'}), 404
+        return jsonify(p.to_dict())
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @medecin.route('/api/patients', methods=['POST'])
-def create_patient():
-    """Créer un nouveau patient"""
+def create_patient_api():
     try:
         data = request.json
-        
-        if not data.get('nom') or not data.get('email'):
-            return jsonify({'error': 'Nom et email sont obligatoires'}), 400
-        
+        if not data or not data.get('nom') or not data.get('email'):
+            return jsonify({'error': 'Nom et email obligatoires'}), 400
+
         patient = Patient(
+            user_id=data.get('user_id'),
             nom=data['nom'],
             email=data['email'],
-            telephone=data.get('telephone', '')
+            telephone=data.get('telephone', ''),
+            sexe=data.get('sexe', 'Homme')
         )
-        
+
         if patient.save():
-            return jsonify({
-                'message': 'Patient créé avec succès',
-                'id': patient.id,
-                'patient': {
-                    'id': patient.id,
-                    'nom': patient.nom,
-                    'email': patient.email,
-                    'telephone': patient.telephone
-                }
-            }), 201
-        else:
-            return jsonify({'error': 'Erreur lors de la création du patient'}), 500
-            
+            return jsonify({'message': 'Patient créé avec succès', 'id': patient.id}), 201
+        return jsonify({'error': 'Erreur lors de la création du patient'}), 500
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @medecin.route('/api/patients/<int:patient_id>', methods=['PUT'])
-def update_patient(patient_id):
-    """Mettre à jour un patient"""
+def update_patient_api(patient_id):
     try:
         data = request.json
+        if not data:
+            return jsonify({'error': 'Données JSON requises'}), 400
+
         patient = Patient.get_by_id(patient_id)
-        
         if not patient:
             return jsonify({'error': 'Patient non trouvé'}), 404
-        
-        if 'nom' in data:
-            patient.nom = data['nom']
-        if 'email' in data:
-            patient.email = data['email']
-        if 'telephone' in data:
-            patient.telephone = data['telephone']
-        
+
+        patient.nom = data.get('nom', patient.nom)
+        patient.email = data.get('email', patient.email)
+        patient.telephone = data.get('telephone', patient.telephone)
+        patient.sexe = data.get('sexe', patient.sexe)
+
         if patient.save():
-            return jsonify({
-                'message': 'Patient mis à jour avec succès',
-                'patient': {
-                    'id': patient.id,
-                    'nom': patient.nom,
-                    'email': patient.email,
-                    'telephone': patient.telephone
-                }
-            })
-        else:
-            return jsonify({'error': 'Erreur lors de la mise à jour'}), 500
-            
+            return jsonify({'message': 'Patient mis à jour avec succès'})
+        return jsonify({'error': 'Erreur mise à jour'}), 500
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @medecin.route('/api/patients/<int:patient_id>', methods=['DELETE'])
-def delete_patient(patient_id):
-    """Supprimer un patient"""
+def delete_patient_api(patient_id):
     try:
         patient = Patient.get_by_id(patient_id)
-        
         if not patient:
             return jsonify({'error': 'Patient non trouvé'}), 404
-        
+
         if patient.delete():
             return jsonify({'message': 'Patient supprimé avec succès'})
-        else:
-            return jsonify({'error': 'Erreur lors de la suppression'}), 500
-            
+        return jsonify({'error': 'Erreur suppression'}), 500
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ------------------ API ROUTES POUR LES RENDEZ-VOUS ------------------
+
+# ------------------ API RENDEZ-VOUS ------------------
 @medecin.route('/api/rendezvous', methods=['GET'])
-def get_rendezvous():
-    """Récupérer tous les rendez-vous"""
+def get_rendezvous_api():
     try:
-        rendezvous = Rendezvous.get_all()
-        rendezvous_data = []
-        for r in rendezvous:
-            rendezvous_data.append({
-                'id': r.id,
-                'patient_id': r.patient_id,
-                'patient_nom': r.patient_nom,
-                'medecin_id': r.medecin_id,
-                'medecin_nom': r.medecin_nom,
-                'date_heure': str(r.date_heure) if r.date_heure else None,
-                'statut': r.statut,
-                'notes': r.notes
-            })
-        return jsonify(rendezvous_data)
+        rdvs = Rendezvous.get_all()
+        return jsonify([r.to_dict() for r in rdvs])
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @medecin.route('/api/rendezvous/today', methods=['GET'])
-def get_rendezvous_today():
-    """Récupérer les rendez-vous d'aujourd'hui"""
+def get_rendezvous_today_api():
     try:
         today = date.today()
-        
-        conn = create_connection()  # ✅ MAINTENANT create_connection EST IMPORTÉ
+        conn = create_connection()
         if not conn:
-            return jsonify({'error': 'Erreur de connexion à la base de données'}), 500
-            
+            return jsonify({'error': 'Erreur de connexion à la base'}), 500
+
         cur = conn.cursor(dictionary=True)
         cur.execute("""
-            SELECT r.*, p.nom AS patient_nom, p.telephone AS patient_telephone, 
+            SELECT r.id, r.patient_id, r.medecin_id, r.date_heure, r.statut, r.notes,
+                   p.nom AS patient_nom, p.telephone AS patient_telephone,
                    m.nom AS medecin_nom
             FROM rendezvous r
             LEFT JOIN patients p ON r.patient_id = p.id
@@ -230,15 +176,16 @@ def get_rendezvous_today():
             WHERE DATE(r.date_heure) = %s
             ORDER BY r.date_heure
         """, (today,))
-        
         rdvs = cur.fetchall()
         cur.close()
         conn.close()
-        
+
         result = []
         for rdv in rdvs:
             result.append({
                 'id': rdv['id'],
+                'patient_id': rdv['patient_id'],
+                'medecin_id': rdv['medecin_id'],
                 'patient_nom': rdv['patient_nom'] or 'N/A',
                 'patient_telephone': rdv['patient_telephone'] or 'N/A',
                 'medecin_nom': rdv['medecin_nom'] or 'N/A',
@@ -246,121 +193,6 @@ def get_rendezvous_today():
                 'statut': rdv['statut'] or 'En attente',
                 'notes': rdv['notes'] or ''
             })
-        
         return jsonify(result)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@medecin.route('/api/rendezvous/<int:rdv_id>', methods=['GET'])
-def get_rendezvous_by_id(rdv_id):
-    """Récupérer un rendez-vous par ID"""
-    try:
-        rdv = Rendezvous.get_by_id(rdv_id)
-        if rdv:
-            return jsonify({
-                'id': rdv.id,
-                'patient_id': rdv.patient_id,
-                'patient_nom': rdv.patient_nom,
-                'medecin_id': rdv.medecin_id,
-                'medecin_nom': rdv.medecin_nom,
-                'date_heure': str(rdv.date_heure) if rdv.date_heure else None,
-                'statut': rdv.statut,
-                'notes': rdv.notes
-            })
-        return jsonify({'error': 'Rendez-vous non trouvé'}), 404
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@medecin.route('/api/rendezvous', methods=['POST'])
-def create_rendezvous():
-    """Créer un nouveau rendez-vous"""
-    try:
-        data = request.json
-        
-        # Validation des données
-        if not data.get('patient_id') or not data.get('date_heure'):
-            return jsonify({'error': 'patient_id et date_heure sont obligatoires'}), 400
-        
-        # Utiliser l'ID du médecin connecté (pour l'instant on utilise 1)
-        medecin_id = data.get('medecin_id', 1)
-        
-        rdv = Rendezvous(
-            patient_id=data['patient_id'],
-            medecin_id=medecin_id,
-            date_heure=data['date_heure'],
-            statut=data.get('statut', 'En attente'),
-            notes=data.get('notes', '')
-        )
-        
-        if rdv.save():
-            return jsonify({
-                'message': 'Rendez-vous créé avec succès',
-                'id': rdv.id,
-                'rendezvous': {
-                    'id': rdv.id,
-                    'patient_id': rdv.patient_id,
-                    'medecin_id': rdv.medecin_id,
-                    'date_heure': rdv.date_heure,
-                    'statut': rdv.statut,
-                    'notes': rdv.notes
-                }
-            }), 201
-        else:
-            return jsonify({'error': 'Erreur lors de la création du rendez-vous'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@medecin.route('/api/rendezvous/<int:rdv_id>', methods=['PUT'])
-def update_rendezvous(rdv_id):
-    """Mettre à jour un rendez-vous"""
-    try:
-        data = request.json
-        rdv = Rendezvous.get_by_id(rdv_id)
-        
-        if not rdv:
-            return jsonify({'error': 'Rendez-vous non trouvé'}), 404
-        
-        # Mettre à jour les champs
-        if 'date_heure' in data:
-            rdv.date_heure = data['date_heure']
-        if 'statut' in data:
-            rdv.statut = data['statut']
-        if 'notes' in data:
-            rdv.notes = data['notes']
-        
-        if rdv.save():
-            return jsonify({
-                'message': 'Rendez-vous mis à jour avec succès',
-                'rendezvous': {
-                    'id': rdv.id,
-                    'patient_id': rdv.patient_id,
-                    'medecin_id': rdv.medecin_id,
-                    'date_heure': rdv.date_heure,
-                    'statut': rdv.statut,
-                    'notes': rdv.notes
-                }
-            })
-        else:
-            return jsonify({'error': 'Erreur lors de la mise à jour'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@medecin.route('/api/rendezvous/<int:rdv_id>', methods=['DELETE'])
-def delete_rendezvous(rdv_id):
-    """Supprimer un rendez-vous"""
-    try:
-        rdv = Rendezvous.get_by_id(rdv_id)
-        
-        if not rdv:
-            return jsonify({'error': 'Rendez-vous non trouvé'}), 404
-        
-        if rdv.delete():
-            return jsonify({'message': 'Rendez-vous supprimé avec succès'})
-        else:
-            return jsonify({'error': 'Erreur lors de la suppression'}), 500
-            
     except Exception as e:
         return jsonify({'error': str(e)}), 500
