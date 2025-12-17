@@ -8,7 +8,7 @@ import os
 # 🚀 Lancer automatiquement le serveur RPC Patient
 # ==========================================================
 def start_rpc_server():
-    rpc_path = os.path.join(os.getcwd(), "server_rpc_Patient.py")
+    rpc_path = os.path.join(os.getcwd(), "app/rpc/patient/server_rpc_Patient.py")
 
     print(f"🚀 Lancement automatique du serveur RPC Patient : {rpc_path}")
 
@@ -52,5 +52,5 @@ if __name__ == "__main__":
     start_rpc_server()  # <-- lancement auto du RPC Patient
 
     app = create_app()
-    print("🔥 Patient App running: http://localhost:5005")
-    app.run(debug=True, host="0.0.0.0", port=5005)
+    print("🔥 Patient App running: http://localhost:5003")
+    app.run(debug=True, host="0.0.0.0", port=5003)

@@ -270,8 +270,13 @@
     }
 
     @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
     }
 
     @keyframes slideUp {
@@ -279,6 +284,7 @@
             transform: translateY(50px);
             opacity: 0;
         }
+
         to {
             transform: translateY(0);
             opacity: 1;
@@ -303,28 +309,29 @@
         <div class="dashboard-left" style="flex: 1; min-width: 300px;">
             <h2>Prochains rendez-vous</h2>
             {% if upcoming_appointments %}
-                {% for rdv in upcoming_appointments %}
-                <div class="appointment-card2">
-                    <img src="{{ url_for('static', filename=rdv.photo_url) }}" 
+            {% for rdv in upcoming_appointments %}
+            <div class="appointment-card2">
+                <!-- ✅ NOUVEAU -->
+                     <img src="{{ url_for('static', filename=rdv.photo_url) }}" 
                          alt="Dr. {{ rdv.medecin_nom }}" 
                          style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
-                    <div style="flex: 1;">
-                        <p style="margin: 0; font-weight: 600; color: #1e293b;">{{ rdv.medecin_nom }}</p>
-                        <p style="margin: 3px 0; color: #64748b; font-size: 0.9em;">{{ rdv.specialite }}</p>
-                        <p style="margin: 3px 0; color: #107aca; font-size: 0.9em;">{{ rdv.date_heure }}</p>
-                    </div>
-                    <div style="display: flex; gap: 8px;">
-                        <button class="btn-details" data-rdv-id="{{ rdv.id }}" 
-                                style="padding: 6px 12px; border: none; background: #107aca; color: white; border-radius: 6px; cursor: pointer;">
-                            📋 Détails
-                        </button>
-                    </div>
+                <div style="flex: 1;">
+                    <p style="margin: 0; font-weight: 600; color: #1e293b;">{{ rdv.medecin_nom }}</p>
+                    <p style="margin: 3px 0; color: #64748b; font-size: 0.9em;">{{ rdv.specialite }}</p>
+                    <p style="margin: 3px 0; color: #107aca; font-size: 0.9em;">{{ rdv.date_heure }}</p>
                 </div>
-                {% endfor %}
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-details" data-rdv-id="{{ rdv.id }}"
+                        style="padding: 6px 12px; border: none; background: #107aca; color: white; border-radius: 6px; cursor: pointer;">
+                        📋 Détails
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
             {% else %}
-                <p style="color: #64748b; padding: 15px; background: #f8fafc; border-radius: 8px; text-align: center;">
-                    Aucun rendez-vous à venir.
-                </p>
+            <p style="color: #64748b; padding: 15px; background: #f8fafc; border-radius: 8px; text-align: center;">
+                Aucun rendez-vous à venir.
+            </p>
             {% endif %}
         </div>
 
@@ -360,315 +367,370 @@
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
 <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.8/locales/fr.global.min.js'></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Calendrier
-    var calendarEl = document.getElementById('calendar');
-    
-    if (calendarEl) {
-        var events = [];
-        
-        {% for rdv in upcoming_appointments %}
-        events.push({
-            title: 'Dr. {{ rdv.medecin_nom }}',
-            start: '{{ rdv.date_heure.replace(" ", "T") }}:00',
-            extendedProps: {
-                specialite: '{{ rdv.specialite }}',
-                dateheure: '{{ rdv.date_heure }}'
-            },
-            color: '#107aca',
-            textColor: 'white'
-        });
-        {% endfor %}
+    document.addEventListener('DOMContentLoaded', function () {
+        // Calendrier
+        var calendarEl = document.getElementById('calendar');
 
-        var calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            locale: 'fr',
-            headerToolbar: {
-                left: 'prev,next',
-                center: 'title',
-                right: 'today'
-            },
-            buttonText: {
-                today: "Aujourd'hui"
-            },
-            events: events,
-            height: 'auto',
-            eventDidMount: function(info) {
-                info.el.setAttribute('title', info.event.extendedProps.dateheure + ' - ' + info.event.extendedProps.specialite);
-            }
-        });
+        if (calendarEl) {
+            var events = [];
 
-        calendar.render();
-    }
+            {% for rdv in upcoming_appointments %}
+            events.push({
+                title: 'Dr. {{ rdv.medecin_nom }}',
+                start: '{{ rdv.date_heure.replace(" ", "T") }}:00',
+                extendedProps: {
+                    specialite: '{{ rdv.specialite }}',
+                    dateheure: '{{ rdv.date_heure }}'
+                },
+                color: '#107aca',
+                textColor: 'white'
+            });
+            {% endfor %}
 
-    // Gestion des boutons Détails
-    document.querySelectorAll('.btn-details').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const rdvId = this.getAttribute('data-rdv-id');
-            loadRdvDetails(rdvId);
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'fr',
+                headerToolbar: {
+                    left: 'prev,next',
+                    center: 'title',
+                    right: 'today'
+                },
+                buttonText: {
+                    today: "Aujourd'hui"
+                },
+                events: events,
+                height: 'auto',
+                eventDidMount: function (info) {
+                    info.el.setAttribute('title', info.event.extendedProps.dateheure + ' - ' + info.event.extendedProps.specialite);
+                }
+            });
+
+            calendar.render();
+        }
+
+        // Gestion des boutons Détails
+        document.querySelectorAll('.btn-details').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const rdvId = this.getAttribute('data-rdv-id');
+                loadRdvDetails(rdvId);
+            });
         });
     });
-});
 
-// Fonction pour charger les détails du RDV
-function loadRdvDetails(rdvId) {
-    const modal = document.getElementById('detailsModal');
-    const modalBody = document.getElementById('modalBody');
-    
-    // Afficher le modal avec loader
-    modal.classList.add('active');
-    modalBody.innerHTML = `
+    // Fonction pour charger les détails du RDV
+    function loadRdvDetails(rdvId) {
+        const modal = document.getElementById('detailsModal');
+        const modalBody = document.getElementById('modalBody');
+
+        // Afficher le modal avec loader
+        modal.classList.add('active');
+        modalBody.innerHTML = `
         <div style="text-align: center; padding: 40px;">
             <div style="font-size: 40px; margin-bottom: 15px;">⏳</div>
             <p style="color: #64748b;">Chargement des détails...</p>
         </div>
     `;
-    
-    // Appel AJAX
-    fetch(`/patient/rdv/details/${rdvId}`)
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                const rdv = result.data;
-                displayRdvDetails(rdv);
-            } else {
-                modalBody.innerHTML = `
+
+        // Appel AJAX
+        fetch(`/patient/rdv/details/${rdvId}`)
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    const rdv = result.data;
+                    displayRdvDetails(rdv);
+                } else {
+                    modalBody.innerHTML = `
                     <div style="text-align: center; padding: 40px; color: #ef4444;">
                         <div style="font-size: 40px; margin-bottom: 15px;">❌</div>
                         <p>${result.message}</p>
                     </div>
                 `;
-            }
-        })
-        .catch(error => {
-            console.error('Erreur:', error);
-            modalBody.innerHTML = `
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                modalBody.innerHTML = `
                 <div style="text-align: center; padding: 40px; color: #ef4444;">
                     <div style="font-size: 40px; margin-bottom: 15px;">⚠️</div>
                     <p>Une erreur est survenue lors du chargement.</p>
                 </div>
             `;
-        });
-}
+            });
+    }
 
+    // Fonction pour afficher les détails
+    // Fonction pour afficher les détails du rendez-vous dans le modal
+    // Compatible avec la nouvelle structure RPC (sans photo_url, annee_experience, adresse_cabinet, description)
 // Fonction pour afficher les détails
 function displayRdvDetails(rdv) {
     const modalBody = document.getElementById('modalBody');
-    
-    const statutClass = rdv.statut === 'confirmé' ? 'status-confirme' : 'status-en-attente';
-    const statutText = rdv.statut === 'confirmé' ? 'Confirmé' : 'En attente';
-    
+
+    // ✅ DEBUG: Vérifiez ce qui est dans rdv
+    console.log('[MODAL] Données RDV:', rdv);
+    console.log('[MODAL] adresse_cabinet:', rdv.adresse_cabinet);
+
+    // ✅ Gérer les différents statuts possibles
+    let statutClass = 'status-en-attente';
+    let statutText = 'En attente';
+
+    if (rdv.statut === 'Confirmé' || rdv.statut === 'confirmé') {
+        statutClass = 'status-confirme';
+        statutText = 'Confirmé';
+    } else if (rdv.statut === 'terminé' || rdv.statut === 'Terminé') {
+        statutClass = 'status-termine';
+        statutText = 'Terminé';
+    } else if (rdv.statut === 'Annulé' || rdv.statut === 'annulé') {
+        statutClass = 'status-annule';
+        statutText = 'Annulé';
+    }
+
     modalBody.innerHTML = `
-        <div class="doctor-info">
-            <img src="/static/${rdv.photo_url}" alt="${rdv.medecin_nom}" class="doctor-photo">
-            <div class="doctor-details">
-                <h4>Dr. ${rdv.medecin_nom}</h4>
-                <p style="color: #107aca; font-weight: 600;">${rdv.specialite}</p>
-                <p>🎓 ${rdv.annee_experience} ans d'expérience</p>
-            </div>
+    <div class="doctor-info">
+        <div class="doctor-details">
+            <h4>${rdv.medecin_nom || 'Nom non disponible'}</h4>
+            <p style="color: #107aca; font-weight: 600;">
+                ${rdv.specialite || 'Spécialité non spécifiée'}
+            </p>
+            ${rdv.medecin_telephone ? `<p>📞 ${rdv.medecin_telephone}</p>` : ''}
         </div>
+    </div>
 
-        <div class="info-section">
-            <h5>📅 Informations du rendez-vous</h5>
-            <div class="info-item">
-                <div class="info-icon">🕐</div>
-                <div class="info-text">
-                    <div class="info-label">Date et heure</div>
-                    <div class="info-value">${rdv.date_heure}</div>
-                </div>
-            </div>
-            <div class="info-item">
-                <div class="info-icon">📍</div>
-                <div class="info-text">
-                    <div class="info-label">Adresse</div>
-                    <div class="info-value">${rdv.adresse_cabinet || 'Non spécifiée'}</div>
-                </div>
-            </div>
-            <div class="info-item">
-                <div class="info-icon">💰</div>
-                <div class="info-text">
-                    <div class="info-label">Tarif consultation</div>
-                    <div class="info-value">${rdv.tarif_consultation} DH</div>
-                </div>
-            </div>
-            <div class="info-item">
-                <div class="info-icon">✓</div>
-                <div class="info-text">
-                    <div class="info-label">Statut</div>
-                    <div class="info-value">
-                        <span class="status-badge ${statutClass}">${statutText}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="info-section">
-            <h5>👨‍⚕️ Contact</h5>
-            <div class="info-item">
-                <div class="info-icon">📧</div>
-                <div class="info-text">
-                    <div class="info-label">Email</div>
-                    <div class="info-value">${rdv.medecin_email}</div>
-                </div>
-            </div>
-        </div>
-
-        ${rdv.description ? `
-        <div class="info-section">
-            <h5>ℹ️ À propos du médecin</h5>
-            <p style="color: #475569; line-height: 1.6;">${rdv.description}</p>
-        </div>
-        ` : ''}
-
-        ${rdv.notes ? `
-        <div class="info-section">
-            <h5>📝 Notes</h5>
-            <div class="notes-box">
-                ${rdv.notes}
-            </div>
-        </div>
-        ` : ''}
-    `;
-}
-
-// Fermer le modal
-function closeModal() {
-    document.getElementById('detailsModal').classList.remove('active');
-}
-
-// Fermer avec clic en dehors
-document.getElementById('detailsModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeModal();
-    }
-});
-
-// Fermer avec touche Échap
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeModal();
-    }
-});
-/**
- * Système de notifications complet
- */
-
-// État du panneau (ouvert/fermé)
-let panelOpen = false;
-
-// Charger au démarrage
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('[NOTIF] Initialisation');
-    loadNotificationCount();
-    
-    // Rafraîchir toutes les 30 secondes
-    setInterval(loadNotificationCount, 30000);
-    
-    // Événement clic sur la cloche
-    const bell = document.querySelector('.notification-bell');
-    if (bell) {
-        bell.addEventListener('click', toggleNotificationPanel);
-    }
-    
-    // Fermer le panneau si clic en dehors
-    document.addEventListener('click', function(e) {
-        const panel = document.getElementById('notificationPanel');
-        const bell = document.querySelector('.notification-bell');
+    <div class="info-section">
+        <h5>📅 Informations du rendez-vous</h5>
         
-        if (panel && panelOpen && !panel.contains(e.target) && !bell.contains(e.target)) {
-            closeNotificationPanel();
+        <div class="info-item">
+            <div class="info-icon">🕐</div>
+            <div class="info-text">
+                <div class="info-label">Date et heure</div>
+                <div class="info-value">${rdv.date_heure || 'Non spécifiée'}</div>
+            </div>
+        </div>
+        
+        <div class="info-item">
+            <div class="info-icon">💰</div>
+            <div class="info-text">
+                <div class="info-label">Tarif consultation</div>
+                <div class="info-value">
+                    ${rdv.tarif_consultation ? rdv.tarif_consultation + ' DH' : 'Non spécifié'}
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-item">
+            <div class="info-icon">✓</div>
+            <div class="info-text">
+                <div class="info-label">Statut</div>
+                <div class="info-value">
+                    <span class="status-badge ${statutClass}">${statutText}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-section">
+        <h5>👨‍⚕️ Contact du médecin</h5>
+        
+        <div class="info-item">
+            <div class="info-icon">📧</div>
+            <div class="info-text">
+                <div class="info-label">Email</div>
+                <div class="info-value">${rdv.medecin_email || 'Email non renseigné'}</div>
+            </div>
+        </div>
+        
+        ${rdv.medecin_telephone ? `
+        <div class="info-item">
+            <div class="info-icon">📱</div>
+            <div class="info-text">
+                <div class="info-label">Téléphone</div>
+                <div class="info-value">${rdv.medecin_telephone}</div>
+            </div>
+        </div>
+        ` : ''}
+    </div>
+
+    <!-- ✅ MODIFIÉ ICI : Utilisez rdv.adresse_cabinet -->
+    ${rdv.adresse_cabinet ? `
+    <div class="info-section">
+        <h5>🏥 Lieu de consultation</h5>
+        
+        <div class="info-item">
+            <div class="info-icon">📍</div>
+            <div class="info-text">
+                <div class="info-label">Clinique/Cabinet</div>
+                <div class="info-value">${rdv.adresse_cabinet}</div>
+            </div>
+        </div>
+    </div>
+    ` : ''}
+
+    ${rdv.specialite_description ? `
+    <div class="info-section">
+        <h5>ℹ️ À propos de la spécialité</h5>
+        <p style="color: #475569; line-height: 1.6;">
+            ${rdv.specialite_description}
+        </p>
+    </div>
+    ` : ''}
+
+    ${rdv.notes ? `
+    <div class="info-section">
+        <h5>📝 Notes du rendez-vous</h5>
+        <div class="notes-box">
+            ${rdv.notes}
+        </div>
+    </div>
+    ` : ''}
+    `;
+
+    // Debug pour vérifier les données
+    console.log('[MODAL] Détails du RDV affichés:', {
+        id: rdv.id,
+        medecin: rdv.medecin_nom,
+        specialite: rdv.specialite,
+        statut: rdv.statut,
+        tarif: rdv.tarif_consultation,
+        adresse_cabinet: rdv.adresse_cabinet
+    });
+}
+// Fermer le modal
+    function closeModal() {
+        document.getElementById('detailsModal').classList.remove('active');
+    }
+
+    // Fermer avec clic en dehors
+    document.getElementById('detailsModal').addEventListener('click', function (e) {
+        if (e.target === this) {
+            closeModal();
         }
     });
-});
 
-/**
- * Charge le nombre de notifications non lues
- */
-function loadNotificationCount() {
-    fetch('/patient/get_unread_count')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.count > 0) {
-                updateNotificationBadge(data.count);
-            } else {
-                hideNotificationBadge();
+    // Fermer avec touche Échap
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
+    /**
+     * Système de notifications complet
+     */
+
+    // État du panneau (ouvert/fermé)
+    let panelOpen = false;
+
+    // Charger au démarrage
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('[NOTIF] Initialisation');
+        loadNotificationCount();
+
+        // Rafraîchir toutes les 30 secondes
+        setInterval(loadNotificationCount, 30000);
+
+        // Événement clic sur la cloche
+        const bell = document.querySelector('.notification-bell');
+        if (bell) {
+            bell.addEventListener('click', toggleNotificationPanel);
+        }
+
+        // Fermer le panneau si clic en dehors
+        document.addEventListener('click', function (e) {
+            const panel = document.getElementById('notificationPanel');
+            const bell = document.querySelector('.notification-bell');
+
+            if (panel && panelOpen && !panel.contains(e.target) && !bell.contains(e.target)) {
+                closeNotificationPanel();
             }
-        })
-        .catch(error => console.error('[NOTIF] Erreur:', error));
-}
+        });
+    });
 
-/**
- * Affiche le badge avec le nombre
- */
-function updateNotificationBadge(count) {
-    const indicator = document.querySelector('.notification-indicator');
-    if (indicator) {
-        indicator.textContent = count;
-        indicator.style.display = 'flex';
+    /**
+     * Charge le nombre de notifications non lues
+     */
+    function loadNotificationCount() {
+        fetch('/patient/get_unread_count')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.count > 0) {
+                    updateNotificationBadge(data.count);
+                } else {
+                    hideNotificationBadge();
+                }
+            })
+            .catch(error => console.error('[NOTIF] Erreur:', error));
     }
-}
 
-/**
- * Cache le badge
- */
-function hideNotificationBadge() {
-    const indicator = document.querySelector('.notification-indicator');
-    if (indicator) {
-        indicator.style.display = 'none';
+    /**
+     * Affiche le badge avec le nombre
+     */
+    function updateNotificationBadge(count) {
+        const indicator = document.querySelector('.notification-indicator');
+        if (indicator) {
+            indicator.textContent = count;
+            indicator.style.display = 'flex';
+        }
     }
-}
 
-/**
- * Ouvre/Ferme le panneau de notifications
- */
-function toggleNotificationPanel() {
-    if (panelOpen) {
-        closeNotificationPanel();
-    } else {
-        openNotificationPanel();
+    /**
+     * Cache le badge
+     */
+    function hideNotificationBadge() {
+        const indicator = document.querySelector('.notification-indicator');
+        if (indicator) {
+            indicator.style.display = 'none';
+        }
     }
-}
 
-/**
- * Ouvre le panneau et charge les notifications
- */
-function openNotificationPanel() {
-    console.log('[NOTIF] Ouverture du panneau');
-    
-    // Créer le panneau s'il n'existe pas
-    let panel = document.getElementById('notificationPanel');
-    if (!panel) {
-        panel = createNotificationPanel();
-        document.body.appendChild(panel);
+    /**
+     * Ouvre/Ferme le panneau de notifications
+     */
+    function toggleNotificationPanel() {
+        if (panelOpen) {
+            closeNotificationPanel();
+        } else {
+            openNotificationPanel();
+        }
     }
-    
-    // Afficher le panneau
-    panel.style.display = 'block';
-    panelOpen = true;
-    
-    // Charger les notifications
-    loadNotifications();
-}
 
-/**
- * Ferme le panneau
- */
-function closeNotificationPanel() {
-    const panel = document.getElementById('notificationPanel');
-    if (panel) {
-        panel.style.display = 'none';
-        panelOpen = false;
+    /**
+     * Ouvre le panneau et charge les notifications
+     */
+    function openNotificationPanel() {
+        console.log('[NOTIF] Ouverture du panneau');
+
+        // Créer le panneau s'il n'existe pas
+        let panel = document.getElementById('notificationPanel');
+        if (!panel) {
+            panel = createNotificationPanel();
+            document.body.appendChild(panel);
+        }
+
+        // Afficher le panneau
+        panel.style.display = 'block';
+        panelOpen = true;
+
+        // Charger les notifications
+        loadNotifications();
     }
-}
 
-/**
- * Crée le panneau HTML
- */
-function createNotificationPanel() {
-    const panel = document.createElement('div');
-    panel.id = 'notificationPanel';
-    panel.className = 'notification-panel';
-    panel.innerHTML = `
+    /**
+     * Ferme le panneau
+     */
+    function closeNotificationPanel() {
+        const panel = document.getElementById('notificationPanel');
+        if (panel) {
+            panel.style.display = 'none';
+            panelOpen = false;
+        }
+    }
+
+    /**
+     * Crée le panneau HTML
+     */
+    function createNotificationPanel() {
+        const panel = document.createElement('div');
+        panel.id = 'notificationPanel';
+        panel.className = 'notification-panel';
+        panel.innerHTML = `
         <div class="notification-header">
             <h3>Notifications</h3>
             <button class="close-btn" onclick="closeNotificationPanel()">
@@ -681,67 +743,67 @@ function createNotificationPanel() {
             </div>
         </div>
     `;
-    return panel;
-}
+        return panel;
+    }
 
-/**
- * Charge les notifications depuis le serveur
- */
-function loadNotifications() {
-    const listContainer = document.getElementById('notificationList');
-    
-    fetch('/patient/get_notifications')
-        .then(response => response.json())
-        .then(data => {
-            console.log('[NOTIF] Notifications reçues:', data);
-            
-            if (data.success && data.notifications.length > 0) {
-                displayNotifications(data.notifications);
-            } else {
-                listContainer.innerHTML = `
+    /**
+     * Charge les notifications depuis le serveur
+     */
+    function loadNotifications() {
+        const listContainer = document.getElementById('notificationList');
+
+        fetch('/patient/get_notifications')
+            .then(response => response.json())
+            .then(data => {
+                console.log('[NOTIF] Notifications reçues:', data);
+
+                if (data.success && data.notifications.length > 0) {
+                    displayNotifications(data.notifications);
+                } else {
+                    listContainer.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-bell-slash"></i>
                         <p>Aucune notification</p>
                     </div>
                 `;
-            }
-        })
-        .catch(error => {
-            console.error('[NOTIF] Erreur:', error);
-            listContainer.innerHTML = `
+                }
+            })
+            .catch(error => {
+                console.error('[NOTIF] Erreur:', error);
+                listContainer.innerHTML = `
                 <div class="error-state">
                     <i class="fas fa-exclamation-triangle"></i>
                     <p>Erreur de chargement</p>
                 </div>
             `;
+            });
+    }
+
+    /**
+     * Affiche les notifications dans le panneau
+     */
+    function displayNotifications(notifications) {
+        const listContainer = document.getElementById('notificationList');
+        listContainer.innerHTML = '';
+
+        notifications.forEach(notif => {
+            const item = createNotificationItem(notif);
+            listContainer.appendChild(item);
         });
-}
+    }
 
-/**
- * Affiche les notifications dans le panneau
- */
-function displayNotifications(notifications) {
-    const listContainer = document.getElementById('notificationList');
-    listContainer.innerHTML = '';
-    
-    notifications.forEach(notif => {
-        const item = createNotificationItem(notif);
-        listContainer.appendChild(item);
-    });
-}
+    /**
+     * Crée un élément de notification
+     */
+    function createNotificationItem(notif) {
+        const item = document.createElement('div');
+        item.className = `notification-item ${notif.lue ? 'read' : 'unread'}`;
+        item.dataset.id = notif.id;
 
-/**
- * Crée un élément de notification
- */
-function createNotificationItem(notif) {
-    const item = document.createElement('div');
-    item.className = `notification-item ${notif.lue ? 'read' : 'unread'}`;
-    item.dataset.id = notif.id;
-    
-    const icon = getNotificationIcon(notif.type);
-    const timeAgo = getTimeAgo(notif.date_creation);
-    
-    item.innerHTML = `
+        const icon = getNotificationIcon(notif.type);
+        const timeAgo = getTimeAgo(notif.date_creation);
+
+        item.innerHTML = `
         <div class="notification-icon">
             <i class="${icon}"></i>
         </div>
@@ -752,78 +814,78 @@ function createNotificationItem(notif) {
         </div>
         ${!notif.lue ? '<div class="unread-dot"></div>' : ''}
     `;
-    
-    // Clic pour marquer comme lu
-    if (!notif.lue) {
-        item.addEventListener('click', () => markAsRead(notif.id));
-    }
-    
-    return item;
-}
 
-/**
- * Retourne l'icône selon le type de notification
- */
-function getNotificationIcon(type) {
-    const icons = {
-        'rdv_confirme': 'fas fa-check-circle text-success',
-        'rdv_annule': 'fas fa-times-circle text-danger',
-        'rdv_refuse': 'fas fa-ban text-warning',
-        'demande_avis': 'fas fa-star text-primary',
-        'rappel_rdv': 'fas fa-bell text-info'
-    };
-    return icons[type] || 'fas fa-info-circle';
-}
-
-/**
- * Calcule le temps écoulé
- */
-function getTimeAgo(dateStr) {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diff = now - date;
-    const minutes = Math.floor(diff / 60000);
-    
-    if (minutes < 1) return "À l'instant";
-    if (minutes < 60) return `Il y a ${minutes} min`;
-    
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `Il y a ${hours}h`;
-    
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `Il y a ${days}j`;
-    
-    return date.toLocaleDateString('fr-FR');
-}
-
-/**
- * Marque une notification comme lue
- */
-function markAsRead(notifId) {
-    fetch(`/patient/mark_notification_read/${notifId}`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'}
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            console.log(`[NOTIF] ✅ Notification ${notifId} marquée comme lue`);
-            
-            // Mettre à jour l'affichage
-            const item = document.querySelector(`.notification-item[data-id="${notifId}"]`);
-            if (item) {
-                item.classList.remove('unread');
-                item.classList.add('read');
-                const dot = item.querySelector('.unread-dot');
-                if (dot) dot.remove();
-            }
-            
-            // Rafraîchir le compteur
-            loadNotificationCount();
+        // Clic pour marquer comme lu
+        if (!notif.lue) {
+            item.addEventListener('click', () => markAsRead(notif.id));
         }
-    })
-    .catch(error => console.error('[NOTIF] Erreur:', error));
-}
+
+        return item;
+    }
+
+    /**
+     * Retourne l'icône selon le type de notification
+     */
+    function getNotificationIcon(type) {
+        const icons = {
+            'rdv_confirme': 'fas fa-check-circle text-success',
+            'rdv_annule': 'fas fa-times-circle text-danger',
+            'rdv_refuse': 'fas fa-ban text-warning',
+            'demande_avis': 'fas fa-star text-primary',
+            'rappel_rdv': 'fas fa-bell text-info'
+        };
+        return icons[type] || 'fas fa-info-circle';
+    }
+
+    /**
+     * Calcule le temps écoulé
+     */
+    function getTimeAgo(dateStr) {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diff = now - date;
+        const minutes = Math.floor(diff / 60000);
+
+        if (minutes < 1) return "À l'instant";
+        if (minutes < 60) return `Il y a ${minutes} min`;
+
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `Il y a ${hours}h`;
+
+        const days = Math.floor(hours / 24);
+        if (days < 7) return `Il y a ${days}j`;
+
+        return date.toLocaleDateString('fr-FR');
+    }
+
+    /**
+     * Marque une notification comme lue
+     */
+    function markAsRead(notifId) {
+        fetch(`/patient/mark_notification_read/${notifId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log(`[NOTIF] ✅ Notification ${notifId} marquée comme lue`);
+
+                    // Mettre à jour l'affichage
+                    const item = document.querySelector(`.notification-item[data-id="${notifId}"]`);
+                    if (item) {
+                        item.classList.remove('unread');
+                        item.classList.add('read');
+                        const dot = item.querySelector('.unread-dot');
+                        if (dot) dot.remove();
+                    }
+
+                    // Rafraîchir le compteur
+                    loadNotificationCount();
+                }
+            })
+            .catch(error => console.error('[NOTIF] Erreur:', error));
+    }
 </script>
 
 {% endblock %}

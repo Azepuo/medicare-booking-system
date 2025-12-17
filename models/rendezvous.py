@@ -1,4 +1,4 @@
-from database.connection_p import create_connection
+from database.connection import create_connection
 from datetime import datetime
 
 class RendezVous:

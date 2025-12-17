@@ -13,7 +13,7 @@ except ImportError as e:
     print("💡 Essayons avec des chemins relatifs...")
     try:
         # Essaye avec des imports relatifs
-        from database.connection_p import create_connection
+        from database.connection import create_connection
         from models.medecin import Medecin
     except ImportError:
         print("❌ Impossible de charger les modules")

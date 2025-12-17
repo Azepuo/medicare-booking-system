@@ -1,4 +1,4 @@
-from database.connection_p import create_connection
+from database.connection import create_connection
 
 class Patient:
     def __init__(self, id=None, nom=None, email=None, telephone=None, date_inscription=None):

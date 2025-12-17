@@ -10,7 +10,7 @@ def get_db_connection():
     try:
         conn = mysql.connector.connect(
             host='localhost',
-            database='medicare_db',
+            database='medicare_unified',
             user='root',
             password=''
         )
@@ -18,7 +18,6 @@ def get_db_connection():
     except Error as e:
         print(f"Erreur de connexion à la base de données: {e}")
         return None
-
 class ServerRPC:
     def __init__(self):
         self.server = xmlrpc.server.SimpleXMLRPCServer(("localhost", 9000), allow_none=True)
@@ -182,9 +181,6 @@ class ServerRPC:
             "message": f"Erreur lors de l'enregistrement: {str(e)}"
         }
 
-    
-
-
     # Méthode pour afficher la page d'accueil du patient
     def get_patient_info(self, patient_id):
         try:
@@ -196,11 +192,19 @@ class ServerRPC:
                 WHERE id = %s
             """, (patient_id,))
             patient_info = cursor.fetchone()
+            if patient_info is None:
+                print(f"[DEBUG] ⚠️ Aucun patient trouvé avec id={patient_id}")
+                return {"success": False, "message": "Patient introuvable"}
+            print(f"[DEBUG] ✅ Patient trouvé: {patient_info}")
             cursor.close()
             conn.close()
             return patient_info
         except Error as e:
+            print(f"[DEBUG] ❌ Erreur SQL: {e}")
             return {"success": False, "message": str(e)}
+        except Exception as e:
+          print(f"[DEBUG] ❌ Erreur inattendue: {e}")
+          return {"success": False, "message": str(e)}
         
 
     # Méthode pour afficher le tableau de bord du patient
@@ -208,7 +212,7 @@ class ServerRPC:
         try:
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT nom, email FROM patients WHERE id=%s", (patient_id,))
+            cursor.execute("SELECT nom, email FROM patients WHERE user_id=%s", (patient_id,))
             patient_info = cursor.fetchone()
             if patient_info is None:
                 patient_info = {"nom": "", "email": ""} 
@@ -217,10 +221,11 @@ class ServerRPC:
             cursor.execute("""
                 SELECT r.id, r.date_heure, r.statut, r.notes,
                     m.nom AS medecin_nom, 
-                    m.specialite, 
-                    m.photo_url
+                    m.photo_url,
+                    s.nom AS specialite
                 FROM rendezvous r
                 JOIN medecins m ON r.medecin_id = m.id
+                Join specialisations s ON m.id_specialisation=s.id
                 WHERE r.patient_id=%s AND r.date_heure >= NOW() AND r.statut NOT IN ('Annulé', 'En attente', 'terminé')
                 ORDER BY r.date_heure ASC
             """, (patient_id,))
@@ -266,7 +271,6 @@ class ServerRPC:
         except Error as e:
             print(f"[RPC] Erreur dans get_dashboard: {e}")
             return {"success": False, "message": str(e)}
-
     # Méthode pour afficher tous les rendez-vous du patient
     def get_all_appointments(self, patient_id):
         try:
@@ -276,8 +280,8 @@ class ServerRPC:
                 SELECT 
                     r.id, 
                     r.date_heure, 
-                    r.statut, 
-                    m.clinic, 
+                    r.statut,  
+                    m.clinic,
                     r.notes,
                     m.id as medecin_id,
                     m.nom AS medecin_nom, 
@@ -413,10 +417,10 @@ class ServerRPC:
         try:
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT id, nom, email, telephone FROM patients WHERE id=%s", (patient_id,))
+            cursor.execute("SELECT id, nom, email, telephone FROM patients WHERE user_id=%s", (patient_id,))
             patient_info = cursor.fetchone()
 
-            cursor.execute("SELECT COUNT(*) as rdv_count FROM rendezvous WHERE patient_id=%s", (patient_id,))
+            cursor.execute("SELECT COUNT(*) as rdv_count FROM rendezvous r JOIN patients p ON r.patient_id = p.id where p.user_id=%s", (patient_id,))
             rdv_count = cursor.fetchone()
 
             cursor.close()
@@ -440,7 +444,7 @@ class ServerRPC:
             cursor.execute("""
                 UPDATE patients
                 SET nom = %s, email = %s, telephone = %s
-                WHERE id = %s
+                WHERE user_id = %s
             """, (nom, email, telephone, patient_id))
             conn.commit()
             cursor.close()
@@ -454,8 +458,6 @@ class ServerRPC:
     def logout(self):
         return {"success": True, "message": "Déconnexion réussie"}
     
-
-
     # Méthode pour récupérer les médecins par spécialisation
     def get_doctors_local(self, specialization_id):
         try:
@@ -604,7 +606,7 @@ class ServerRPC:
             cursor = conn.cursor()
 
             # 1. Vérifier si le médecin existe
-            cursor.execute("SELECT id, nom FROM medecins WHERE id = %s", (doctor_id,))
+            cursor.execute("SELECT id, nom FROM medecins WHERE user_id = %s", (doctor_id,))
             medecin = cursor.fetchone()
             if not medecin:
                 cursor.close()
@@ -705,7 +707,7 @@ class ServerRPC:
             cursor.execute("""
                 SELECT id, tarif_consultation 
                 FROM medecins
-                WHERE id = %s
+                WHERE user_id = %s
             """, (doctor_id,))
             
             medecin = cursor.fetchone()
@@ -713,8 +715,9 @@ class ServerRPC:
             conn.close()
             
             if medecin:
+                tarif = float(medecin[1]) if medecin[1] is not None else 0.0
                 print(f"[RPC] ✅ Honoraire trouvé: {medecin[1]}")
-                return [{"id": medecin[0], "montant": medecin[1]}]
+                return [{"id": medecin[0], "montant":tarif}]
             else:
                 print(f"[RPC] ⚠️ Médecin non trouvé")
                 return []
@@ -819,70 +822,123 @@ class ServerRPC:
      # Ajouter UNIQUEMENT cette méthode dans votre classe ServerRPC dans server_rpc.py
 # Ajouter UNIQUEMENT cette méthode dans votre classe ServerRPC dans server_rpc.py
     def get_rendezvous_details(self, rdv_id):
-        """
+       """
         Récupère les détails complets d'un rendez-vous
-        """
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor(dictionary=True)
-            
-            # Requête pour récupérer les détails complets
-            cursor.execute("""
-                SELECT 
-                    r.id,
-                    r.date_heure,
-                    r.statut,
-                    r.notes,
-                    m.nom as medecin_nom,
-                    m.specialite,
-                    m.email as medecin_email,
-                    m.description,
-                    m.annees_experience as annee_experience,
-                    m.tarif_consultation,
-                    m.photo_url,
-                    m.clinic as adresse_cabinet
-                FROM rendezvous r
-                JOIN medecins m ON r.medecin_id = m.id
-                WHERE r.id = %s
-            """, (rdv_id,))
-            
-            rdv = cursor.fetchone()
-            
-            if rdv:
-                # Formater la date si nécessaire
-                if isinstance(rdv["date_heure"], datetime):
-                    rdv["date_heure"] = rdv["date_heure"].strftime("%Y-%m-%d %H:%M")
-                
-                # Convertir tous les objets date/datetime en strings
-                for key, value in rdv.items():
-                    if isinstance(value, (datetime, date)):
-                        rdv[key] = value.strftime("%Y-%m-%d %H:%M" if isinstance(value, datetime) else "%Y-%m-%d")
-                
-                print(f"[RPC] Détails du rendez-vous {rdv_id} trouvés")
-                
-                cursor.close()
-                conn.close()
-                
-                return {
-                    "success": True,
-                    "data": rdv
-                }
-            else:
-                cursor.close()
-                conn.close()
-                
-                print(f"[RPC] Rendez-vous {rdv_id} introuvable")
-                return {
-                    "success": False,
-                    "message": "Rendez-vous introuvable"
-                }
-                
-        except Error as e:
-            print(f"[RPC] Erreur dans get_rendezvous_details: {e}")
+        Compatible avec la nouvelle structure de BD (sans photo_url, specialite, annees_experience, clinic)
+      """
+       try:
+        print(f"[RPC] 🔍 Récupération des détails du rendez-vous {rdv_id}")
+        
+        conn = get_db_connection()
+        if not conn:
+            print("[RPC] ❌ Échec de connexion à la BD")
             return {
                 "success": False,
-                "message": str(e)
+                "message": "Erreur de connexion à la base de données"
             }
+        
+        cursor = conn.cursor(dictionary=True)
+        
+        # ✅ REQUÊTE CORRIGÉE avec jointure sur specialisations
+        cursor.execute("""
+            SELECT 
+                r.id,
+                r.date_heure,
+                r.statut,
+                r.notes,
+                m.nom as medecin_nom,
+                m.email as medecin_email,
+                m.telephone as medecin_telephone,
+                m.tarif_consultation,
+                m.photo_url,
+                m.clinic as adresse_cabinet,
+                s.nom as specialite,
+                s.description as specialite_description
+            FROM rendezvous r
+            JOIN medecins m ON r.medecin_id = m.id
+            LEFT JOIN specialisations s ON m.id_specialisation = s.id
+            WHERE r.id = %s
+        """, (rdv_id,))
+        
+        rdv = cursor.fetchone()
+        
+        if not rdv:
+            cursor.close()
+            conn.close()
+            print(f"[RPC] ⚠️ Rendez-vous {rdv_id} introuvable")
+            return {
+                "success": False,
+                "message": "Rendez-vous introuvable"
+            }
+        
+        # Formater la date si nécessaire
+        if isinstance(rdv.get("date_heure"), datetime):
+            rdv["date_heure"] = rdv["date_heure"].strftime("%Y-%m-%d %H:%M")
+        
+        # Convertir tous les objets date/datetime en strings
+        for key, value in rdv.items():
+            if isinstance(value, (datetime, date)):
+                rdv[key] = value.strftime(
+                    "%Y-%m-%d %H:%M" if isinstance(value, datetime) else "%Y-%m-%d"
+                )
+        
+        # Assurer que les valeurs None sont remplacées par des chaînes vides
+        # ET convertir les Decimal en float pour XML-RPC
+        from decimal import Decimal
+        
+        for key in rdv.keys():
+            if rdv[key] is None:
+                rdv[key] = ""
+            elif isinstance(rdv[key], Decimal):
+                rdv[key] = float(rdv[key])  # ✅ CORRECTION: Convertir Decimal en float
+        
+        print(f"[RPC] ✅ Détails du rendez-vous {rdv_id} récupérés")
+        print(f"[RPC]    - Médecin: {rdv['medecin_nom']}")
+        print(f"[RPC]    - Spécialité: {rdv['specialite']}")
+        print(f"[RPC]    - Date: {rdv['date_heure']}")
+        print(f"[RPC]    - Statut: {rdv['statut']}")
+        print(f"[RPC]    - Tarif: {rdv['tarif_consultation']}")
+        
+        cursor.close()
+        conn.close()
+        
+        return {
+            "success": True,
+            "data": rdv
+        }
+        
+       except mysql.connector.Error as db_error:
+        print(f"[RPC] ❌ Erreur SQL dans get_rendezvous_details: {db_error}")
+        print(f"[RPC]    Code erreur: {db_error.errno}")
+        print(f"[RPC]    Message SQL: {db_error.msg}")
+        import traceback
+        traceback.print_exc()
+        
+        try:
+            cursor.close()
+            conn.close()
+        except:
+            pass
+            return {
+            "success": False,
+            "message": f"Erreur base de données: {str(db_error)}"
+        }
+        
+       except Exception as e:
+        print(f"[RPC] ❌ Erreur inattendue dans get_rendezvous_details: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        try:
+            cursor.close()
+            conn.close()
+        except:
+            pass
+            
+        return {
+            "success": False,
+            "message": f"Erreur lors de la récupération: {str(e)}"
+        }
     def mark_notification_as_read(self, notification_id):
         """
         Marque une notification comme lue

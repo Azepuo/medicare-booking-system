@@ -1,6 +1,7 @@
 def up(connection):
     """Créer la table specialisations et ajouter la colonne id_specialisation à la table medecins"""
     cursor = connection.cursor()
+    
 
     try:
         # Créer la table specialisations si elle n'existe pas

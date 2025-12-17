@@ -1,8 +1,7 @@
 
 from app.routes.main_routes import main
-
 try:
-    from app.routes.patient_routes import patient
+    from app.routes.patient.patient_routes import patient
 except Exception:
     patient = None
 def register_blueprints(app):
