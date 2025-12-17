@@ -26,9 +26,7 @@
           <th class="col-actions">Actions</th>
         </tr>
       </thead>
-      <tbody id="rdvTable">
-        <!-- Les rendez-vous seront insérés ici par JavaScript -->
-      </tbody>
+      <tbody id="rdvTable"></tbody>
     </table>
   </div>
 
@@ -38,7 +36,6 @@
 </div>
 
 <div class="grid stats-grid mt-20"> 
-
   <div class="stat-card">
     <div class="stat-icon icon-blue"><i class="fas fa-calendar-day"></i></div>
     <div>
@@ -70,301 +67,133 @@
       <p class="stat-label">Annulés</p>
     </div>
   </div>
-
 </div>
-
 {% endblock %}
 
 {% block scripts %}
 <script>
 const API_ROUTES = {
-    LIST_TODAY: '/medecin/api/rendezvous/today',
-    DELETE: '/medecin/api/rendezvous'
+  LIST_TODAY: '/medecin/api/rendezvous/today',
+  DELETE: '/medecin/api/rendezvous'
 };
 
-function escapeHtml(text){
-    if (!text) return '';
-    return text.replace(/[&<>"']/g, function(c){
-        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c];
-    });
+function escapeHtml(text) {
+  if (!text) return '';
+  return text.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));
 }
 
 function showLoading() {
-    const tbody = document.getElementById('rdvTable');
-    tbody.innerHTML = '<tr><td colspan="6" class="centered-cell">Chargement...</td></tr>';
+  const tbody = document.getElementById('rdvTable');
+  tbody.innerHTML = '<tr><td colspan="6" class="centered-cell">Chargement...</td></tr>';
 }
 
 function showNoData() {
-    document.getElementById('rdvTable').style.display = 'none';
-    document.getElementById('noDataMessage').style.display = 'block';
+  document.getElementById('rdvTable').style.display = 'none';
+  document.getElementById('noDataMessage').style.display = 'block';
 }
 
 function showTable() {
-    document.getElementById('rdvTable').style.display = 'table-row-group';
-    document.getElementById('noDataMessage').style.display = 'none';
+  document.getElementById('rdvTable').style.display = 'table-row-group';
+  document.getElementById('noDataMessage').style.display = 'none';
 }
 
-async function renderRDV(){
-    showLoading();
-    try {
-        const response = await fetch(API_ROUTES.LIST_TODAY);
-        if (!response.ok) throw new Error(`Erreur ${response.status}: ${response.statusText}`);
-        const rdvs = await response.json();
-        const tbody = document.getElementById('rdvTable');
-        tbody.innerHTML = '';
+async function renderRDV() {
+  showLoading();
+  try {
+    const res = await fetch(API_ROUTES.LIST_TODAY);
+    if (!res.ok) throw new Error(`Erreur ${res.status}: ${res.statusText}`);
+    const rdvs = await res.json();
 
-        if (!rdvs || rdvs.length === 0) {
-            showNoData();
-            updateStatistics(rdvs);
-            return;
-        }
+    const tbody = document.getElementById('rdvTable');
+    tbody.innerHTML = '';
 
-        showTable();
-        rdvs.forEach(rdv => {
-            const tr = document.createElement('tr');
-            tr.dataset.status = rdv.statut || '';
-            tr.dataset.id = rdv.id || '';
-
-            let heureDisplay = rdv.date_heure || '';
-            if (heureDisplay.includes(' ')) {
-                heureDisplay = heureDisplay.split(' ')[1].substring(0,5);
-            }
-
-            tr.innerHTML = `
-                <td class="cell-hour">${escapeHtml(heureDisplay)}</td>
-                <td class="cell-patient"><strong>${escapeHtml(rdv.patient_nom || 'N/A')}</strong></td>
-                <td class="cell-motif">${escapeHtml(rdv.notes || 'Non spécifié')}</td>
-                <td class="cell-contact">${escapeHtml(rdv.patient_telephone || 'N/A')}</td>
-                <td class="cell-status">
-                    <span class="status-badge">${escapeHtml(rdv.statut || 'Inconnu')}</span>
-                </td>
-                <td class="cell-actions">
-                    <div class="actions">
-                        <button class="btn action-btn" onclick="goEdit(${rdv.id})">Modifier</button>
-                        <button class="btn action-btn danger" onclick="confirmDelete(${rdv.id})">Supprimer</button>
-                    </div>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-        updateStatistics(rdvs);
-    } catch(error) {
-        console.error('Erreur renderRDV:', error);
-        const tbody = document.getElementById('rdvTable');
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6" class="centered-cell error-cell">
-                    ❌ Erreur: ${escapeHtml(error.message)}
-                    <br><br>
-                    <button class="btn action-btn" onclick="renderRDV()">Réessayer</button>
-                </td>
-            </tr>
-        `;
-        showTable();
+    if (!rdvs || rdvs.length === 0) {
+      showNoData();
+      updateStatistics(rdvs);
+      return;
     }
+
+    showTable();
+    rdvs.forEach(rdv => {
+      const tr = document.createElement('tr');
+      tr.dataset.status = rdv.statut || '';
+      tr.dataset.id = rdv.id || '';
+
+      let heure = rdv.date_heure ? rdv.date_heure.split(' ')[1]?.slice(0,5) : '';
+      tr.innerHTML = `
+        <td class="cell-hour">${escapeHtml(heure)}</td>
+        <td class="cell-patient"><strong>${escapeHtml(rdv.patient_nom || 'N/A')}</strong></td>
+        <td class="cell-motif">${escapeHtml(rdv.notes || 'Non spécifié')}</td>
+        <td class="cell-contact">${escapeHtml(rdv.patient_telephone || 'N/A')}</td>
+        <td class="cell-status"><span class="status-badge">${escapeHtml(rdv.statut || 'Inconnu')}</span></td>
+        <td class="cell-actions">
+          <div class="actions">
+            <button class="btn action-btn" onclick="goEdit(${rdv.id})">Modifier</button>
+            <button class="btn action-btn danger" onclick="confirmDelete(${rdv.id})">Supprimer</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+    updateStatistics(rdvs);
+
+  } catch (error) {
+    console.error('Erreur renderRDV:', error);
+    const tbody = document.getElementById('rdvTable');
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="centered-cell error-cell">
+          ❌ Erreur: ${escapeHtml(error.message)}<br><br>
+          <button class="btn action-btn" onclick="renderRDV()">Réessayer</button>
+        </td>
+      </tr>
+    `;
+    showTable();
+  }
 }
 
-async function deleteRDV(id){
-    try {
-        const response = await fetch(`${API_ROUTES.DELETE}/${id}`, { method: 'DELETE' });
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || `Erreur ${response.status}`);
-        }
-        const result = await response.json();
-        alert('✅ ' + (result.message || 'Rendez-vous supprimé avec succès'));
-        await renderRDV();
-    } catch (error) {
-        console.error('Erreur:', error);
-        alert('❌ Erreur de connexion au serveur: ' + error.message);
+async function deleteRDV(id) {
+  if (!confirm('Êtes-vous sûr de vouloir supprimer ce rendez-vous ?')) return;
+  try {
+    const res = await fetch(`${API_ROUTES.DELETE}/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const errorData = await res.json().catch(()=>({}));
+      throw new Error(errorData.error || `Erreur ${res.status}`);
     }
+    const result = await res.json().catch(()=>({}));
+    alert('✅ ' + (result.message || 'Rendez-vous supprimé avec succès'));
+    renderRDV();
+  } catch (error) {
+    console.error(error);
+    alert('❌ Erreur: ' + error.message);
+  }
 }
 
-function updateStatistics(rdvs = null){
-    let total, confirmed, pending, cancelled;
-    if (rdvs) {
-        total = rdvs.length;
-        confirmed = rdvs.filter(r => r.statut === 'Confirmé').length;
-        pending = rdvs.filter(r => r.statut === 'En attente').length;
-        cancelled = rdvs.filter(r => r.statut === 'Annulé').length;
-    } else {
-        const rows = document.querySelectorAll('#rdvTable tr[data-status]');
-        total = rows.length;
-        confirmed = Array.from(rows).filter(r => r.dataset.status === 'Confirmé').length;
-        pending = Array.from(rows).filter(r => r.dataset.status === 'En attente').length;
-        cancelled = Array.from(rows).filter(r => r.dataset.status === 'Annulé').length;
-    }
-    document.getElementById('totalRDV').textContent = total;
-    document.getElementById('confirmedRDV').textContent = confirmed;
-    document.getElementById('pendingRDV').textContent = pending;
-    document.getElementById('cancelledRDV').textContent = cancelled;
+function goEdit(id) { window.location.href = `/medecin/rdv/edit/${id}`; }
+
+function updateStatistics(rdvs = null) {
+  let total=0, confirmed=0, pending=0, cancelled=0;
+  if (rdvs) {
+    total = rdvs.length;
+    confirmed = rdvs.filter(r => r.statut === 'Confirmé').length;
+    pending = rdvs.filter(r => r.statut === 'En attente').length;
+    cancelled = rdvs.filter(r => r.statut === 'Annulé').length;
+  } else {
+    const rows = document.querySelectorAll('#rdvTable tr[data-status]');
+    total = rows.length;
+    confirmed = Array.from(rows).filter(r => r.dataset.status==='Confirmé').length;
+    pending = Array.from(rows).filter(r => r.dataset.status==='En attente').length;
+    cancelled = Array.from(rows).filter(r => r.dataset.status==='Annulé').length;
+  }
+  document.getElementById('totalRDV').textContent = total;
+  document.getElementById('confirmedRDV').textContent = confirmed;
+  document.getElementById('pendingRDV').textContent = pending;
+  document.getElementById('cancelledRDV').textContent = cancelled;
 }
 
-function goEdit(id){ window.location.href = `/medecin/rdv/edit/${id}`; }
-function confirmDelete(id){ if (confirm('Êtes-vous sûr de vouloir supprimer ce rendez-vous ?')) deleteRDV(id); }
-function refreshRDV(){ renderRDV(); }
+function refreshRDV() { renderRDV(); }
 
 document.addEventListener('DOMContentLoaded', renderRDV);
-setInterval(renderRDV, 120000);
+setInterval(renderRDV, 120000); // rafraîchissement auto toutes les 2 min
 </script>
-
-<style>
-/* Layout helpers */
-.header-row {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:12px;
-}
-.header-actions { display:flex; gap:8px; }
-.mt-15 { margin-top:15px; }
-.mt-20 { margin-top:20px; }
-
-/* Table container to enable responsive behaviour */
-.table-responsive { width:100%; overflow-x:auto; }
-
-/* Table rules: keep columns fixed and aligned */
-.rdv-table {
-  width:100%;
-  border-collapse:collapse;
-  table-layout: fixed; /* important: forces columns to their widths */
-  min-width:720px; /* allow horizontal scroll on small screens */
-}
-.rdv-table thead th {
-  text-align:left;
-  padding:10px 12px;
-  background:#f7f7f7;
-  font-weight:700;
-  border-bottom:1px solid #e0e0e0;
-}
-.rdv-table tbody td {
-  padding:10px 12px;
-  vertical-align:middle;
-  border-bottom:1px solid #eee;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-
-/* column width hints */
-.col-hour, .cell-hour { width:90px; }
-.col-actions, .cell-actions { width:220px; }
-.col-status, .cell-status { width:140px; }
-.col-contact { width:140px; }
-
-/* make patient and motif flexible */
-.col-patient, .cell-patient { width:180px; }
-
-
-/* center / error cell helpers */
-.centered-cell { text-align:center; padding:18px; }
-.error-cell { color:#dc3545; }
-
-/* Status badge styled via row data-attribute for robustness */
-.rdv-table tbody tr[data-status="Confirmé"] .status-badge {
-  background:#d1e7dd; color:#0f5132;
-}
-.rdv-table tbody tr[data-status="En attente"] .status-badge {
-  background:#fff3cd; color:#664d03;
-}
-.rdv-table tbody tr[data-status="Annulé"] .status-badge {
-  background:#f8d7da; color:#721c24;
-}
-.status-badge {
-  display:inline-block;
-  padding:6px 10px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:600;
-  text-transform:capitalize;
-}
-
-/* Actions: bigger buttons, spaced and aligned to right on wide screens */
-.actions {
-  display:flex;
-  gap:10px;
-  justify-content:flex-end;
-  align-items:center;
-}
-.btn {
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:8px 12px;
-  border-radius:6px;
-  border:1px solid transparent;
-  background:#e9ecef;
-  cursor:pointer;
-  font-size:14px;
-}
-.btn.primary { background:#0d6efd; color:#fff; }
-.btn.danger, .btn.danger:hover { background:#dc3545; color:#fff; border-color:transparent; }
-.btn.action-btn { min-width:100px; padding:8px 14px; font-weight:600; }
-
-/* smaller buttons for very narrow screens */
-@media (max-width:640px) {
-  .rdv-table { min-width:600px; }
-  .btn.action-btn { min-width:80px; padding:6px 10px; font-size:13px; }
-  .rdv-table tbody td { white-space:normal; } /* allow wrapping on tiny screens */
-  .actions { justify-content:flex-start; }
-}
-
-/* Stats cards */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 15px;
-}
-
-/* --- CARD STYLE --- */
-.stat-card {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  background: #ffffff;
-  padding: 20px;
-  border-radius: 18px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
-
-/* --- ICONS STYLE --- */
-.stat-icon {
-  width: 55px;
-  height: 55px;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 26px;
-}
-
-/* ICON COLORS – same pastel as your image */
-.icon-blue { background:#d9e9ff; color:#3b82f6; }
-.icon-yellow { background:#fff2c6; color:#eab308; }
-.icon-red { background:#ffd6cc; color:#f97316; }
-.icon-green { background:#d8f5dc; color:#22c55e; }
-
-/* --- TEXT --- */
-.stat-number {
-  font-size: 22px;
-  font-weight: 700;
-  margin: 0;
-  color: #1f2937;
-}
-
-.stat-label {
-  margin: 0;
-  font-size: 14px;
-  color: #6b7280;
-}
-
-/* Responsive */
-@media (max-width:900px) {
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width:550px) {
-  .stats-grid { grid-template-columns: 1fr; }
-}
-
-</style>
 {% endblock %}

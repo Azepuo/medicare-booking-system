@@ -10,7 +10,6 @@
       <label>Patient *</label>
       <select name="patient_id" id="patient_id" class="input" required>
         <option value="">Sélectionner un patient...</option>
-        <!-- Les patients seront chargés dynamiquement -->
       </select>
     </div>
 
@@ -47,11 +46,7 @@
 async function loadPatients() {
   try {
     const response = await fetch('/medecin/api/patients');
-    
-    if (!response.ok) {
-      throw new Error(`Erreur ${response.status}: ${response.statusText}`);
-    }
-    
+    if (!response.ok) throw new Error(`Erreur ${response.status}: ${response.statusText}`);
     const patients = await response.json();
     
     const patientSelect = document.getElementById('patient_id');
@@ -84,19 +79,11 @@ document.getElementById('rdvAddForm').addEventListener('submit', async function(
     patient_id: parseInt(document.getElementById('patient_id').value),
     date_heure: document.getElementById('date_heure').value,
     statut: document.getElementById('statut').value,
-    notes: document.getElementById('notes').value
+    notes: document.getElementById('notes').value.trim()
   };
 
-  // Validation
-  if (!payload.patient_id) {
-    alert('Veuillez sélectionner un patient');
-    return;
-  }
-
-  if (!payload.date_heure) {
-    alert('Veuillez sélectionner une date et heure');
-    return;
-  }
+  if (!payload.patient_id) { alert('Veuillez sélectionner un patient'); return; }
+  if (!payload.date_heure) { alert('Veuillez sélectionner une date et heure'); return; }
 
   try {
     const response = await fetch('/medecin/api/rendezvous', {
@@ -106,11 +93,11 @@ document.getElementById('rdvAddForm').addEventListener('submit', async function(
     });
     
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.json().catch(()=>({}));
       throw new Error(errorData.error || `Erreur ${response.status}`);
     }
     
-    const result = await response.json();
+    const result = await response.json().catch(()=>({}));
     alert('✅ ' + (result.message || 'Rendez-vous planifié avec succès !'));
     window.location.href = '/medecin/rdv';
     
@@ -124,12 +111,9 @@ document.getElementById('rdvAddForm').addEventListener('submit', async function(
 document.addEventListener('DOMContentLoaded', function() {
   loadPatients();
   
-  // Définir la date et heure par défaut (maintenant + 1 heure)
   const now = new Date();
   now.setHours(now.getHours() + 1);
   now.setMinutes(0);
-  now.setSeconds(0);
-  
   const datetimeLocal = now.toISOString().slice(0, 16);
   document.getElementById('date_heure').value = datetimeLocal;
 });
