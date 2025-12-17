@@ -3,13 +3,8 @@ from flask import Blueprint, render_template, jsonify, request
 from models.patient import Patient
 from models.rendezvous import Rendezvous
 from models.medecin import Medecin
-<<<<<<< HEAD:app/routes/medecin_routes.py
 from database.connection import create_connection
 from datetime import date
-=======
-from database.connection_m import create_connection  # ✅ AJOUTEZ CET IMPORT
-from datetime import datetime, date
->>>>>>> 6c2dca7c2628f3fc9bc2215a8b8d61b7666885da:app/routes/medcin/medecin_routes.py
 from models.disponibilite import Disponibilite
 from flask import session
 

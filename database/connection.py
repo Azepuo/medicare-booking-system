@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import mysql.connector
 from mysql.connector import Error
 from contextlib import contextmanager
@@ -53,6 +52,3 @@ def test_connection():
 
 if __name__ == "__main__":
     test_connection()
-=======
-## hada howa li diro fih lcode dyalk
->>>>>>> 6c2dca7c2628f3fc9bc2215a8b8d61b7666885da

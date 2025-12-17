@@ -7,12 +7,8 @@ from app.routes.medcin.medecin_routes import medecin
 from app.rpc_medecin.disponibilites_rpc import disponibilites_rpc
 
 # Routes disponibilités (normal)
-<<<<<<< HEAD:app/app.py
 from app.routes.routes_disponibilites import dispo
 from app.rpc_medecin.patients_rpc import patients_rpc
-=======
-from app.routes.medcin.routes_disponibilites import dispo
->>>>>>> 6c2dca7c2628f3fc9bc2215a8b8d61b7666885da:app/main_medecin.py
 
 
 def create_app():
