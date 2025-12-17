@@ -1,4 +1,3 @@
-# app/rpc_medecin/patients_rpc.py
 from flask import Blueprint, request, jsonify
 from .patients_rpc_methods import list_patients, get_patient, create_patient, update_patient, delete_patient
 
@@ -9,15 +8,10 @@ patients_rpc = Blueprint("patients_rpc", __name__, url_prefix="/medecin/rpc/pati
 # ------------------------------------------------------
 @patients_rpc.route("/list", methods=["GET"])
 def list_all_patients():
-    print("🔍 Route /medecin/rpc/patients/list appelée")
-    
     try:
         patients = list_patients()
-        print(f"✅ {len(patients)} patients trouvés")
         return jsonify({"ok": True, "data": patients})
-        
     except Exception as e:
-        print(f"❌ Erreur list_all_patients: {e}")
         return jsonify({"ok": False, "error": str(e)}), 500
 
 # ------------------------------------------------------
@@ -32,7 +26,6 @@ def get_single_patient(patient_id):
         else:
             return jsonify({"ok": False, "error": "Patient non trouvé"}), 404
     except Exception as e:
-        print(f"❌ Erreur get_single_patient: {e}")
         return jsonify({"ok": False, "error": str(e)}), 500
 
 # ------------------------------------------------------
@@ -40,17 +33,22 @@ def get_single_patient(patient_id):
 # ------------------------------------------------------
 @patients_rpc.route("/create", methods=["POST"])
 def create_new_patient():
-    print("🔍 Route /medecin/rpc/patients/create appelée")
-    
     data = request.get_json()
     if not data:
         return jsonify({"ok": False, "error": "Données JSON requises"}), 400
     
+    payload = {
+        'user_id': data.get('user_id'),  # facultatif
+        'nom': data.get('nom'),
+        'email': data.get('email'),
+        'telephone': data.get('telephone', ''),
+        'sexe': data.get('sexe', 'Homme')
+    }
+
     try:
-        new_patient = create_patient(data)
+        new_patient = create_patient(payload)
         return jsonify({"ok": True, "data": new_patient})
     except Exception as e:
-        print(f"❌ Erreur create_new_patient: {e}")
         return jsonify({"ok": False, "error": str(e)}), 400
 
 # ------------------------------------------------------
@@ -62,14 +60,15 @@ def update_existing_patient(patient_id):
     if not data:
         return jsonify({"ok": False, "error": "Données JSON requises"}), 400
     
+    payload = {key: data[key] for key in ['nom','email','telephone','sexe'] if key in data}
+
     try:
-        updated_patient = update_patient(patient_id, data)
+        updated_patient = update_patient(patient_id, payload)
         if updated_patient:
             return jsonify({"ok": True, "data": updated_patient})
         else:
             return jsonify({"ok": False, "error": "Patient non trouvé"}), 404
     except Exception as e:
-        print(f"❌ Erreur update_existing_patient: {e}")
         return jsonify({"ok": False, "error": str(e)}), 400
 
 # ------------------------------------------------------
@@ -84,5 +83,4 @@ def delete_existing_patient(patient_id):
         else:
             return jsonify({"ok": False, "error": "Patient non trouvé"}), 404
     except Exception as e:
-        print(f"❌ Erreur delete_existing_patient: {e}")
         return jsonify({"ok": False, "error": str(e)}), 400

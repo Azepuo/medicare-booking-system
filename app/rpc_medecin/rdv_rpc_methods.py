@@ -1,5 +1,5 @@
 # app/rpc_medecin/rdv_rpc_methods.py
-from datetime import datetime, date
+from datetime import datetime
 import mysql.connector
 from mysql.connector import Error
 import os
@@ -13,7 +13,7 @@ def create_connection():
         conn = mysql.connector.connect(
             host=os.getenv('DB_HOST', 'localhost'),
             port=os.getenv('DB_PORT', '3306'),
-            database=os.getenv('DB_NAME', 'medicare_booking'),
+            database=os.getenv('DB_NAME', 'medicare_unified'),
             user=os.getenv('DB_USER', 'root'),
             password=os.getenv('DB_PASSWORD', '')
         )
@@ -32,8 +32,8 @@ def list_all_rdv():
         cursor = conn.cursor(dictionary=True)
         query = """
         SELECT r.id, r.date_heure, r.notes, r.statut,
-               p.nom, p.prenom, p.telephone, p.email
-        FROM rendez_vous r
+               p.nom, p.telephone, p.email, p.sexe
+        FROM rendezvous r
         LEFT JOIN patients p ON r.patient_id = p.id
         ORDER BY r.date_heure DESC
         """
@@ -44,8 +44,10 @@ def list_all_rdv():
         for rdv in rdvs:
             result.append({
                 'id': rdv['id'],
-                'patient_nom': f"{rdv['prenom']} {rdv['nom']}" if rdv['prenom'] and rdv['nom'] else 'N/A',
+                'patient_nom': rdv['nom'] or 'N/A',
                 'patient_telephone': rdv['telephone'] or 'N/A',
+                'patient_email': rdv['email'] or '',
+                'patient_sexe': rdv['sexe'] or '',
                 'date_heure': rdv['date_heure'].strftime('%Y-%m-%d %H:%M:%S') if rdv['date_heure'] else '',
                 'notes': rdv['notes'] or '',
                 'statut': rdv['statut'] or 'En attente'
@@ -68,8 +70,8 @@ def list_today_rdv():
         cursor = conn.cursor(dictionary=True)
         query = """
         SELECT r.id, r.date_heure, r.notes, r.statut,
-               p.nom, p.prenom, p.telephone, p.email
-        FROM rendez_vous r
+               p.nom, p.telephone, p.email, p.sexe
+        FROM rendezvous r
         LEFT JOIN patients p ON r.patient_id = p.id
         WHERE DATE(r.date_heure) = CURDATE()
         ORDER BY r.date_heure ASC
@@ -81,8 +83,10 @@ def list_today_rdv():
         for rdv in rdvs:
             result.append({
                 'id': rdv['id'],
-                'patient_nom': f"{rdv['prenom']} {rdv['nom']}" if rdv['prenom'] and rdv['nom'] else 'N/A',
+                'patient_nom': rdv['nom'] or 'N/A',
                 'patient_telephone': rdv['telephone'] or 'N/A',
+                'patient_email': rdv['email'] or '',
+                'patient_sexe': rdv['sexe'] or '',
                 'date_heure': rdv['date_heure'].strftime('%H:%M') if rdv['date_heure'] else '',
                 'notes': rdv['notes'] or '',
                 'statut': rdv['statut'] or 'En attente'
@@ -103,9 +107,9 @@ def get_rdv(rid):
     try:
         cursor = conn.cursor(dictionary=True)
         query = """
-        SELECT r.id, r.patient_id, r.date_heure, r.notes, r.statut,
-               p.nom, p.prenom, p.telephone
-        FROM rendez_vous r
+        SELECT r.id, r.patient_id, r.medecin_id, r.date_heure, r.notes, r.statut,
+               p.nom, p.telephone, p.email, p.sexe
+        FROM rendezvous r
         LEFT JOIN patients p ON r.patient_id = p.id
         WHERE r.id = %s
         """
@@ -116,7 +120,11 @@ def get_rdv(rid):
             return {
                 'id': rdv['id'],
                 'patient_id': rdv['patient_id'],
-                'patient_nom': f"{rdv['prenom']} {rdv['nom']}" if rdv['prenom'] and rdv['nom'] else 'N/A',
+                'medecin_id': rdv['medecin_id'],
+                'patient_nom': rdv['nom'] or 'N/A',
+                'patient_telephone': rdv['telephone'] or 'N/A',
+                'patient_email': rdv['email'] or '',
+                'patient_sexe': rdv['sexe'] or '',
                 'date_heure': rdv['date_heure'].strftime('%Y-%m-%d %H:%M:%S') if rdv['date_heure'] else '',
                 'notes': rdv['notes'] or '',
                 'statut': rdv['statut'] or 'En attente'
@@ -137,11 +145,12 @@ def create_rdv(data):
     try:
         cursor = conn.cursor()
         query = """
-        INSERT INTO rendez_vous (patient_id, date_heure, notes, statut)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO rendezvous (patient_id, medecin_id, date_heure, notes, statut)
+        VALUES (%s, %s, %s, %s, %s)
         """
         values = (
             data.get('patient_id'),
+            data.get('medecin_id'),
             data.get('date_heure'),
             data.get('notes', ''),
             data.get('statut', 'En attente')
@@ -170,7 +179,7 @@ def update_rdv(rid, data):
         cursor = conn.cursor()
         
         # Vérifier si le RDV existe
-        check_query = "SELECT id FROM rendez_vous WHERE id = %s"
+        check_query = "SELECT id FROM rendezvous WHERE id = %s"
         cursor.execute(check_query, (rid,))
         if not cursor.fetchone():
             raise Exception("Rendez-vous non trouvé")
@@ -193,7 +202,7 @@ def update_rdv(rid, data):
             raise Exception("Aucune donnée à mettre à jour")
         
         values.append(rid)
-        query = f"UPDATE rendez_vous SET {', '.join(update_fields)} WHERE id = %s"
+        query = f"UPDATE rendezvous SET {', '.join(update_fields)} WHERE id = %s"
         
         cursor.execute(query, values)
         conn.commit()
@@ -218,12 +227,12 @@ def delete_rdv(rid):
         cursor = conn.cursor()
         
         # Vérifier si le RDV existe
-        check_query = "SELECT id FROM rendez_vous WHERE id = %s"
+        check_query = "SELECT id FROM rendezvous WHERE id = %s"
         cursor.execute(check_query, (rid,))
         if not cursor.fetchone():
             return False
         
-        delete_query = "DELETE FROM rendez_vous WHERE id = %s"
+        delete_query = "DELETE FROM rendezvous WHERE id = %s"
         cursor.execute(delete_query, (rid,))
         conn.commit()
         

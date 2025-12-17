@@ -1,8 +1,6 @@
-# app/rpc_medecin/patients_rpc_methods.py
 from database.connection import create_connection
 from contextlib import contextmanager
 from typing import Optional, Dict, Any, List
-from datetime import datetime
 
 # ----------------- CONTEXT MANAGER -----------------
 @contextmanager
@@ -18,39 +16,32 @@ def get_cursor():
         conn.rollback()
         raise
     finally:
-        try: 
+        try:
             cur.close()
-        except: 
+        except:
             pass
-        try: 
+        try:
             conn.close()
-        except: 
+        except:
             pass
 
 # ----------------- HELPERS -----------------
 def _row_to_patient(row: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     if not row:
         return None
-    
-    # Formater date_inscription en ISO
-    if 'date_inscription' in row and isinstance(row['date_inscription'], datetime):
-        row['date_inscription'] = row['date_inscription'].strftime('%Y-%m-%d %H:%M:%S')
-    
-    # S'assurer que tous les champs nécessaires existent
-    result = {
+    return {
         'id': row.get('id'),
+        'user_id': row.get('user_id'),
         'nom': row.get('nom', ''),
         'email': row.get('email', ''),
         'telephone': row.get('telephone', ''),
-        'age': row.get('age'),
-        'date_inscription': row.get('date_inscription', '')
+        'sexe': row.get('sexe', '')
     }
-    return result
 
 # ----------------- LIST -----------------
 def list_patients() -> List[Dict[str, Any]]:
     with get_cursor() as (conn, cur):
-        cur.execute("SELECT * FROM patients ORDER BY date_inscription DESC")
+        cur.execute("SELECT * FROM patients ORDER BY id DESC")
         rows = cur.fetchall()
         return [_row_to_patient(r) for r in rows if r]
 
@@ -66,14 +57,15 @@ def create_patient(payload: Dict[str, Any]) -> Dict[str, Any]:
     nom = payload.get('nom')
     email = payload.get('email')
     telephone = payload.get('telephone', '')
-    age = payload.get('age', None)
+    sexe = payload.get('sexe', 'Homme')
+    user_id = payload.get('user_id')  # peut être None si patient sans compte
 
     if not nom or not email:
         raise ValueError("Nom et email sont requis")
 
-    sql = "INSERT INTO patients (nom, email, telephone, age) VALUES (%s, %s, %s, %s)"
+    sql = "INSERT INTO patients (user_id, nom, email, telephone, sexe) VALUES (%s, %s, %s, %s, %s)"
     with get_cursor() as (conn, cur):
-        cur.execute(sql, (nom, email, telephone, age))
+        cur.execute(sql, (user_id, nom, email, telephone, sexe))
         new_id = cur.lastrowid
         cur.execute("SELECT * FROM patients WHERE id=%s", (new_id,))
         row = cur.fetchone()
@@ -81,7 +73,7 @@ def create_patient(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 # ----------------- UPDATE -----------------
 def update_patient(pid: int, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    allowed = ["nom", "email", "telephone", "age"]
+    allowed = ["nom", "email", "telephone", "sexe"]
     sets = []
     params = []
     for field in allowed:
