@@ -89,9 +89,10 @@
                 </a>
 
                 <!-- LOGOUT -->
-                <button class="btn-ghost logout-btn" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i> Se déconnecter
-                </button>
+               <a href="{{ url_for('auth.logout') }}"class="btn-ghost logout-btn">
+                 <i class="fas fa-sign-out-alt"></i> Se déconnecter
+               </a>
+                   
             </nav>
         </aside>
 

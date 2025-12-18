@@ -9,7 +9,8 @@ from app.rpc_medecin.disponibilites_rpc import disponibilites_rpc
 # Routes disponibilités (normal)
 
 from app.rpc.auth_rpc.auth_rpc import auth_rpc
-
+from app.routes.authentification.authentification_routes import auth_bp
+from app.routes.main_routes import main
 
 def create_app():
     app = Flask(__name__)
@@ -27,7 +28,13 @@ def create_app():
     # Importez le blueprint RP
     app.register_blueprint(auth_rpc)
 # Enregistrez-le
-   
+
+
+
+
+
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(main)
 
     return app
 
