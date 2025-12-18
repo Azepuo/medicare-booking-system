@@ -995,21 +995,21 @@ def get_services_facture(facture_id):
 # ✅ NORMALISATION ADMIN
 # =====================================================
 
-def normalize_admin(row):
-    if row is None:
-        return None
+# def normalize_admin(row):
+#     if row is None:
+#         return None
     
-    data = dict(row)
+#     data = dict(row)
 
-    # Convertir les dates en string
-    if data.get("date_creation") and hasattr(data["date_creation"], "isoformat"):
-        data["date_creation"] = data["date_creation"].isoformat()
+#     # Convertir les dates en string
+#     if data.get("date_creation") and hasattr(data["date_creation"], "isoformat"):
+#         data["date_creation"] = data["date_creation"].isoformat()
 
-    if data.get("last_login") and hasattr(data["last_login"], "isoformat"):
-        data["last_login"] = data["last_login"].isoformat()
+#     if data.get("last_login") and hasattr(data["last_login"], "isoformat"):
+#         data["last_login"] = data["last_login"].isoformat()
 
-    return data
-
+    # return data
+# 
 
 # ... tout le code précédent (medecins / patients / rdv / factures) inchangé ...
 
@@ -1019,20 +1019,19 @@ def normalize_admin(row):
 # =====================================================
 
 def normalize_admin(row):
-    if row is None:
+    if not row:
         return None
-    
+
     data = dict(row)
 
-    # Convertir les dates en string
-    if data.get("date_creation") and hasattr(data["date_creation"], "isoformat"):
-        data["date_creation"] = data["date_creation"].isoformat()
+    if data.get("created_at"):
+        data["created_at"] = data["created_at"].isoformat()
 
-    if data.get("last_login") and hasattr(data["last_login"], "isoformat"):
+    if data.get("last_login"):
         data["last_login"] = data["last_login"].isoformat()
 
-    # photo est déjà une chaîne → rien à faire
     return data
+
 
 
 # =====================================================
@@ -1044,53 +1043,69 @@ def get_admin():
     cursor = conn.cursor(dictionary=True)
 
     cursor.execute("""
-        SELECT id, nom_complet, email, telephone, username, date_creation, last_login, photo
-        FROM admin
+        SELECT
+            a.id,
+            u.nom,
+            u.email,
+            u.telephone,
+            a.username,
+            a.photo,
+            a.last_login,
+            u.created_at
+        FROM admin a
+        JOIN users u ON a.user_id = u.id
+        WHERE u.role = 'ADMIN'
         LIMIT 1
     """)
-    row = cursor.fetchone()
 
+    row = cursor.fetchone()
     cursor.close()
     conn.close()
 
     return normalize_admin(row)
 
 
+
 def update_admin(data):
     conn = create_connection()
     cursor = conn.cursor()
 
-    # Si une nouvelle photo est fournie → on met à jour aussi `photo`
+    # 1️⃣ update USERS
+    cursor.execute("""
+        UPDATE users
+        SET nom=%s,
+            email=%s,
+            telephone=%s
+        WHERE role='ADMIN'
+        LIMIT 1
+    """, (
+        data.get("nom_complet"),
+        data.get("email"),
+        data.get("telephone")
+    ))
+
+    # 2️⃣ update ADMIN
     if data.get("photo"):
         cursor.execute("""
             UPDATE admin
-            SET nom_complet = %s,
-                email = %s,
-                telephone = %s,
-                username = %s,
-                photo = %s
-            WHERE id = 1
+            SET username=%s,
+                photo=%s
+            WHERE user_id = (
+                SELECT id FROM users WHERE role='ADMIN' LIMIT 1
+            )
         """, (
-            data.get("nom_complet"),
-            data.get("email"),
-            data.get("telephone"),
             data.get("username"),
             data.get("photo")
         ))
     else:
-        # Pas de nouvelle photo → on garde l'ancienne
         cursor.execute("""
             UPDATE admin
-            SET nom_complet = %s,
-                email = %s,
-                telephone = %s,
-                username = %s
-            WHERE id = 1
+            SET username=%s
+            WHERE user_id = (
+                SELECT id FROM users WHERE role='ADMIN' LIMIT 1
+            )
         """, (
-            data.get("nom_complet"),
-            data.get("email"),
-            data.get("telephone"),
-            data.get("username")
+            data.get("username"),
         ))
 
     conn.commit()
@@ -1100,11 +1115,17 @@ def update_admin(data):
     return {"success": True}
 
 
+
 def update_admin_password(current_pwd, new_pwd):
     conn = create_connection()
     cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("SELECT password FROM admin WHERE id = 1")
+    cursor.execute("""
+        SELECT id, password
+        FROM users
+        WHERE role='ADMIN'
+        LIMIT 1
+    """)
     admin = cursor.fetchone()
 
     if not admin:
@@ -1112,38 +1133,45 @@ def update_admin_password(current_pwd, new_pwd):
         conn.close()
         return {"error": "ADMIN_NOT_FOUND"}
 
-    hashed = admin["password"].encode("utf-8")
-
-    # ✅ Vérifier mot de passe actuel
-    if not bcrypt.checkpw(current_pwd.encode("utf-8"), hashed):
+    if not bcrypt.checkpw(current_pwd.encode(), admin["password"].encode()):
         cursor.close()
         conn.close()
         return {"error": "WRONG_PASSWORD"}
 
-    # ✅ Générer hash du nouveau mot de passe
-    new_hashed = bcrypt.hashpw(new_pwd.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    new_hash = bcrypt.hashpw(new_pwd.encode(), bcrypt.gensalt()).decode()
 
-    # ✅ Mise à jour en BDD
-    cursor.execute("UPDATE admin SET password = %s WHERE id = 1", (new_hashed,))
+    cursor.execute("""
+        UPDATE users
+        SET password=%s
+        WHERE id=%s
+    """, (new_hash, admin["id"]))
+
     conn.commit()
-
     cursor.close()
     conn.close()
 
     return {"success": True}
 
 
+
 def update_last_login():
     conn = create_connection()
     cursor = conn.cursor()
 
-    cursor.execute("UPDATE admin SET last_login = NOW() WHERE id = 1")
-    conn.commit()
+    cursor.execute("""
+        UPDATE admin
+        SET last_login = NOW()
+        WHERE user_id = (
+            SELECT id FROM users WHERE role='ADMIN' LIMIT 1
+        )
+    """)
 
+    conn.commit()
     cursor.close()
     conn.close()
 
     return True
+
 # =====================================================
 # ✅ Statistiques
 # =====================================================
