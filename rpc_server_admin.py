@@ -432,29 +432,16 @@ def supprimer_patient(patient_id):
 # ✅ NORMALISATION RDV
 # =====================================================
 def normalize_rdv(row):
-    if row is None:
+    if not row:
         return None
 
     data = dict(row)
 
-    if data.get("date_rdv"):
-        data["date_rdv"] = str(data["date_rdv"])
-
-    # ⚠ ajouter ceci si tu veux être sûre
-    if "tarif_consultation" in data:
-        data["tarif_consultation"] = float(data["tarif_consultation"])
-    
-    heure = data.get("heure_rdv")
-    if heure is not None:
-        if isinstance(heure, timedelta):
-            total_seconds = int(heure.total_seconds())
-            hours = total_seconds // 3600
-            minutes = (total_seconds % 3600) // 60
-            data["heure_rdv"] = f"{hours:02d}:{minutes:02d}"
-        elif hasattr(heure, "strftime"):
-            data["heure_rdv"] = heure.strftime("%H:%M")
-        else:
-            data["heure_rdv"] = str(heure)
+    if data.get("date_heure") and hasattr(data["date_heure"], "strftime"):
+        dt = data["date_heure"]
+        data["date_rdv"] = dt.strftime("%Y-%m-%d")
+        data["heure_rdv"] = dt.strftime("%H:%M")
+        data["date_heure"] = dt.strftime("%Y-%m-%d %H:%M:%S")
 
     return data
 
@@ -478,7 +465,7 @@ def liste_rdv(search=""):
             WHERE p.nom LIKE %s
                OR m.nom LIKE %s
                OR r.statut LIKE %s
-            ORDER BY r.date_rdv DESC, r.heure_rdv ASC
+            ORDER BY r.date_heure DESC
         """, (
             f"%{search}%",
             f"%{search}%",
@@ -492,16 +479,14 @@ def liste_rdv(search=""):
             FROM rendezvous r
             JOIN patients p ON r.patient_id = p.id
             JOIN medecins m ON r.medecin_id = m.id
-            ORDER BY r.date_rdv DESC, r.heure_rdv ASC
+            ORDER BY r.date_heure DESC
         """)
 
     rows = cursor.fetchall()
-
     cursor.close()
     conn.close()
 
-    return [normalize_rdv(row) for row in rows]
-
+    return [normalize_rdv(r) for r in rows]
 
 def get_rdv(rdv_id):
     conn = create_connection()
@@ -510,8 +495,7 @@ def get_rdv(rdv_id):
     cursor.execute("""
         SELECT r.*,
                p.nom AS patient_nom,
-               m.nom AS medecin_nom,
-               m.tarif_consultation
+               m.nom AS medecin_nom
         FROM rendezvous r
         JOIN patients p ON r.patient_id = p.id
         JOIN medecins m ON r.medecin_id = m.id
@@ -519,161 +503,210 @@ def get_rdv(rdv_id):
     """, (rdv_id,))
 
     row = cursor.fetchone()
-
     cursor.close()
     conn.close()
 
     return normalize_rdv(row)
 
+def normalize_jour(jour):
+    """
+    Normalise le jour en français (lundi → dimanche)
+    Accepte FR / EN / majuscules / minuscules
+    """
+    if not jour:
+        return None
+
+    jour = jour.strip().lower()
+
+    mapping = {
+        # Anglais → Français
+        "monday": "lundi",
+        "tuesday": "mardi",
+        "wednesday": "mercredi",
+        "thursday": "jeudi",
+        "friday": "vendredi",
+        "saturday": "samedi",
+        "sunday": "dimanche",
+
+        # Français
+        "lundi": "lundi",
+        "mardi": "mardi",
+        "mercredi": "mercredi",
+        "jeudi": "jeudi",
+        "vendredi": "vendredi",
+        "samedi": "samedi",
+        "dimanche": "dimanche",
+    }
+
+    return mapping.get(jour)
 
 # ✅ Fonction interne de vérification
 def rdv_is_valid(data, ignore_id=None):
-    """Retourne: 'OK', 'INACTIVE', 'NOT_AVAILABLE', 'ALREADY_BOOKED'"""
-
     conn = create_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # ✅ 0) Vérifier statut du médecin
-    cursor.execute("""
-        SELECT statut FROM medecins WHERE id = %s
-    """, (data.get("medecin_id"),))
-
+    # 1️⃣ Médecin actif
+    cursor.execute("SELECT statut FROM medecins WHERE id=%s", (data["medecin_id"],))
     med = cursor.fetchone()
-
     if not med or med["statut"] != "Actif":
         cursor.close()
         conn.close()
-        return "INACTIVE"
+        return "MEDECIN_INACTIF"
 
-    # ✅ 1) Vérifier disponibilité
+    # 2️⃣ Date / Heure
+    try:
+        dt = datetime.datetime.strptime(data["date_heure"], "%Y-%m-%d %H:%M:%S")
+    except Exception:
+        cursor.close()
+        conn.close()
+        return "FORMAT_DATE_INVALIDE"
+
+    # 🔹 Jour normalisé (FR)
+    jour_raw = dt.strftime("%A")          # Monday / Tuesday / ...
+    jour = normalize_jour(jour_raw)       # lundi / mardi / ...
+
+    if not jour:
+        cursor.close()
+        conn.close()
+        return "JOUR_INVALIDE"
+
+    heure = dt.time()
+
+    # 3️⃣ Vérifier disponibilité médecin
     cursor.execute("""
-        SELECT * FROM disponibilites_medecin
+        SELECT *
+        FROM disponibilites
         WHERE medecin_id = %s
-        AND date_disponible = %s
-        AND %s BETWEEN heure_debut AND heure_fin
+          AND LOWER(jour_semaine) = %s
+          AND %s BETWEEN heure_debut AND heure_fin
     """, (
-        data.get("medecin_id"),
-        data.get("date_rdv"),
-        data.get("heure_rdv")
+        data["medecin_id"],
+        jour,
+        heure
     ))
 
     dispo = cursor.fetchone()
     if not dispo:
         cursor.close()
         conn.close()
-        return "NOT_AVAILABLE"
+        return "MEDECIN_NON_DISPONIBLE"
 
-    # ✅ 2) Vérifier conflits
-    sql_conflict = """
-        SELECT * FROM rendezvous
+    # 4️⃣ Vérifier conflit RDV (30 minutes)
+    cursor.execute("""
+        SELECT id
+        FROM rendezvous
         WHERE medecin_id = %s
-        AND date_rdv = %s
-        AND heure_rdv = %s
-    """
-    params = [
-        data.get("medecin_id"),
-        data.get("date_rdv"),
-        data.get("heure_rdv")
-    ]
+          AND ABS(TIMESTAMPDIFF(MINUTE, date_heure, %s)) < 30
+    """, (
+        data["medecin_id"],
+        data["date_heure"]
+    ))
 
-    if ignore_id:
-        sql_conflict += " AND id != %s"
-        params.append(ignore_id)
-
-    cursor.execute(sql_conflict, tuple(params))
     conflict = cursor.fetchone()
-
     cursor.close()
     conn.close()
 
-    if conflict:
-        return "ALREADY_BOOKED"
+    if conflict and (not ignore_id or conflict["id"] != ignore_id):
+        return "CRENEAU_DEJA_PRIS"
 
     return "OK"
 
+
 def ajouter_rdv(data):
+    # ✅ Vérifier que date_heure existe
+    if "date_heure" not in data:
+        return {"error": "DATE_HEURE_MANQUANTE"}
+
+    # ✅ Valider les données
     state = rdv_is_valid(data)
-
-    if state == "INACTIVE":
-        return {"error": "INACTIVE"}
-
-    if state == "NOT_AVAILABLE":
-        return {"error": "NOT_AVAILABLE"}
-
-    if state == "ALREADY_BOOKED":
-        return {"error": "ALREADY_BOOKED"}
+    if state != "OK":
+        return {"error": state}
 
     conn = create_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
-        INSERT INTO rendezvous
-        (patient_id, medecin_id, date_rdv, heure_rdv, statut, notes)
-        VALUES (%s, %s, %s, %s, %s, %s)
-    """, (
-        data.get("patient_id"),
-        data.get("medecin_id"),
-        data.get("date_rdv"),
-        data.get("heure_rdv"),
-        data.get("statut") or "en_attente",
-        data.get("notes"),
-    ))
+    try:
+        cursor.execute("""
+            INSERT INTO rendezvous
+            (patient_id, medecin_id, date_heure, statut, notes)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (
+            data["patient_id"],
+            data["medecin_id"],
+            data["date_heure"],
+            data.get("statut", "en_attente"),
+            data.get("notes")
+        ))
 
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return {"success": True}
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return {"success": True}
+    
+    except Exception as e:
+        if conn:
+            conn.close()
+        print(f"❌ Erreur ajouter_rdv: {e}")
+        return {"error": "ERREUR_BDD"}
+
+
 
 
 def editer_rdv(rdv_id, data):
+    # ✅ Vérifier que date_heure existe
+    if "date_heure" not in data:
+        return {"error": "DATE_HEURE_MANQUANTE"}
+
+    # ✅ Valider les données
     state = rdv_is_valid(data, ignore_id=rdv_id)
-
-    if state == "INACTIVE":
-        return {"error": "INACTIVE"}
-
-    if state == "NOT_AVAILABLE":
-        return {"error": "NOT_AVAILABLE"}
-
-    if state == "ALREADY_BOOKED":
-        return {"error": "ALREADY_BOOKED"}
-
+    if state != "OK":
+        return {"error": state}
 
     conn = create_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
-        UPDATE rendezvous
-        SET patient_id=%s,
-            medecin_id=%s,
-            date_rdv=%s,
-            heure_rdv=%s,
-            statut=%s,
-            notes=%s
-        WHERE id=%s
-    """, (
-        data.get("patient_id"),
-        data.get("medecin_id"),
-        data.get("date_rdv"),
-        data.get("heure_rdv"),
-        data.get("statut"),
-        data.get("notes"),
-        rdv_id
-    ))
+    try:
+        cursor.execute("""
+            UPDATE rendezvous
+            SET patient_id=%s,
+                medecin_id=%s,
+                date_heure=%s,
+                statut=%s,
+                notes=%s
+            WHERE id=%s
+        """, (
+            data["patient_id"],
+            data["medecin_id"],
+            data["date_heure"],
+            data.get("statut", "en_attente"),
+            data.get("notes"),
+            rdv_id
+        ))
 
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return {"success": True}
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return {"success": True}
+    
+    except Exception as e:
+        if conn:
+            conn.close()
+        print(f"❌ Erreur editer_rdv: {e}")
+        return {"error": "ERREUR_BDD"}
+
 
 
 def supprimer_rdv(rdv_id):
     conn = create_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM rendezvous WHERE id = %s", (rdv_id,))
+    cursor.execute("DELETE FROM rendezvous WHERE id=%s", (rdv_id,))
     conn.commit()
     cursor.close()
     conn.close()
     return True
+
 
 
 # =====================================================
@@ -685,24 +718,17 @@ def get_disponibilites(medecin_id):
     cursor = conn.cursor(dictionary=True)
 
     cursor.execute("""
-        SELECT date_disponible, heure_debut, heure_fin
-        FROM disponibilites_medecin
+        SELECT jour_semaine, heure_debut, heure_fin
+        FROM disponibilites
         WHERE medecin_id = %s
     """, (medecin_id,))
 
     rows = cursor.fetchall()
-
     cursor.close()
     conn.close()
 
-    return [
-        {
-            "date": str(r["date_disponible"]),
-            "heure_debut": str(r["heure_debut"]),
-            "heure_fin": str(r["heure_fin"])
-        }
-        for r in rows
-    ]
+    return rows
+
 
 
 # =====================================================
@@ -1135,7 +1161,7 @@ def get_stats():
     total_patients = cursor.fetchone()[0]
 
     # ✅ Rendez-vous aujourd'hui
-    cursor.execute("SELECT COUNT(*) FROM rendezvous WHERE date_rdv = CURDATE()")
+    cursor.execute("SELECT COUNT(*) FROM rendezvous WHERE DATE(date_heure) = CURDATE()") 
     rdv_aujourd_hui = cursor.fetchone()[0]
 
     # ✅ Factures totales
@@ -1305,44 +1331,22 @@ def liste_rdv_aujourdhui():
     conn = create_connection()
     cursor = conn.cursor(dictionary=True)
 
-    query = """
+    cursor.execute("""
         SELECT r.*, 
                p.nom AS patient_nom,
                m.nom AS medecin_nom
         FROM rendezvous r
         JOIN patients p ON r.patient_id = p.id
         JOIN medecins m ON r.medecin_id = m.id
-        WHERE r.date_rdv = CURDATE()
-        ORDER BY r.heure_rdv ASC
-    """
+        WHERE DATE(r.date_heure) = CURDATE()
+        ORDER BY r.date_heure ASC
+    """)
 
-    cursor.execute(query)
     rows = cursor.fetchall()
-
-    # ✅ Normalisation pour XML-RPC
-    normalized = []
-    for r in rows:
-        # ✅ Convertir date
-        if isinstance(r.get("date_rdv"), (datetime.date, datetime.datetime)):
-            r["date_rdv"] = r["date_rdv"].strftime("%Y-%m-%d")
-
-        # ✅ Convertir heure_rdv (timedelta → "HH:MM")
-        heure = r.get("heure_rdv")
-        if isinstance(heure, timedelta):
-            total_seconds = int(heure.total_seconds())
-            hours = total_seconds // 3600
-            minutes = (total_seconds % 3600) // 60
-            r["heure_rdv"] = f"{hours:02d}:{minutes:02d}"
-        elif hasattr(heure, "strftime"):
-            r["heure_rdv"] = heure.strftime("%H:%M")
-        else:
-            r["heure_rdv"] = str(heure)
-
-        normalized.append(r)
-
     cursor.close()
     conn.close()
-    return normalized
+
+    return [normalize_rdv(r) for r in rows]
 
 
 
