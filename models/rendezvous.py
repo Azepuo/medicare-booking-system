@@ -1,4 +1,4 @@
-from database.connection import create_connection
+from database.connection import get_db_connection
 from datetime import datetime
 
 class RendezVous:
@@ -13,7 +13,7 @@ class RendezVous:
     @staticmethod
     def get_all():
         """Récupérer tous les rendez-vous"""
-        connection = create_connection()
+        connection = get_db_connection()
         if not connection:
             return []
         
@@ -38,7 +38,7 @@ class RendezVous:
     @staticmethod
     def get_by_id(rdv_id):
         """Récupérer un rendez-vous par son ID"""
-        connection = create_connection()
+        connection = get_db_connection()
         if not connection:
             return None
         
@@ -64,7 +64,7 @@ class RendezVous:
     @staticmethod
     def get_by_patient(patient_id):
         """Récupérer les rendez-vous d'un patient"""
-        connection = create_connection()
+        connection = get_db_connection()
         if not connection:
             return []
         
@@ -84,7 +84,7 @@ class RendezVous:
     @staticmethod
     def get_by_medecin(medecin_id):
         """Récupérer les rendez-vous d'un médecin"""
-        connection = create_connection()
+        connection = get_db_connection()
         if not connection:
             return []
         
@@ -103,7 +103,7 @@ class RendezVous:
 
     def save(self):
         """Sauvegarder le rendez-vous"""
-        connection = create_connection()
+        connection = get_db_connection()
         if not connection:
             return False
         

@@ -1,4 +1,4 @@
-from database.connection import create_connection
+from database.connection import get_db_connection
 
 class Patient:
     def __init__(self, id=None, nom=None, email=None, telephone=None, date_inscription=None):
@@ -11,7 +11,7 @@ class Patient:
     @staticmethod
     def get_all():
         """Récupérer tous les patients"""
-        connection = create_connection()
+        connection = get_db_connection()
         if not connection:
             return []
         
@@ -31,7 +31,7 @@ class Patient:
     @staticmethod
     def get_by_id(patient_id):
         """Récupérer un patient par son ID"""
-        connection = create_connection()
+        connection = get_db_connection()
         if not connection:
             return None
         
@@ -50,7 +50,7 @@ class Patient:
     
     def save(self):
         """Sauvegarder le patient (create or update)"""
-        connection = create_connection()
+        connection = get_db_connection()
         if not connection:
             return False
         
@@ -82,7 +82,7 @@ class Patient:
 
     def delete(self):
         """Supprimer le patient"""
-        connection = create_connection()
+        connection = get_db_connection()
         if not connection:
             return False
         

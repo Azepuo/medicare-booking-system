@@ -1,11 +1,38 @@
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify,redirect
 from app import get_db_connection
 from datetime import datetime, timedelta, time
 import calendar
 from xmlrpc.client import ServerProxy
 import xmlrpc.client
 import http.client
+import jwt
+SECRET_KEY = "secret123"  # ⚠️ Identique à Auth et server_rpc
+def get_current_user():
+    """
+    Extrait user_id et role depuis le cookie JWT
+    Returns:
+        tuple: (user_id, role) ou (None, None)
+    """
+    token = request.cookies.get("access_token")
 
+    if not token:
+        print("[JWT] ❌ Aucun token trouvé")
+        return None, None
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        user_id = payload.get("user_id")
+        role = payload.get("role")
+        
+        print(f"[JWT] ✅ User authentifié: user_id={user_id}, role={role}")
+        return user_id, role
+        
+    except jwt.ExpiredSignatureError:
+        print("[JWT] ❌ Token expiré")
+        return None, None
+    except jwt.InvalidTokenError as e:
+        print(f"[JWT] ❌ Token invalide: {e}")
+        return None, None
 patient = Blueprint("patient", __name__, url_prefix="/patient")
 
 # ✅ Fonction pour créer une nouvelle connexion RPC à chaque appel
@@ -32,11 +59,15 @@ def accueil():
 @patient.route("/get_unread_count")
 def get_unread_count():
     """Route pour récupérer le nombre de notifications non lues"""
-    patient_id = 1  # À remplacer par session['patient_id']
+    # 🔒 Vérifier authentification
+    user_id, role = get_current_user()
+    
+    if not user_id or role != "PATIENT":
+        return jsonify({"success": False, "count": 0, "error": "UNAUTHORIZED"})
     
     try:
         rpc_server = get_rpc_server()
-        result = rpc_server.get_unread_count(patient_id)
+        result = rpc_server.get_unread_count(user_id)
         return jsonify(result)
     except Exception as e:
         print(f"[GET_UNREAD_COUNT] ❌ Erreur: {e}")
@@ -44,13 +75,17 @@ def get_unread_count():
 @patient.route("/get_notifications")
 def get_notifications():
     """Récupère les notifications du patient"""
-    patient_id = 1  # À remplacer par session['patient_id']
+    # 🔒 Vérifier authentification
+    user_id, role = get_current_user()
+    
+    if not user_id or role != "PATIENT":
+        return jsonify({"success": False, "notifications": [], "error": "UNAUTHORIZED"})
     
     try:
-        print(f"[GET_NOTIFICATIONS] Récupération pour patient {patient_id}")
+        print(f"[GET_NOTIFICATIONS] Récupération pour patient {user_id}")
         
         rpc_server = get_rpc_server()
-        result = rpc_server.get_notifications(patient_id,10)
+        result = rpc_server.get_notifications(user_id,10)
         
         return jsonify(result)
     except Exception as e:
@@ -59,11 +94,16 @@ def get_notifications():
 @patient.route("/mark_notification_read/<int:notif_id>", methods=["POST"])
 def mark_notification_read(notif_id):
     """Marque une notification comme lue"""
+    # 🔒 Vérifier authentification
+    user_id, role = get_current_user()
+    
+    if not user_id or role != "PATIENT":
+        return jsonify({"success": False, "error": "UNAUTHORIZED"})
     try:
         print(f"[MARK_READ] Notification {notif_id}")
         
         rpc_server = get_rpc_server()
-        result = rpc_server.mark_notification_as_read(notif_id)
+        result = rpc_server.mark_notification_as_read(user_id,notif_id)
         
         return jsonify(result)
     except Exception as e:
@@ -71,12 +111,15 @@ def mark_notification_read(notif_id):
         return jsonify({"success": False})
 @patient.route("/dashboard")
 def dashboard():
-    patient_id = 1  # à remplacer par session['patient_id']
-
+    user_id, role = get_current_user()
+    
+    if not user_id or role != "PATIENT":
+        print("[AUTH] ❌ Accès refusé au dashboard")
+        return redirect("http://localhost:5000/login")
     try:
         # Appel RPC
         rpc_server = get_rpc_server()
-        rpc_data = rpc_server.get_dashboard(patient_id)
+        rpc_data = rpc_server.get_dashboard(user_id)
         patient_name = rpc_data['patient_info']['nom']
         upcoming_appointments = rpc_data['upcoming_appointments']
         last_consults = rpc_data['past_appointments']
@@ -95,33 +138,19 @@ def dashboard():
     )
 @patient.route('/rdv/details/<int:rdv_id>', methods=['GET'])
 def get_rdv_details(rdv_id):
+    # 🔒 Vérifier authentification
+    user_id, role = get_current_user()
+    
+    if not user_id or role != "PATIENT":
+        return jsonify({'success': False, 'message': 'UNAUTHORIZED'}), 403
+    
     try:
         print("="*50)
         print(f"[RDV_DETAILS] Récupération détails pour RDV: {rdv_id}")
         
-        patient_id = 1  # À remplacer par session['patient_id']
-        
-        # Vérifier que le RDV appartient au patient (sécurité)
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT patient_id FROM rendezvous WHERE id = %s
-        """, (rdv_id,))
-        rdv_patient = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        
-        if not rdv_patient or rdv_patient[0] != patient_id:
-            return jsonify({
-                'success': False,
-                'message': 'Accès non autorisé'
-            }), 403
-
-        # 🔴 CORRECTION : Créer une connexion RPC
-        rpc_server = get_rpc_server()  # ← AJOUTEZ CETTE LIGNE !
-        
-        # Appel RPC
-        result = rpc_server.get_rendezvous_details(rdv_id)
+        # ✅ La vérification de propriété est faite dans le RPC
+        rpc_server = get_rpc_server()
+        result = rpc_server.get_rendezvous_details(user_id,rdv_id)
         
         print(f"[RDV_DETAILS] Résultat RPC: {result}")
         
@@ -144,19 +173,21 @@ def get_rdv_details(rdv_id):
             'success': False,
             'message': f'Erreur serveur: {str(e)}'
         }), 500
-
 @patient.route("/mes_rdv")
 def mes_rdv():
-    patient_id = 1  # à remplacer par session['patient_id']
+    user_id, role = get_current_user()
+    
+    if not user_id or role != "PATIENT":
+        return redirect("http://localhost:5000/login")
 
     try:
         print("="*50)
-        print(f"[ROUTE] Récupération RDV pour patient_id: {patient_id}")
+        print(f"[ROUTE] Récupération RDV pour patient_id: {user_id}")
         print("="*50)
         
         # Appel RPC
         rpc_server = get_rpc_server()
-        rpc_data = rpc_server.get_all_appointments(patient_id)
+        rpc_data = rpc_server.get_all_appointments(user_id)
         
         print(f"[ROUTE] Type de rpc_data: {type(rpc_data)}")
         print(f"[ROUTE] rpc_data reçu: {rpc_data}")
@@ -234,6 +265,10 @@ def mes_rdv():
 
 @patient.route("/update_appointment", methods=["POST"])
 def update_appointment():
+    user_id, role = get_current_user()
+    
+    if not user_id or role != "PATIENT":
+        return jsonify({"success": False, "message": "UNAUTHORIZED"})
     try:
         # Récupérer les données du formulaire
         appointment_id = request.form.get("id")
@@ -242,7 +277,6 @@ def update_appointment():
         time_str = request.form.get("time")
         notes = request.form.get("notes", "")
         
-        patient_id = 1  # À remplacer par l'ID du patient connecté
 
         print("="*50)
         print(f"[UPDATE] Mise à jour RDV:")
@@ -250,7 +284,7 @@ def update_appointment():
         print(f"  - Médecin: {medecin_id}")
         print(f"  - Date: {date}")
         print(f"  - Heure: {time_str}")
-        print(f"  - Patient: {patient_id}")
+        print(f"  - Patient: {user_id}")
 
         # Validation
         if not (appointment_id and medecin_id and date and time_str):
@@ -262,12 +296,13 @@ def update_appointment():
         # Appel RPC
         rpc_server = get_rpc_server()
         result = rpc_server.update_appointment(
+            user_id,
             appointment_id, 
             medecin_id, 
             date, 
             time_str, 
-            notes, 
-            patient_id
+            notes
+            
         )
         
         print(f"[UPDATE] ✅ Résultat RPC: {result}")
@@ -284,17 +319,20 @@ def update_appointment():
 
 @patient.route("/cancel_appointment", methods=["POST"])
 def cancel_appointment():
+    user_id, role = get_current_user()
+    
+    if not user_id or role != "PATIENT":
+        return jsonify({"success": False, "message": "UNAUTHORIZED"})
     try:
         # Récupérer les données
         data = request.get_json()
         appointment_id = data.get("appointment_id")
         
-        patient_id = 1  # À remplacer par session['patient_id']
 
         print("="*50)
         print(f"[CANCEL] Annulation RDV:")
         print(f"  - RDV ID: {appointment_id}")
-        print(f"  - Patient ID: {patient_id}")
+        print(f"  - Patient ID: {user_id}")
 
         # Validation
         if not appointment_id:
@@ -305,7 +343,7 @@ def cancel_appointment():
 
         # Appel RPC
         rpc_server = get_rpc_server()
-        result = rpc_server.cancel_appointment(appointment_id)
+        result = rpc_server.cancel_appointment(user_id,appointment_id)
         
         print(f"[CANCEL] ✅ Résultat RPC: {result}")
         return jsonify(result)
@@ -321,16 +359,19 @@ def cancel_appointment():
 
 @patient.route("/profile")
 def profile():
-    patient_id = 1  # à remplacer par session['patient_id']
+    user_id, role = get_current_user()
+    
+    if not user_id or role != "PATIENT":
+        return redirect("http://localhost:5000/login")
 
     try:
         print("="*50)
         print(f"[PROFILE] Appel RPC pour profil patient:")
-        print(f"  - Patient ID: {patient_id}")
+        print(f"  - Patient ID: {user_id}")
 
         # Appel RPC
         rpc_server = get_rpc_server()
-        rpc_data = rpc_server.get_profile_local(patient_id)
+        rpc_data = rpc_server.get_profile_local(user_id)
         
         print(f"[PROFILE] ✅ Données RPC reçues: {rpc_data}")
         
@@ -364,14 +405,15 @@ def profile():
 
 @patient.route("/update_profile", methods=["POST"])
 def update_profile():
+    user_id, role = get_current_user()
+    
+    if not user_id or role != "PATIENT":
+        return jsonify({"success": False, "message": "UNAUTHORIZED"})
     try:
         # Récupérer les données
         nom = request.form.get("nom", "").strip()
         email = request.form.get("email", "").strip()
         telephone = request.form.get("telephone", "").strip()
-        
-        patient_id = 1  # À remplacer par l'ID du patient connecté
-
         print("="*50)
         print(f"[UPDATE_PROFILE] Appel RPC pour mise à jour profil")
 
@@ -384,7 +426,7 @@ def update_profile():
 
         # Appel RPC
         rpc_server = get_rpc_server()
-        result = rpc_server.update_profile(patient_id, nom, email, telephone)
+        result = rpc_server.update_profile(user_id,nom, email, telephone)
         
         print(f"[UPDATE_PROFILE] Résultat: {result}")
         return jsonify(result)
@@ -409,13 +451,11 @@ def prise_rdv():
 
 @patient.route("/get_doctors")
 def get_doctors():
-    patient_id = 1  # à remplacer par session['patient_id']
     specialization_id = request.args.get('specialization')
 
     try:
         print("="*50)
         print(f"[GET_DOCTORS] Récupération médecins:")
-        print(f"  - Patient: {patient_id}")
         print(f"  - Spécialisation: {specialization_id}")
 
         if not specialization_id:
@@ -450,8 +490,11 @@ def get_appointment_review(appointment_id):
     """
     Récupère l'avis existant pour un rendez-vous (si existe)
     """
+    user_id, role = get_current_user()
+    
+    if not user_id or role != "PATIENT":
+        return jsonify({"success": False, "message": "UNAUTHORIZED"}), 403
     try:
-        patient_id = 1  # À remplacer par session['patient_id']
         
         print(f"[GET_REVIEW] Vérification avis pour RDV {appointment_id}")
         
@@ -466,7 +509,7 @@ def get_appointment_review(appointment_id):
                 a.date_avis
             FROM avis a
             WHERE a.rendezvous_id = %s AND a.patient_id = %s
-        """, (appointment_id, patient_id))
+        """, (appointment_id, user_id))
         
         existing_review = cursor.fetchone()
         cursor.close()
@@ -496,15 +539,16 @@ def get_appointment_review(appointment_id):
             "success": False,
             "message": str(e)
         }), 500
-
-
 @patient.route("/submit_review", methods=["POST"])
 def submit_review():
     """
     Route pour soumettre un avis patient
     """
+    user_id, role = get_current_user()
+    
+    if not user_id or role != "PATIENT":
+        return jsonify({"success": False, "message": "UNAUTHORIZED"}), 403
     try:
-        patient_id = 1  # À remplacer par session['patient_id']
         
         # Récupérer les données JSON
         data = request.get_json()
@@ -515,7 +559,7 @@ def submit_review():
         
         print("="*50)
         print(f"[SUBMIT_REVIEW] Soumission d'avis:")
-        print(f"  - Patient: {patient_id}")
+        print(f"  - Patient: {user_id}")
         print(f"  - RDV: {appointment_id}")
         print(f"  - Note: {rating}")
         print(f"  - Commentaire: {comment[:50] if comment else 'N/A'}...")
@@ -546,7 +590,7 @@ def submit_review():
             SELECT medecin_id, statut 
             FROM rendezvous 
             WHERE id = %s AND patient_id = %s
-        """, (appointment_id, patient_id))
+        """, (appointment_id, user_id))
         
         rdv_info = cursor.fetchone()
         cursor.close()
@@ -563,7 +607,6 @@ def submit_review():
         # Appel RPC pour enregistrer l'avis
         rpc_server = get_rpc_server()
         result = rpc_server.save_patient_review(
-            patient_id,
             medecin_id,
             appointment_id,
             rating,
@@ -624,7 +667,10 @@ def get_available_slots():
 
 @patient.route("/book_appointment", methods=["POST"])
 def book_appointment_route():
-    patient_id = 1  # à remplacer par session['patient_id']
+    user_id, role = get_current_user()
+    
+    if not user_id or role != "PATIENT":
+        return jsonify({"success": False, "message": "UNAUTHORIZED"})
 
     try:
         # Récupérer les données du formulaire
@@ -635,7 +681,7 @@ def book_appointment_route():
 
         print("="*50)
         print(f"[BOOK] Prise de RDV:")
-        print(f"  - Patient ID: {patient_id}")
+        print(f"  - Patient ID: {user_id}")
         print(f"  - Médecin ID: {doctor_id}")
         print(f"  - Date: {consultation_date}")
         print(f"  - Heure: {consultation_time}")
@@ -651,7 +697,7 @@ def book_appointment_route():
         # Appel RPC
         rpc_server = get_rpc_server()
         result = rpc_server.book_appointment(
-            patient_id, 
+            user_id,
             doctor_id, 
             consultation_date, 
             consultation_time,
@@ -672,13 +718,16 @@ def book_appointment_route():
 
 @patient.route("/get_honoraires")
 def get_honoraires():
-    patient_id = 1  # à remplacer par session['patient_id']
+    user_id, role = get_current_user()
+    
+    if not user_id or role != "PATIENT":
+        return jsonify({"success": False, "message": "UNAUTHORIZED"})
     doctor_id = request.args.get('doctor_id')
 
     try:
         print("="*50)
         print(f"[GET_HONORAIRES] Récupération honoraires:")
-        print(f"  - Patient: {patient_id}")
+        print(f"  - Patient: {user_id}")
         print(f"  - Médecin: {doctor_id}")
 
         if not doctor_id:
@@ -720,13 +769,16 @@ def get_honoraires():
 
 @patient.route("/get_available_dates")
 def get_available_dates():
-    patient_id = 1  # à remplacer par session['patient_id']
+    user_id, role = get_current_user()
+    
+    if not user_id or role != "PATIENT":
+        return jsonify({"success": False, "message": "UNAUTHORIZED"})
     doctor_id = request.args.get("doctor_id")
 
     try:
         print("="*50)
         print(f"[GET_AVAILABLE_DATES] Récupération dates disponibles:")
-        print(f"  - Patient: {patient_id}")
+        print(f"  - Patient: {user_id}")
         print(f"  - Médecin: {doctor_id}")
 
         if not doctor_id:

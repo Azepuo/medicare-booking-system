@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion - Medicare</title>
-    <link rel="stylesheet" href="{{ url_for('', filename='css/login.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth/login.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
 
 <body>
+
     <div class="container">
 
         <div class="left">
@@ -19,36 +20,41 @@
         </div>
 
         <div class="right">
-            <form method="POST" class="login-box">
-
+            <form id="loginForm" class="login-box">
                 <h2>Se connecter</h2>
 
-                {% if error %}
-                    <div class="error-msg">{{ error }}</div>
-                {% endif %}
+                <div id="login_error" style="color:red; display:none; margin-bottom:10px;"></div>
 
-                <div class="input-group">
-                    <input type="email" name="email" placeholder=" " required>
+                    <div class="input-group">
+                    <input id="login_email" name="login_email" type="email" placeholder=" " required>
                     <label>Email</label>
                 </div>
 
                 <div class="input-group">
-                    <input type="password" name="password" placeholder=" " required>
+                    <input id="login_password" name="login_password" type="password" placeholder=" " required>
                     <label>Mot de passe</label>
                 </div>
 
+            
                 <button type="submit" class="btn">Connexion</button>
 
                 <p class="register-text">
-                    Pas de compte ? 
-                    <a href="{{ url_for('auth.register') }}">Créer un compte</a>
+                Pas de compte ? 
+                <a href="{{ url_for('auth.register') }}">Créer un compte</a>
+
                 </p>
 
-                <a href="{{ url_for('main.index') }}" class="link-services">← Retour à l'accueil</a>
+                <a href="{{ url_for('auth.accueil') }}" class="link-services">← Retour à l'accueil</a>
 
+            
             </form>
+
         </div>
 
     </div>
+
+
+    <script src="/socket.io/socket.io.js" defer></script>
+    <script src="{{ url_for('static', filename='js/auth/auth.js') }}" defer></script>
 </body>
 </html>

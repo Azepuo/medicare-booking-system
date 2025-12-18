@@ -6,7 +6,33 @@ console.log('🔍 Statuts uniques trouvés:', [...new Set(appointments.map(a => 
 
 let currentFilter = 'tous';
 let searchQuery = '';
-
+/**
+ * 1️⃣ FONCTION POUR RECHARGER LES RENDEZ-VOUS
+ * Appelez cette fonction après création/modification/annulation
+ */
+async function rechargerRendezVous() {
+    try {
+        console.log('🔄 Rechargement des rendez-vous...');
+        
+        const response = await fetch('/patient/get_all_appointments');
+        const data = await response.json();
+        
+        if (Array.isArray(data)) {
+            // Mettre à jour le tableau global
+            appointments = data;
+            
+            // Rafraîchir l'affichage
+            renderAppointments();
+            updateStats();
+            
+            console.log('✅ Rendez-vous rechargés:', data.length);
+        } else {
+            console.error('❌ Format de données invalide');
+        }
+    } catch (error) {
+        console.error('❌ Erreur rechargement:', error);
+    }
+}
 // Fonction pour normaliser les statuts
 function normalizeStatus(status) {
     const statusMap = {
@@ -40,25 +66,45 @@ function hideAppointmentForm() {
 }
 
 // Ajouter un rendez-vous
-function addNewAppointment(patientName, patientAge, doctor, appointmentDate, appointmentTime, reason) {
-    const doctorNames = { dr_dupont: "Dr. Dupont" };
-    const doctorSpecs = { dr_dupont: "Cardiologie" };
-
-    const newAppointment = {
-        id: appointments.length + 1,
-        medecin_name: doctorNames[doctor] || "Médecin inconnu",
-        medecin_spec: doctorSpecs[doctor] || "Spécialité non définie",
-        date: appointmentDate,
-        time: appointmentTime,
-        clinic: "Clinique Principale",
-        notes: reason || "",
-        status: "En attente", // CORRECTION: Utiliser "En attente" pour la cohérence
-    };
-
-    appointments.push(newAppointment);
-    renderAppointments();
-    updateStats();
-    hideAppointmentForm();
+/**
+ * 2️⃣ MODIFIER LA FONCTION addNewAppointment
+ * Remplacez votre fonction existante par celle-ci
+ */
+async function addNewAppointment(doctorId, appointmentDate, appointmentTime, reason) {
+    try {
+        console.log('📝 Création du rendez-vous...');
+        
+        const formData = new FormData();
+        formData.append('doctor_id', doctorId);
+        formData.append('consultation_date', appointmentDate);
+        formData.append('consultation_time', appointmentTime);
+        formData.append('reason', reason || '');
+        
+        const response = await fetch('/patient/book_appointment', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('✅ Rendez-vous créé avec succès !');
+            hideAppointmentForm();
+            
+            // ⭐ RECHARGER LES DONNÉES AUTOMATIQUEMENT
+            await rechargerRendezVous();
+            
+            // Optionnel : Recharger aussi les notifications
+            loadNotificationCount();
+            
+        } else {
+            showToast('❌ ' + (result.message || 'Erreur lors de la création'), true);
+        }
+        
+    } catch (error) {
+        console.error('❌ Erreur:', error);
+        showToast('❌ Erreur de connexion', true);
+    }
 }
 function modifier(appointment) {
     console.log('🔧 Modification du RDV:', appointment);
@@ -260,46 +306,50 @@ function modifier(appointment) {
     }
 
     // Soumission du formulaire
-    document.getElementById('editAppointmentForm').addEventListener('submit', function (e) {
-        e.preventDefault();
+   document.getElementById('editAppointmentForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
 
-        const id = document.getElementById('editId').value;
-        const medecin_id = document.getElementById('editDoctor').value;
-        const date = document.getElementById('editDate').value;
-        const time = document.getElementById('editTime').value;
-        const notes = document.getElementById('editNotes').value;
+    const id = document.getElementById('editId').value;
+    const medecin_id = document.getElementById('editDoctor').value;
+    const date = document.getElementById('editDate').value;
+    const time = document.getElementById('editTime').value;
+    const notes = document.getElementById('editNotes').value;
 
-        if (!medecin_id || !date || !time) {
-            showToast("Veuillez remplir tous les champs", true);
-            return;
-        }
+    if (!medecin_id || !date || !time) {
+        showToast("Veuillez remplir tous les champs", true);
+        return;
+    }
 
-        const formData = new FormData();
-        formData.append('id', id);
-        formData.append('medecin_id', medecin_id);
-        formData.append('date', date);
-        formData.append('time', time);
-        formData.append('notes', notes);
+    const formData = new FormData();
+    formData.append('id', id);
+    formData.append('medecin_id', medecin_id);
+    formData.append('date', date);
+    formData.append('time', time);
+    formData.append('notes', notes);
 
-        fetch('/patient/update_appointment', {
+    try {
+        const response = await fetch('/patient/update_appointment', {
             method: 'POST',
             body: formData
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    showToast("✅ Rendez-vous mis à jour !");
-                    hideEditForm();
-                    setTimeout(() => location.reload(), 1500);
-                } else {
-                    showToast("❌ " + (data.message || "Erreur"), true);
-                }
-            })
-            .catch(err => {
-                showToast("❌ Erreur serveur", true);
-                console.error(err);
-            });
-    });
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast("✅ Rendez-vous mis à jour !");
+            hideEditForm();
+            
+            // ⭐ RECHARGER LES DONNÉES
+            await rechargerRendezVous();
+            
+        } else {
+            showToast("❌ " + (data.message || "Erreur"), true);
+        }
+    } catch (err) {
+        showToast("❌ Erreur serveur", true);
+        console.error(err);
+    }
+});
 }
 
 // Ajoutez la fonction showToast si elle n'existe pas
@@ -356,46 +406,42 @@ function hideEditForm() {
     if (f) f.remove();
 }
 
-function cancelAppointment(id) {
+async function cancelAppointment(id) {
     if (confirm('Êtes-vous sûr de vouloir annuler ce rendez-vous ?')) {
         console.log(`🚫 Tentative d'annulation du RDV ${id}`);
 
-        // Envoyer la requête au serveur
-        fetch('/patient/cancel_appointment', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ appointment_id: id })
-        })
-            .then(res => {
-                console.log('Réponse reçue, statut:', res.status);
-                if (!res.ok) {
-                    throw new Error('Erreur réseau: ' + res.status);
-                }
-                return res.json();
-            })
-            .then(data => {
-                console.log('Réponse du serveur:', data);
-                if (data.success) {
-                    // Mettre à jour le statut localement
-                    const idx = appointments.findIndex(a => a.id === id);
-                    if (idx !== -1) {
-                        appointments[idx].status = 'Annulé';
-                        renderAppointments();
-                        updateStats();
-                        showToast("✅ Rendez-vous annulé avec succès !");
-                    }
-                } else {
-                    showToast("❌ Erreur: " + (data.message || "Échec de l'annulation"), true);
-                }
-            })
-            .catch(err => {
-                console.error('Erreur lors de l\'annulation:', err);
-                showToast("❌ Erreur serveur lors de l'annulation", true);
+        try {
+            const response = await fetch('/patient/cancel_appointment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ appointment_id: id })
             });
+            
+            if (!response.ok) {
+                throw new Error('Erreur réseau: ' + response.status);
+            }
+            
+            const data = await response.json();
+            console.log('Réponse du serveur:', data);
+            
+            if (data.success) {
+                showToast("✅ Rendez-vous annulé avec succès !");
+                
+                // ⭐ RECHARGER LES DONNÉES
+                await rechargerRendezVous();
+                
+            } else {
+                showToast("❌ Erreur: " + (data.message || "Échec de l'annulation"), true);
+            }
+        } catch (err) {
+            console.error('Erreur lors de l\'annulation:', err);
+            showToast("❌ Erreur serveur lors de l'annulation", true);
+        }
     }
 }
+
 
 // Stats - VERSION CORRIGÉE
 function updateStats() {
@@ -744,8 +790,12 @@ async function sendReviewToBackend(appointmentId, rating, comment) {
         const data = await response.json();
         
         if (response.ok) {
-            displayUserAlert('✅ Votre avis a été Enregistrer avec succès!', 'success');
+            displayUserAlert('✅ Votre avis a été enregistré avec succès!', 'success');
             console.log('Avis publié:', data);
+            
+            // ⭐ RECHARGER LES DONNÉES (pour mettre à jour le statut)
+            await rechargerRendezVous();
+            
         } else {
             displayUserAlert('❌ Erreur lors de la publication', 'danger');
         }

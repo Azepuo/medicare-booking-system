@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Medicare Booking - Accueil</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth/index.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -15,10 +15,17 @@
     <nav>
         <a href="#features">Fonctionnalités</a>
         <a href="#about">À propos</a>
-        <a href="{{ url_for('auth.login') }}" class="btn-nav">Se connecter</a>
-        <a href="{{ url_for('auth.register') }}" class="btn-nav register-btn">S'inscrire</a>
+
+        {% if is_authenticated %}
+            <a href="/dashboard" class="btn-nav">Dashboard</a>
+            <a href="{{ url_for('auth.logout') }}" class="btn-nav register-btn">Déconnexion</a>
+        {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn-nav">Se connecter</a>
+            <a href="{{ url_for('auth.register') }}" class="btn-nav register-btn">S'inscrire</a>
+        {% endif %}
     </nav>
 </header>
+
 
 <main>
     <!-- Hero -->

@@ -1,4 +1,4 @@
-from database.connection import create_connection
+from database.connection import get_db_connection
 
 class Medecin:
     def __init__(self, id=None, nom=None, specialite=None, email=None, annees_experience=None, tarif_consultation=None, description=None):
@@ -13,7 +13,7 @@ class Medecin:
     @staticmethod
     def get_all():
         """Récupérer tous les médecins"""
-        connection = create_connection()
+        connection = get_db_connection()
         if not connection:
             return []
         
@@ -33,7 +33,7 @@ class Medecin:
     @staticmethod
     def get_by_id(medecin_id):
         """Récupérer un médecin par son ID"""
-        connection = create_connection()
+        connection = get_db_connection()
         if not connection:
             return None
         
@@ -53,7 +53,7 @@ class Medecin:
     @staticmethod
     def get_by_specialite(specialite):
         """Récupérer les médecins par spécialité"""
-        connection = create_connection()
+        connection = get_db_connection()
         if not connection:
             return []
         
@@ -72,7 +72,7 @@ class Medecin:
 
     def save(self):
         """Sauvegarder le médecin (create or update)"""
-        connection = create_connection()
+        connection = get_db_connection()
         if not connection:
             return False
         

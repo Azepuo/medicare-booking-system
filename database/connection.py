@@ -1,34 +1,40 @@
+# C:\Users\pc\medicare-db\database\connection.py
 import mysql.connector
 from mysql.connector import Error
 import os
 from dotenv import load_dotenv
 
+# Charger les variables d'environnement depuis le fichier .env
 load_dotenv()
 
-def create_connection():
-    """Créer une connexion à la base de données"""
+def get_db_connection():
+    """
+    Crée et retourne une connexion à la base de données MySQL.
+    """
     try:
         connection = mysql.connector.connect(
             host=os.getenv('DB_HOST', 'localhost'),
-            port=os.getenv('DB_PORT', '3306'),
+            port=int(os.getenv('DB_PORT', '3306')),  # Convertir en entier
             database=os.getenv('DB_NAME', 'medicare_unified'),
             user=os.getenv('DB_USER', 'root'),
             password=os.getenv('DB_PASSWORD', '')
         )
         return connection
     except Error as e:
-        print(f" Erreur de connexion à la base: {e}")
+        print(f"Erreur de connexion à la base : {e}")
         return None
 
 def test_connection():
-    """Tester la connexion à la base de données"""
-    conn = create_connection()
+    """
+    Teste la connexion à la base de données.
+    """
+    conn = get_db_connection()
     if conn:
-        print(" Connexion à la base de données réussie")
+        print("Connexion réussie à la base de données")
         conn.close()
         return True
     else:
-        print(" Échec de connexion à la base de données")
+        print("Échec de connexion à la base de données")
         return False
 
 if __name__ == "__main__":
