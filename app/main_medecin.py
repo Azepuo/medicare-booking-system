@@ -7,8 +7,8 @@ from app.routes.medcin.medecin_routes import medecin
 from app.rpc_medecin.disponibilites_rpc import disponibilites_rpc
 
 # Routes disponibilités (normal)
-from app.routes.routes_disponibilites import dispo
-from app.rpc_medecin.patients_rpc import patients_rpc
+
+from app.rpc.auth_rpc.auth_rpc import auth_rpc
 
 
 def create_app():
@@ -22,21 +22,16 @@ def create_app():
     app.register_blueprint(disponibilites_rpc)
 
     # Blueprint des Disponibilités normales
-    app.register_blueprint(dispo, url_prefix="/medecin")
+   
 
     # Importez le blueprint RP
-
+    app.register_blueprint(auth_rpc)
 # Enregistrez-le
-    app.register_blueprint(patients_rpc)
-
-    # Route d'accueil
-    @app.route('/')
-    def index():
-        return "<h1>Accueil OK</h1>"
+   
 
     return app
 
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(debug=True,port=5001)  # Port 5001 pour éviter conflit avec d'autres services
+    app.run(debug=True,port=5002)  # Port 5002 pour éviter conflit avec d'autres services

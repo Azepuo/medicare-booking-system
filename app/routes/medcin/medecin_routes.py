@@ -6,14 +6,31 @@ from models.medecin import Medecin
 from database.connection import create_connection
 from datetime import date
 from models.disponibilite import Disponibilite
-from flask import session
+# app/routes/medecin_routes.py
+from flask import Blueprint, request, render_template
+import jwt
+from app.rpc.auth_rpc.auth_rpc import SECRET_KEY
+from models.User import User
 
 medecin = Blueprint('medecin', __name__)
 
 # ------------------ PAGES ------------------
 @medecin.route('/dashboard')
 def dashboard():
-    return render_template('medecin/dashboard.html')
+    token = request.cookies.get("access_token")
+    if not token:
+        return "Utilisateur non connecté", 401
+
+    payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+    user = User.get_by_id(payload["user_id"])
+
+    return render_template(
+        "medecin/dashboard.html",
+        user_id=payload["user_id"],
+        role=payload["role"],
+        username=user.nom if user else "Inconnu",
+        email=user.email if user else ""
+    )
 
 @medecin.route('/patients')
 def patients_page():  # ✅ CORRECT : patients_page

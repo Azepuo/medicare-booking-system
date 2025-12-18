@@ -1,4 +1,4 @@
-from database.connection_m import create_connection
+from database.connection import create_connection
 
 
 class Patient:
