@@ -1,0 +1,16 @@
+# Ignorer les fichiers Python compilés
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignorer les fichiers d'environnement ou de configuration locale
+.env
+*.log
+
+# Ignorer les fichiers générés par VS Code
+.vscode/
+*.code-workspace
+
+# Ignorer les fichiers de cache Flask
+instance/
+*.db

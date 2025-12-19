@@ -1,54 +1,118 @@
-from flask import Flask, render_template, g, request, url_for
+from flask import Flask, render_template, request, redirect, g
 from app.routes.admin_rt.medecin_routes import medecins_bp
 from app.routes.admin_rt.patient_routes import patients_bp
 from app.routes.admin_rt.rdv_routes import rdv_bp
 from app.routes.admin_rt.factures_routes import facture_bp
 from app.routes.admin_rt.account_routes import admin_bp
 from app.routes.admin_rt.tasks_routes import tasks_bp
-from flask import redirect, url_for
+
 import xmlrpc.client
+import jwt
 import subprocess
 import sys
 import os
+import time
 
+# ===============================
+# CONFIG
+# ===============================
 app = Flask(__name__)
-app.secret_key = "un_secret_tres_long_et_complexe"
+app.secret_key = "secret123"
 
-# ==========================================================
-# 🚀 Lancer automatiquement le serveur RPC
-# ==========================================================
+SECRET_KEY = "secret123"
+LOGIN_URL = "http://127.0.0.1:5000/login"
+RPC_URL = "http://localhost:8002"
+
+# ===============================
+# 🚀 AUTO START RPC SERVER
+# ===============================
 def start_rpc_server():
-    rpc_path = os.path.join(os.getcwd(), "rpc_server_admin.py")
+    rpc_file = os.path.join(os.getcwd(), "rpc_server_admin.py")
+    subprocess.Popen([sys.executable, rpc_file])
+    time.sleep(1)  # laisser le temps au RPC de démarrer
 
-    print(f"🚀 Lancement automatique du serveur RPC : {rpc_path}")
+start_rpc_server()
 
-    # Pas de PIPE pour voir les erreurs du RPC dans le terminal
-    subprocess.Popen(
-        [sys.executable, rpc_path],
-        stdout=None,
-        stderr=None
+# ===============================
+# RPC CLIENT
+# ===============================
+rpc = xmlrpc.client.ServerProxy(RPC_URL, allow_none=True)
+
+# ===============================
+# 🔐 AUTH SIMPLE (JWT)
+# ===============================
+@app.before_request
+def load_user():
+    g.user_id = None
+    g.role = None
+    g.admin = None
+
+    if request.path.startswith("/static"):
+        return
+
+    token = request.cookies.get("access_token")
+    if not token:
+        return
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        g.user_id = payload.get("user_id")
+        g.role = payload.get("role")
+
+        if g.role == "ADMIN":
+            try:
+                g.admin = rpc.get_admin()
+            except Exception:
+                g.admin = None
+
+    except Exception:
+        pass
+
+# ===============================
+# 🌍 GLOBALS TEMPLATES
+# ===============================
+@app.context_processor
+def inject_globals():
+    return dict(
+        admin=g.admin,
+        user_id=g.user_id,
+        role=g.role
     )
 
-# ==========================================================
-# 🔗 Connexion au serveur RPC
-# ==========================================================
-rpc = xmlrpc.client.ServerProxy("http://localhost:8002", allow_none=True)
+@app.context_processor
+def inject_stats():
+    try:
+        return dict(stats=rpc.get_stats())
+    except Exception:
+        return dict(stats={
+            "total_medecins": 0,
+            "total_patients": 0,
+            "rdv_aujourd_hui": 0
+        })
 
-# ==========================================================
-# 📊 Tableau de bord admin
-# ==========================================================
+# ===============================
+# 📊 DASHBOARD ADMIN
+# ===============================
 @app.route("/admin/dashboard")
 def dashboard():
-    stats = rpc.get_stats()
-    taches = rpc.liste_taches()
-    rdv_aujourdhui = rpc.liste_rdv_aujourdhui()
+
+    if not g.user_id or g.role != "ADMIN":
+        return redirect(LOGIN_URL)
+
+    try:
+        stats = rpc.get_stats()
+        taches = rpc.liste_taches()
+        rdv_aujourdhui = rpc.liste_rdv_aujourdhui()
+    except Exception:
+        stats = {}
+        taches = []
+        rdv_aujourdhui = []
 
     search = request.args.get("search", "")
-
     if search:
         rdv_aujourdhui = [
             r for r in rdv_aujourdhui
-            if search.lower() in r["patient_nom"].lower()
+            if search.lower() in r.get("patient_nom", "").lower()
         ]
 
     return render_template(
@@ -59,9 +123,9 @@ def dashboard():
         search=search
     )
 
-# ==========================================================
-# 📌 Enregistrement des BLUEPRINTS ADMIN
-# ==========================================================
+# ===============================
+# BLUEPRINTS
+# ===============================
 app.register_blueprint(medecins_bp, url_prefix="/admin/medecins")
 app.register_blueprint(patients_bp, url_prefix="/admin/patients")
 app.register_blueprint(rdv_bp, url_prefix="/admin/rendez_vous")
@@ -69,39 +133,9 @@ app.register_blueprint(facture_bp, url_prefix="/admin/facturation")
 app.register_blueprint(admin_bp, url_prefix="/admin")
 app.register_blueprint(tasks_bp)
 
-# ==========================================================
-# 🌍 Page d’accueil
-# ==========================================================
-@app.route("/")
-def accueil():
-    return redirect(url_for("dashboard"))
-# ==========================================================
-# 🙍 Injecter admin dans tous les templates
-# ==========================================================
-@app.context_processor
-def inject_admin():
-    return dict(admin=g.admin)
-
-# ==========================================================
-# 🔄 Charger admin avant chaque requête
-# ==========================================================
-@app.before_request
-def load_admin():
-    if request.path.startswith("/static"):
-        return
-    g.admin = rpc.get_admin()
-
-# ==========================================================
-# 📊 Injecter les statistiques globales
-# ==========================================================
-@app.context_processor
-def inject_stats():
-    return dict(stats=rpc.get_stats())
-
-# ==========================================================
-# 🚀 LANCEMENT SERVEUR FLASK
-# ==========================================================
+# ===============================
+# START
+# ===============================
 if __name__ == "__main__":
-    start_rpc_server()  # 🚀 Démarrage automatique du RPC
-    print("🔥 Serveur Flask admin démarré sur http://localhost:5001")
-    app.run(debug=True, use_reloader=False)
+    print("🔥 Admin → http://127.0.0.1:5003/admin/dashboard")
+    app.run(port=5003, debug=True)
