@@ -93,3 +93,4 @@ def update_admin_password():
         flash("✅ Mot de passe mis à jour avec succès.", "success")
     
     return redirect(url_for("admin_bp.admin_account"))
+
