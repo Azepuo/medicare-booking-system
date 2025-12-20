@@ -1,0 +1,212 @@
+{% extends 'medecin/base.html' %}
+{% block title %}Nouvelle Disponibilité{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>Nouvelle Disponibilité</h2>
+  <form id="dispoAddForm">
+    <div class="form-group">
+      <label>Jour de la semaine *</label>
+      <select name="jour_semaine" id="jour_semaine" class="input" required>
+        <option value="">Sélectionner un jour...</option>
+        <option value="Lundi">Lundi</option>
+        <option value="Mardi">Mardi</option>
+        <option value="Mercredi">Mercredi</option>
+        <option value="Jeudi">Jeudi</option>
+        <option value="Vendredi">Vendredi</option>
+        <option value="Samedi">Samedi</option>
+        <option value="Dimanche">Dimanche</option>
+      </select>
+    </div>
+    
+    <div class="form-row">
+      <div class="form-group">
+        <label>Heure de début *</label>
+        <input type="time" id="heure_debut" class="input" required>
+      </div>
+      
+      <div class="form-group">
+        <label>Heure de fin *</label>
+        <input type="time" id="heure_fin" class="input" required>
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label id="dureeLabel">Durée: --</label>
+    </div>
+    
+    <div style="display:flex; gap:10px; margin-top:20px;">
+      <button type="submit" class="btn primary">Enregistrer</button>
+      <a href="/medecin/disponibilites" class="btn secondary">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Calculer et afficher la durée
+function calculerEtAfficherDuree() {
+  const debut = document.getElementById('heure_debut').value;
+  const fin = document.getElementById('heure_fin').value;
+  
+  if (debut && fin) {
+    const [h1, m1] = debut.split(':').map(Number);
+    const [h2, m2] = fin.split(':').map(Number);
+    
+    const totalMinutes1 = h1 * 60 + m1;
+    const totalMinutes2 = h2 * 60 + m2;
+    
+    if (totalMinutes2 <= totalMinutes1) {
+      document.getElementById('dureeLabel').innerHTML = 
+        '<span style="color: #dc3545;">⚠ L\'heure de fin doit être après l\'heure de début</span>';
+      return false;
+    }
+    
+    const difference = totalMinutes2 - totalMinutes1;
+    const heures = Math.floor(difference / 60);
+    const minutes = difference % 60;
+    
+    let dureeTexte = '';
+    if (heures > 0) dureeTexte += `${heures}h `;
+    if (minutes > 0) dureeTexte += `${minutes}min`;
+    
+    document.getElementById('dureeLabel').textContent = `Durée: ${dureeTexte}`;
+    return true;
+  }
+  
+  document.getElementById('dureeLabel').textContent = 'Durée: --';
+  return false;
+}
+
+// Soumission du formulaire
+document.getElementById('dispoAddForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  
+  // Validation
+  const jourSemaine = document.getElementById('jour_semaine').value;
+  const heureDebut = document.getElementById('heure_debut').value;
+  const heureFin = document.getElementById('heure_fin').value;
+  
+  if (!jourSemaine) {
+    alert('Veuillez sélectionner un jour');
+    return;
+  }
+  
+  if (!heureDebut || !heureFin) {
+    alert('Veuillez saisir les heures de début et de fin');
+    return;
+  }
+  
+  if (heureDebut >= heureFin) {
+    alert('L\'heure de début doit être avant l\'heure de fin');
+    return;
+  }
+  
+  const payload = {
+    jour_semaine: jourSemaine,
+    heure_debut: heureDebut,
+    heure_fin: heureFin
+  };
+  
+  console.log('Envoi de la disponibilité:', payload);
+  
+  try {
+    const res = await fetch('/medecin/rpc/disponibilites/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+    
+    console.log('Réponse status:', res.status);
+    
+    if (!res.ok) {
+      let errorMessage = `Erreur ${res.status}`;
+      try {
+        const errorData = await res.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch {
+        // Ne rien faire, garder le message par défaut
+      }
+      throw new Error(errorMessage);
+    }
+    
+    const data = await res.json();
+    console.log('Réponse du serveur:', data);
+    
+    if (!data.ok) {
+      throw new Error(data.error || 'Erreur lors de la création de la disponibilité');
+    }
+    
+    alert('✅ Disponibilité créée avec succès');
+    window.location.href = '/medecin/disponibilites';
+    
+  } catch(e) { 
+    console.error('Erreur complète:', e);
+    alert('❌ Erreur: ' + e.message); 
+  }
+});
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+  // Définir les heures par défaut (9h-17h)
+  document.getElementById('heure_debut').value = '09:00';
+  document.getElementById('heure_fin').value = '17:00';
+  
+  // Calculer la durée initiale
+  calculerEtAfficherDuree();
+  
+  // Écouter les changements d'heures
+  document.getElementById('heure_debut').addEventListener('change', calculerEtAfficherDuree);
+  document.getElementById('heure_fin').addEventListener('change', calculerEtAfficherDuree);
+  
+  // Définir le jour d'aujourd'hui par défaut
+  const jours = {
+    0: 'Dimanche',
+    1: 'Lundi',
+    2: 'Mardi',
+    3: 'Mercredi',
+    4: 'Jeudi',
+    5: 'Vendredi',
+    6: 'Samedi'
+  };
+  const aujourdhui = new Date().getDay();
+  const jourAujourdhui = jours[aujourdhui];
+  
+  const selectJour = document.getElementById('jour_semaine');
+  for (let option of selectJour.options) {
+    if (option.value === jourAujourdhui) {
+      option.selected = true;
+      break;
+    }
+  }
+});
+
+// Styles additionnels
+const style = document.createElement('style');
+style.textContent = `
+  .form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 15px;
+  }
+  
+  .form-row .form-group {
+    flex: 1;
+  }
+  
+  #dureeLabel {
+    font-weight: bold;
+    color: #28a745;
+    font-size: 1.1em;
+    padding: 8px 0;
+    border-top: 1px solid #e0e0e0;
+    margin-top: 10px;
+  }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

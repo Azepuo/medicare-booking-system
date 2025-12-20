@@ -1,0 +1,585 @@
+{% extends "medecin/base.html" %}
+
+{% block content %}
+<div class="header-row">
+  <h1 class="h1">Rendez-vous</h1>
+  <div class="header-actions">
+    <button class="btn primary" onclick="window.location.href='/medecin/rdv/add'">
+      <i class="fas fa-plus"></i> Nouveau RDV
+    </button>
+    <button class="btn" onclick="refreshRDV()">
+      <i class="fas fa-sync-alt"></i> Actualiser
+    </button>
+  </div>
+</div>
+
+<!-- Onglets pour filtrer -->
+<div class="tabs mt-15">
+  <button class="tab-btn active" onclick="showTodayRDV()">
+    <i class="fas fa-calendar-day"></i> Aujourd'hui
+  </button>
+  <button class="tab-btn" onclick="showAllRDV()">
+    <i class="fas fa-calendar-week"></i> Tous les RDV
+  </button>
+</div>
+
+<div class="card mt-15">
+  <div class="table-responsive">
+    <table class="table rdv-table">
+      <thead>
+        <tr>
+          <th class="col-hour">Date & Heure</th>
+          <th class="col-patient">Patient</th>
+          <th class="col-motif">Motif</th>
+          <th class="col-contact">Contact</th>
+          <th class="col-status">Statut</th>
+          <th class="col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="rdvTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="grid stats-grid mt-20"> 
+  <div class="stat-card">
+    <div class="stat-icon icon-blue"><i class="fas fa-calendar-day"></i></div>
+    <div>
+      <p class="stat-number" id="totalRDV">0</p>
+      <p class="stat-label">Total RDV</p>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon icon-green"><i class="fas fa-check-circle"></i></div>
+    <div>
+      <p class="stat-number" id="confirmedRDV">0</p>
+      <p class="stat-label">Confirmés</p>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon icon-yellow"><i class="fas fa-hourglass-half"></i></div>
+    <div>
+      <p class="stat-number" id="pendingRDV">0</p>
+      <p class="stat-label">En Attente</p>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon icon-red"><i class="fas fa-times-circle"></i></div>
+    <div>
+      <p class="stat-number" id="cancelledRDV">0</p>
+      <p class="stat-label">Annulés</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Routes API
+const API_ROUTES = {
+  LIST_TODAY: '/medecin/rpc/rdv/list?today=1',
+  LIST_ALL: '/medecin/rpc/rdv/list',
+  LIST_FUTURE: '/medecin/rpc/rdv/list/future',
+  DELETE: '/medecin/rpc/rdv/delete'
+};
+
+let currentView = 'today'; // 'today', 'all', 'future'
+let globalStats = {
+  total: 0,
+  confirmed: 0,
+  pending: 0,
+  cancelled: 0
+};
+
+function escapeHtml(text) {
+  if (!text) return '';
+  return text.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));
+}
+
+function formatDateTime(dateStr) {
+  if (!dateStr) return '';
+  try {
+    const date = new Date(dateStr);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const heures = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    
+    // Afficher la date complète pour les RDV non-d'aujourd'hui
+    const today = new Date();
+    const isToday = date.getDate() === today.getDate() && 
+                    date.getMonth() === today.getMonth() && 
+                    date.getFullYear() === today.getFullYear();
+    
+    if (isToday) {
+      return `${heures}:${minutes}`;
+    } else {
+      return `${day}/${month}/${year} ${heures}:${minutes}`;
+    }
+  } catch (e) {
+    return dateStr;
+  }
+}
+
+async function renderRDV(viewType = 'today') {
+  currentView = viewType;
+  const tbody = document.getElementById('rdvTable');
+  tbody.innerHTML = '<tr><td colspan="6" class="centered-cell">Chargement...</td></tr>';
+  
+  try {
+    let apiUrl;
+    switch(viewType) {
+      case 'today':
+        apiUrl = API_ROUTES.LIST_TODAY;
+        break;
+      case 'all':
+        apiUrl = API_ROUTES.LIST_ALL;
+        break;
+      case 'future':
+        apiUrl = API_ROUTES.LIST_FUTURE;
+        break;
+      default:
+        apiUrl = API_ROUTES.LIST_TODAY;
+    }
+    
+    const res = await fetch(apiUrl);
+    
+    if (!res.ok) {
+      throw new Error(`Erreur ${res.status}: ${res.statusText}`);
+    }
+    
+    const data = await res.json();
+    
+    if (!data.ok) {
+      throw new Error(data.error || 'Erreur serveur');
+    }
+    
+    const rdvs = data.data || [];
+    tbody.innerHTML = '';
+    
+    if (rdvs.length === 0) {
+      let message = 'Aucun rendez-vous';
+      if (viewType === 'today') message = 'Aucun rendez-vous aujourd\'hui';
+      else if (viewType === 'future') message = 'Aucun rendez-vous futur';
+      else message = 'Aucun rendez-vous trouvé';
+      
+      tbody.innerHTML = `<tr><td colspan="6" class="centered-cell">${message}</td></tr>`;
+      return;
+    }
+    
+    rdvs.forEach(rdv => {
+      const tr = document.createElement('tr');
+      tr.dataset.id = rdv.id;
+      tr.dataset.status = rdv.statut || '';
+      
+      tr.innerHTML = `
+        <td class="cell-hour">${formatDateTime(rdv.date_heure)}</td>
+        <td class="cell-patient"><strong>${escapeHtml(rdv.patient_nom || 'N/A')}</strong></td>
+        <td class="cell-motif">${escapeHtml(rdv.notes || 'Non spécifié')}</td>
+        <td class="cell-contact">${escapeHtml(rdv.patient_telephone || 'N/A')}</td>
+        <td class="cell-status">
+          <span class="status-badge ${(rdv.statut || '').toLowerCase().replace(' ', '-')}">
+            ${escapeHtml(rdv.statut || 'Inconnu')}
+          </span>
+        </td>
+        <td class="cell-actions">
+          <div class="actions">
+            <button class="btn action-btn" onclick="goEdit(${rdv.id})">Modifier</button>
+            <button class="btn action-btn danger" onclick="confirmDelete(${rdv.id})">Supprimer</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+    
+    // Mettre à jour les onglets actifs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    if (viewType === 'today') {
+      document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+    } else if (viewType === 'all') {
+      document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+    }
+    
+  } catch (error) {
+    console.error('Erreur renderRDV:', error);
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="centered-cell error-cell">
+          ❌ Erreur: ${escapeHtml(error.message)}
+          <br><br>
+          <button class="btn" onclick="renderRDV(currentView)">Réessayer</button>
+        </td>
+      </tr>
+    `;
+  }
+}
+
+async function loadGlobalStatistics() {
+  try {
+    const res = await fetch(API_ROUTES.LIST_ALL);
+    
+    if (!res.ok) {
+      throw new Error(`Erreur ${res.status}: ${res.statusText}`);
+    }
+    
+    const data = await res.json();
+    
+    if (!data.ok) {
+      throw new Error(data.error || 'Erreur serveur');
+    }
+    
+    const allRDV = data.data || [];
+    
+    // Calculer les statistiques globales
+    globalStats.total = allRDV.length;
+    globalStats.confirmed = allRDV.filter(r => r.statut === 'Confirmé').length;
+    globalStats.pending = allRDV.filter(r => r.statut === 'En attente').length;
+    globalStats.cancelled = allRDV.filter(r => r.statut === 'Annulé').length;
+    
+    // Mettre à jour l'affichage
+    updateStatisticsDisplay();
+    
+  } catch (error) {
+    console.error('Erreur lors du chargement des statistiques globales:', error);
+  }
+}
+
+function updateStatisticsDisplay() {
+  document.getElementById('totalRDV').textContent = globalStats.total;
+  document.getElementById('confirmedRDV').textContent = globalStats.confirmed;
+  document.getElementById('pendingRDV').textContent = globalStats.pending;
+  document.getElementById('cancelledRDV').textContent = globalStats.cancelled;
+}
+
+async function confirmDelete(id) {
+  if (!confirm('Êtes-vous sûr de vouloir supprimer ce rendez-vous ?')) return;
+  
+  try {
+    const res = await fetch(`${API_ROUTES.DELETE}/${id}`, {
+      method: 'DELETE'
+    });
+    
+    const data = await res.json();
+    
+    if (!res.ok) {
+      throw new Error(data.error || 'Erreur suppression');
+    }
+    
+    if (!data.ok) {
+      throw new Error(data.error || 'Erreur suppression');
+    }
+    
+    alert('✅ Rendez-vous supprimé avec succès');
+    // Recharger les statistiques globales et la vue actuelle
+    await loadGlobalStatistics();
+    renderRDV(currentView);
+    
+  } catch (error) {
+    console.error('Erreur suppression:', error);
+    alert('❌ Erreur: ' + error.message);
+  }
+}
+
+function goEdit(id) {
+  window.location.href = `/medecin/rdv/edit/${id}`;
+}
+
+function showTodayRDV() {
+  renderRDV('today');
+}
+
+function showAllRDV() {
+  renderRDV('all');
+}
+
+function refreshRDV() {
+  // Recharger les statistiques globales et la vue actuelle
+  loadGlobalStatistics();
+  renderRDV(currentView);
+}
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+  // Charger les statistiques globales (tous les rendez-vous)
+  loadGlobalStatistics();
+  
+  // Vérifier si on a un paramètre dans l'URL
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('all') === '1') {
+    showAllRDV();
+  } else {
+    showTodayRDV();
+  }
+});
+
+// Actualisation automatique toutes les 2 minutes
+setInterval(() => refreshRDV(), 120000);
+
+// Styles CSS pour les statuts et onglets
+const style = document.createElement('style');
+style.textContent = `
+.tabs{
+  display:flex;
+  gap:4px;
+  background:#e8f4ff;
+  padding:3px;
+  border-radius:6px;
+  border:1px solid #c2e0ff;
+  box-shadow:0 1px 2px rgba(137,207,240,.12);
+  width:fit-content;
+}
+
+.tab-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  padding:6px 10px;
+  background:transparent;
+  border:none;
+  border-radius:5px;
+  font-size:13px;        /* 🔥 taille augmentée */
+  font-weight:600;
+  color:#4a90e2;
+  cursor:pointer;
+  transition:all .2s ease;
+  position:relative;
+  overflow:hidden;
+  white-space:nowrap;
+}
+
+.tab-btn i{
+  font-size:13px;        /* 🔥 icône plus grande */
+}
+
+.tab-btn:hover{
+  background:#d4ecff;
+  color:#357abd;
+}
+
+.tab-btn.active{
+  background:linear-gradient(135deg,#89cff0 0%,#b6d8f2 100%);
+  color:#fff;
+  border:1px solid #8ac6f0;
+  box-shadow:0 1px 3px rgba(137,207,240,.25);
+}
+
+.tab-btn.active::before{
+  content:'';
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  height:2px;
+  background:linear-gradient(90deg,#4a90e2,#89cff0);
+}
+
+.tab-btn:active{
+  transform:scale(.96);
+}
+
+.tab-btn:focus{
+  outline:none;
+  box-shadow:0 0 0 2px rgba(137,207,240,.35);
+}
+
+.tab-btn.has-notification::after{
+  content:'';
+  position:absolute;
+  top:4px;
+  right:4px;
+  width:5px;
+  height:5px;
+  background:#ff6b6b;
+  border-radius:50%;
+}
+
+/* Mobile */
+@media (max-width:640px){
+  .tab-btn{
+    padding:5px 8px;
+    font-size:12px;      /* 🔥 mobile lisible */
+  }
+  .tab-btn i{
+    font-size:12px;
+  }
+}
+`;
+document.head.appendChild(style);
+</script>
+
+<style>
+/* Styles pour les cartes de statistiques */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e8e8e8;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-height: 100px;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  border-color: #007bff;
+}
+
+.stat-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: white;
+  flex-shrink: 0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.stat-icon.icon-blue {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+
+.stat-icon.icon-green {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.stat-icon.icon-purple {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.stat-icon.icon-orange {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.stat-icon.icon-red {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.stat-icon i {
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-number {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.2;
+  color: #1f2937;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 5px 0 0 0;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Animation pour les nombres qui changent */
+.stat-number {
+  transition: all 0.3s ease;
+}
+
+.stat-number.changing {
+  transform: scale(1.1);
+  color: #007bff;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+  
+  .stat-card {
+    padding: 15px;
+    min-height: 90px;
+  }
+  
+  .stat-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+  
+  .stat-number {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Animation au chargement */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stat-card {
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.1s; }
+.stat-card:nth-child(2) { animation-delay: 0.2s; }
+.stat-card:nth-child(3) { animation-delay: 0.3s; }
+.stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+/* Badge pour les statistiques qui ont des données */
+.stat-card.has-data {
+  border-left: 4px solid #10b981;
+}
+
+/* Variante sombre pour les thèmes sombres */
+@media (prefers-color-scheme: dark) {
+  .stat-card {
+    background: #1f2937;
+    border-color: #374151;
+  }
+  
+  .stat-number {
+    color: #f9fafb;
+  }
+  
+  .stat-label {
+    color: #9ca3af;
+  }
+}
+</style>
+{% endblock %}

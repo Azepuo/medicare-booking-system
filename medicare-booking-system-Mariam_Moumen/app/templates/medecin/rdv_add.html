@@ -1,0 +1,192 @@
+{% extends 'medecin/base.html' %}
+{% block title %}Nouveau Rendez-vous{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>Nouveau rendez-vous</h2>
+  <form id="rdvAddForm">
+    <div class="form-group">
+      <label>Patient *</label>
+      <select name="patient_id" id="patient_id" class="input" required>
+        <option value="">Sélectionner un patient...</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Motif de la consultation</label>
+      <textarea name="notes" id="notes" class="input" rows="3" placeholder="Décrire le motif de la consultation..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Date et heure *</label>
+      <input type="datetime-local" id="date_heure" class="input" required>
+    </div>
+    <div class="form-group">
+      <label>Statut</label>
+      <select id="statut" class="input">
+        <option value="En attente">En attente</option>
+        <option value="Confirmé">Confirmé</option>
+        <option value="Annulé">Annulé</option>
+      </select>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:20px;">
+      <button type="submit" class="btn primary">Planifier</button>
+      <a href="/medecin/rdv" class="btn secondary">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Charger la liste des patients
+async function loadPatients() {
+  try {
+    const res = await fetch('/medecin/api/patients');
+    if (!res.ok) {
+      throw new Error(`Erreur ${res.status}`);
+    }
+    
+    const patients = await res.json();
+    const select = document.getElementById('patient_id');
+    select.innerHTML = '<option value="">Sélectionner un patient...</option>';
+    
+    patients.forEach(patient => {
+      const option = document.createElement('option');
+      option.value = patient.id;
+      option.textContent = `${patient.nom} - ${patient.email}`;
+      select.appendChild(option);
+    });
+  } catch(e) { 
+    console.error('Erreur chargement patients:', e);
+    
+    // Si erreur 401/403, rediriger vers login
+    if (e.message.includes('401') || e.message.includes('403')) {
+      alert('Session expirée. Redirection vers la page de connexion...');
+      window.location.href = '/login';
+    } else {
+      alert('Erreur chargement des patients'); 
+    }
+  }
+}
+
+// Soumission du formulaire
+document.getElementById('rdvAddForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  
+  // Validation
+  const patientId = document.getElementById('patient_id').value;
+  const dateHeure = document.getElementById('date_heure').value;
+  
+  if (!patientId) {
+    alert('Veuillez sélectionner un patient');
+    return;
+  }
+  
+  if (!dateHeure) {
+    alert('Veuillez sélectionner une date et heure');
+    return;
+  }
+  
+  const payload = {
+    patient_id: parseInt(patientId),
+    date_heure: dateHeure,
+    statut: document.getElementById('statut').value,
+    notes: document.getElementById('notes').value.trim()
+  };
+  
+  console.log('Envoi du rendez-vous:', payload);
+  
+  try {
+    const res = await fetch('/medecin/rpc/rdv/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+    
+    const contentType = res.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await res.text();
+      console.error('Réponse non JSON:', text.substring(0, 200));
+      throw new Error('Réponse serveur invalide');
+    }
+    
+    const data = await res.json();
+    console.log('Réponse du serveur:', data);
+    
+    if (!res.ok) {
+      if (res.status === 401) {
+        alert('Session expirée. Veuillez vous reconnecter.');
+        window.location.href = '/login';
+        return;
+      }
+      
+      if (res.status === 403) {
+        alert('Accès non autorisé. Vous devez être médecin pour créer un rendez-vous.');
+        window.location.href = '/login';
+        return;
+      }
+      
+      if (res.status === 404) {
+        if (data.error && data.error.includes('Médecin non trouvé')) {
+          alert('Erreur: Votre profil médecin est manquant. Veuillez vous déconnecter et vous reconnecter.');
+          window.location.href = '/login';
+          return;
+        }
+        if (data.error && data.error.includes('Patient non trouvé')) {
+          alert('Erreur: Le patient sélectionné n\'existe pas.');
+          return;
+        }
+      }
+      
+      throw new Error(data.error || `Erreur serveur (${res.status})`);
+    }
+    
+    if (!data.ok) {
+      throw new Error(data.error || 'Erreur lors de la création du rendez-vous');
+    }
+    
+    alert('✅ Rendez-vous planifié avec succès');
+    // Rediriger vers la page qui montre TOUS les rendez-vous, pas seulement ceux d'aujourd'hui
+    window.location.href = '/medecin/rdv?all=1';
+    
+  } catch(e) { 
+    console.error('Erreur complète:', e);
+    alert('❌ Erreur: ' + e.message); 
+  }
+});
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+  loadPatients();
+  
+  // Définir la date et l'heure actuelles
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  
+  // Format: YYYY-MM-DDThh:mm
+  const minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+  document.getElementById('date_heure').min = minDateTime;
+  
+  // **CHANGEMENT CRITIQUE**: Mettre la date par défaut à AUJOURD'HUI, pas demain
+  // Heure par défaut: maintenant + 1 heure (arrondi à l'heure)
+  const defaultTime = new Date(now);
+  defaultTime.setHours(defaultTime.getHours() + 1);
+  defaultTime.setMinutes(0, 0, 0); // Arrondir à l'heure
+  
+  const defaultYear = defaultTime.getFullYear();
+  const defaultMonth = String(defaultTime.getMonth() + 1).padStart(2, '0');
+  const defaultDay = String(defaultTime.getDate()).padStart(2, '0');
+  const defaultHours = String(defaultTime.getHours()).padStart(2, '0');
+  const defaultMinutes = String(defaultTime.getMinutes()).padStart(2, '0');
+  
+  const defaultDateTime = `${defaultYear}-${defaultMonth}-${defaultDay}T${defaultHours}:${defaultMinutes}`;
+  document.getElementById('date_heure').value = defaultDateTime;
+});
+</script>
+{% endblock %}

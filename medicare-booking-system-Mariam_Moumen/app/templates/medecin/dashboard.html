@@ -1,0 +1,1195 @@
+{% extends "medecin/base.html" %}
+
+{% block title %}Dashboard • Médecin{% endblock %}
+{% block body_id %}dashboard-page{% endblock %}
+{% block page_title %}Tableau de Bord{% endblock %}
+
+{% block content %}
+<!-- USER INFO CARD -->
+<div class="card user-info-card mb-20">
+  <div class="user-info-content">
+    <div class="user-avatar">
+      <i class="fas fa-user-md"></i>
+    </div>
+    <div class="user-details">
+      <h2>Bienvenue, Dr. {{ username }} !</h2>
+      <div class="user-meta">
+        <span class="user-badge"><i class="fas fa-id-card"></i> ID: {{ user_id }}</span>
+        <span class="user-badge role-badge"><i class="fas fa-user-tag"></i> {{ role }}</span>
+        <span class="user-badge"><i class="fas fa-calendar-day"></i> {{ current_date }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TWO DYNAMIC COUNTERS -->
+<div class="grid stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon icon-blue"><i class="fas fa-user-injured"></i></div>
+    <div>
+      <p class="stat-number" id="totalPatients">0</p>
+      <p class="stat-label">Total Patients</p>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon icon-yellow"><i class="fas fa-calendar-check"></i></div>
+    <div>
+      <p class="stat-number" id="totalRDV">0</p>
+      <p class="stat-label">Total Rendez-vous</p>
+    </div>
+  </div>
+</div>
+
+<!-- LISTE DES RENDEZ-VOUS -->
+<div class="card mt-30">
+  <div class="table-header">
+    <div class="header-left">
+      <h3><i class="fas fa-calendar-alt mr-10"></i>Tous les Rendez-vous</h3>
+      <span class="badge badge-pill badge-blue" id="rdvCountBadge">0</span>
+    </div>
+    <div class="header-right">
+      <button class="btn btn-outline" onclick="refreshData()">
+        <i class="fas fa-sync-alt"></i> Actualiser
+      </button>
+      <button class="btn btn-primary" onclick="window.location.href='/medecin/rdv/add'">
+        <i class="fas fa-plus"></i> Nouveau RDV
+      </button>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <!-- Onglets pour filtrer -->
+    <div class="tabs mt-15 mb-15">
+      <button class="tab-btn active" onclick="showTodayRDV()">
+        <i class="fas fa-calendar-day"></i> Aujourd'hui
+      </button>
+      <button class="tab-btn" onclick="showAllRDV()">
+        <i class="fas fa-calendar-week"></i> Tous
+      </button>
+      <button class="tab-btn" onclick="showFutureRDV()">
+        <i class="fas fa-calendar-plus"></i> Futurs
+      </button>
+    </div>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th width="120">Date & Heure</th>
+          <th width="200">Patient</th>
+          <th>Motif / Notes</th>
+          <th width="150">Contact</th>
+          <th width="120">Statut</th>
+          <th width="180" class="text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="rdvTable">
+        <!-- Rempli par JS -->
+        <tr>
+          <td colspan="6" class="text-center">
+            <div class="loading-spinner">
+              <i class="fas fa-spinner fa-spin"></i> Chargement des rendez-vous...
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <div id="noDataMessage" class="empty-state" style="display:none;">
+      <div class="empty-state-icon">
+        <i class="fas fa-calendar-times"></i>
+      </div>
+      <h4>Aucun rendez-vous</h4>
+      <p id="noDataMessageText">Vous n'avez pas de rendez-vous.</p>
+      <button class="btn btn-primary" onclick="window.location.href='/medecin/rdv/add'">
+        <i class="fas fa-plus"></i> Planifier un rendez-vous
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* ---------- Config API ---------- */
+const API = {
+  PATIENTS: '/medecin/api/patients',
+  RDV_TODAY: '/medecin/rpc/rdv/list?today=1',
+  RDV_ALL: '/medecin/rpc/rdv/list',
+  RDV_FUTURE: '/medecin/rpc/rdv/list/future',
+  RDV_DELETE: '/medecin/rpc/rdv/delete'
+};
+
+let currentView = 'today'; // 'today', 'all', 'future'
+let globalRDVStats = {
+  total: 0,
+  today: 0
+};
+
+/* ---------- Helpers ---------- */
+function escapeHtml(text){
+  if (text === null || text === undefined) return '';
+  return String(text).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c];
+  });
+}
+
+function formatDateTime(dateStr) {
+  if (!dateStr) return '';
+  try {
+    const date = new Date(dateStr);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const heures = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    
+    const today = new Date();
+    const isToday = date.getDate() === today.getDate() && 
+                    date.getMonth() === today.getMonth() && 
+                    date.getFullYear() === today.getFullYear();
+    
+    if (isToday) {
+      return `Aujourd'hui ${heures}:${minutes}`;
+    } else {
+      return `${day}/${month}/${year} ${heures}:${minutes}`;
+    }
+  } catch (e) {
+    return dateStr;
+  }
+}
+
+/* ---------- Refresh entrées ---------- */
+function refreshData(){
+  fetchPatientsCount();
+  loadGlobalRDVStatistics();
+  renderRDV(currentView);
+}
+
+/* ---------- Patients count ---------- */
+async function fetchPatientsCount(){
+  try {
+    const res = await fetch(API.PATIENTS, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`Erreur ${res.status}`);
+    const patients = await res.json();
+    const count = Array.isArray(patients) ? patients.length : (patients && (patients.total || patients.count || 0));
+    document.getElementById('totalPatients').textContent = Number.isFinite(count) ? count : 0;
+  } catch(err) {
+    console.error('Erreur fetchPatientsCount:', err);
+    document.getElementById('totalPatients').textContent = '—';
+  }
+}
+
+/* ---------- Global RDV Statistics ---------- */
+async function loadGlobalRDVStatistics() {
+  try {
+    // Charger tous les RDV pour le compteur total
+    const res = await fetch(API.RDV_ALL, { cache: 'no-store' });
+    
+    if (!res.ok) {
+      throw new Error(`Erreur ${res.status}`);
+    }
+    
+    const data = await res.json();
+    
+    let allRDV = [];
+    if (data.data && Array.isArray(data.data)) {
+      allRDV = data.data;
+    } else if (Array.isArray(data)) {
+      allRDV = data;
+    } else if (data.rendezvous && Array.isArray(data.rendezvous)) {
+      allRDV = data.rendezvous;
+    }
+    
+    globalRDVStats.total = allRDV.length;
+    
+    // Charger les RDV d'aujourd'hui pour le compteur d'aujourd'hui
+    try {
+      const todayRes = await fetch(API.RDV_TODAY, { cache: 'no-store' });
+      if (todayRes.ok) {
+        const todayData = await todayRes.json();
+        if (todayData.data && Array.isArray(todayData.data)) {
+          globalRDVStats.today = todayData.data.length;
+        }
+      }
+    } catch (todayError) {
+      console.warn('Erreur lors du chargement des RDV du jour:', todayError);
+    }
+    
+    // Mettre à jour l'affichage
+    updateRDVStatisticsDisplay();
+    
+  } catch (error) {
+    console.error('Erreur loadGlobalRDVStatistics:', error);
+    globalRDVStats.total = 0;
+    globalRDVStats.today = 0;
+    updateRDVStatisticsDisplay();
+  }
+}
+
+function updateRDVStatisticsDisplay() {
+  document.getElementById('totalRDV').textContent = globalRDVStats.total;
+}
+
+/* ---------- RDV table helpers ---------- */
+function showLoadingRDV(){
+  const tbody = document.getElementById('rdvTable');
+  if (!tbody) return;
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="6" class="text-center">
+        <div class="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i> Chargement des rendez-vous...
+        </div>
+      </td>
+    </tr>`;
+  const noData = document.getElementById('noDataMessage');
+  if (noData) noData.style.display = 'none';
+}
+
+function showNoData(viewType){
+  const tbody = document.getElementById('rdvTable');
+  if (tbody) tbody.innerHTML = '';
+  const noData = document.getElementById('noDataMessage');
+  if (noData) {
+    let message = 'Vous n\'avez pas de rendez-vous.';
+    if (viewType === 'today') {
+      message = 'Vous n\'avez pas de rendez-vous aujourd\'hui.';
+    } else if (viewType === 'future') {
+      message = 'Vous n\'avez pas de rendez-vous futurs.';
+    }
+    document.getElementById('noDataMessageText').textContent = message;
+    noData.style.display = 'block';
+  }
+  document.getElementById('rdvCountBadge').textContent = '0';
+}
+
+function showTable(){
+  const noData = document.getElementById('noDataMessage');
+  if (noData) noData.style.display = 'none';
+}
+
+function updateTabButtons(viewType) {
+  // Mettre à jour les onglets actifs
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  if (viewType === 'today') {
+    document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+  } else if (viewType === 'all') {
+    document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+  } else if (viewType === 'future') {
+    document.querySelector('.tab-btn:nth-child(3)').classList.add('active');
+  }
+}
+
+/* ---------- Render RDV ---------- */
+async function renderRDV(viewType = 'today'){
+  currentView = viewType;
+  showLoadingRDV();
+  
+  try {
+    let apiUrl;
+    switch(viewType) {
+      case 'today':
+        apiUrl = API.RDV_TODAY;
+        break;
+      case 'all':
+        apiUrl = API.RDV_ALL;
+        break;
+      case 'future':
+        apiUrl = API.RDV_FUTURE;
+        break;
+      default:
+        apiUrl = API.RDV_TODAY;
+    }
+    
+    const res = await fetch(apiUrl, { cache: 'no-store' });
+    
+    if (!res.ok) {
+      throw new Error(`Erreur ${res.status}: ${res.statusText}`);
+    }
+    
+    const data = await res.json();
+    
+    // Vérifier le format de la réponse
+    let rdvs = [];
+    if (data.data && Array.isArray(data.data)) {
+      rdvs = data.data;
+    } else if (Array.isArray(data)) {
+      rdvs = data;
+    } else if (data.rendezvous && Array.isArray(data.rendezvous)) {
+      rdvs = data.rendezvous;
+    } else {
+      throw new Error('Format de réponse invalide');
+    }
+
+    const tbody = document.getElementById('rdvTable');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (!rdvs || rdvs.length === 0) {
+      showNoData(viewType);
+      return;
+    }
+
+    showTable();
+
+    // Trier par date et heure (du plus récent au plus ancien pour tous les RDV)
+    rdvs.sort((a, b) => {
+      const dateA = new Date(a.date_heure || a.date || a.created_at);
+      const dateB = new Date(b.date_heure || b.date || b.created_at);
+      if (viewType === 'all') {
+        // Pour tous les RDV, du plus récent au plus ancien
+        return dateB - dateA;
+      } else {
+        // Pour aujourd'hui et futurs, du plus proche au plus lointain
+        return dateA - dateB;
+      }
+    });
+
+    rdvs.forEach(rdv => {
+      const patientName = rdv.patient_nom || (rdv.patient && rdv.patient.nom) || 'N/A';
+      const patientPrenom = rdv.patient_prenom || (rdv.patient && rdv.patient.prenom) || '';
+      const fullName = patientPrenom ? `${patientPrenom} ${patientName}` : patientName;
+      
+      const patientPhone = rdv.patient_telephone || (rdv.patient && (rdv.patient.telephone || rdv.patient.phone)) || 'Non renseigné';
+      const statut = rdv.statut || 'En attente';
+      const id = rdv.id !== undefined ? rdv.id : (rdv._id !== undefined ? rdv._id : '');
+      const motif = rdv.notes || rdv.motif || rdv.raison || 'Non spécifié';
+
+      const tr = document.createElement('tr');
+      tr.setAttribute('data-status', statut.toLowerCase().replace(' ', '-'));
+      tr.setAttribute('data-id', id);
+
+      // Déterminer la classe CSS pour le statut
+      let statusClass = '';
+      if (statut.toLowerCase() === 'confirmé') {
+        statusClass = 'status-confirme';
+      } else if (statut.toLowerCase() === 'en attente') {
+        statusClass = 'status-attente';
+      } else if (statut.toLowerCase() === 'annulé') {
+        statusClass = 'status-annule';
+      } else if (statut.toLowerCase() === 'terminé') {
+        statusClass = 'status-termine';
+      }
+
+      tr.innerHTML = `
+        <td class="time-cell">
+          <span class="time-badge">${escapeHtml(formatDateTime(rdv.date_heure || rdv.date || rdv.created_at))}</span>
+        </td>
+        <td class="patient-cell">
+          <div class="patient-info">
+            <strong>${escapeHtml(fullName)}</strong>
+            ${rdv.patient_age ? `<small>${escapeHtml(rdv.patient_age)} ans</small>` : ''}
+          </div>
+        </td>
+        <td class="motif-cell">
+          <div class="truncate-text" title="${escapeHtml(motif)}">
+            ${escapeHtml(motif.length > 60 ? motif.substring(0, 60) + '...' : motif)}
+          </div>
+        </td>
+        <td class="contact-cell">
+          ${patientPhone !== 'Non renseigné' ? 
+            `<a href="tel:${patientPhone.replace(/\s/g, '')}" class="contact-link">
+              <i class="fas fa-phone"></i> ${escapeHtml(patientPhone)}
+            </a>` : 
+            `<span class="text-muted">Non renseigné</span>`
+          }
+        </td>
+        <td class="status-cell">
+          <span class="status-badge ${statusClass}">${escapeHtml(statut)}</span>
+        </td>
+        <td class="actions-cell text-center">
+          <div class="action-buttons">
+            <button class="btn-icon" onclick="goEdit('${escapeHtml(id)}')" title="Modifier">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn-icon btn-success" onclick="markAsDone('${escapeHtml(id)}')" title="Marquer comme terminé">
+              <i class="fas fa-check"></i>
+            </button>
+            <button class="btn-icon btn-danger" onclick="confirmDelete('${escapeHtml(id)}')" title="Supprimer">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('rdvCountBadge').textContent = rdvs.length;
+    updateTabButtons(viewType);
+
+  } catch(err) {
+    console.error('Erreur renderRDV:', err);
+    const tbody = document.getElementById('rdvTable');
+    if (!tbody) return;
+    
+    let errorMessage = err.message || 'Erreur lors du chargement des rendez-vous';
+    
+    // Message spécifique pour les erreurs 404
+    if (err.message && err.message.includes('404')) {
+      errorMessage = 'Route API non trouvée. Veuillez vérifier la configuration.';
+    }
+    
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="text-center error-message">
+          <div class="alert alert-error">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div>
+              <strong>Erreur de chargement</strong>
+              <p>${escapeHtml(errorMessage)}</p>
+              <button class="btn btn-sm" onclick="renderRDV(currentView)">Réessayer</button>
+            </div>
+          </div>
+        </td>
+      </tr>`;
+  }
+}
+
+/* ---------- View Controls ---------- */
+function showTodayRDV() {
+  renderRDV('today');
+}
+
+function showAllRDV() {
+  renderRDV('all');
+}
+
+function showFutureRDV() {
+  renderRDV('future');
+}
+
+/* ---------- Delete RDV ---------- */
+async function deleteRDV(id){
+  try {
+    if (!id && id !== 0) throw new Error('ID invalide');
+    const url = API.RDV_DELETE + '/' + encodeURIComponent(id);
+    const res = await fetch(url, { method: 'DELETE' });
+    
+    if (!res.ok) {
+      const text = await res.text();
+      let errorMsg = 'Suppression échouée';
+      try {
+        const errData = JSON.parse(text);
+        errorMsg = errData.error || errData.message || errorMsg;
+      } catch (e) {
+        errorMsg = text || errorMsg;
+      }
+      throw new Error(errorMsg);
+    }
+    
+    const text = await res.text();
+    let result = {};
+    try {
+      result = JSON.parse(text);
+    } catch (e) {
+      result = { message: 'Suppression réussie' };
+    }
+    
+    // Notification toast
+    showToast('success', '✅ ' + (result.message || 'Rendez-vous supprimé'));
+    
+    // Recharger les statistiques globales et la vue actuelle
+    await loadGlobalRDVStatistics();
+    await renderRDV(currentView);
+    await fetchPatientsCount();
+  } catch(err) {
+    console.error('Erreur deleteRDV:', err);
+    showToast('error', '❌ ' + (err.message || 'Erreur lors de la suppression'));
+  }
+}
+
+async function markAsDone(id) {
+  try {
+    const url = API.RDV_DELETE.replace('delete', 'complete') + '/' + encodeURIComponent(id);
+    const res = await fetch(url, { method: 'PUT' });
+    
+    if (!res.ok) {
+      const text = await res.text();
+      let errorMsg = 'Marquage échoué';
+      try {
+        const errData = JSON.parse(text);
+        errorMsg = errData.error || errData.message || errorMsg;
+      } catch (e) {
+        errorMsg = text || errorMsg;
+      }
+      throw new Error(errorMsg);
+    }
+    
+    showToast('success', '✅ Rendez-vous marqué comme terminé');
+    // Recharger les statistiques globales et la vue actuelle
+    await loadGlobalRDVStatistics();
+    await renderRDV(currentView);
+  } catch(err) {
+    showToast('error', '❌ ' + (err.message || 'Erreur'));
+  }
+}
+
+/* ---------- Helpers d'UI ---------- */
+function goEdit(id){
+  if (!id && id !== 0) return;
+  window.location.href = '/medecin/rdv/edit/' + encodeURIComponent(id);
+}
+
+function confirmDelete(id){
+  if (!id && id !== 0) return;
+  if (confirm('Êtes-vous sûr de vouloir supprimer ce rendez-vous ? Cette action est irréversible.')) {
+    deleteRDV(id);
+  }
+}
+
+function showToast(type, message) {
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `
+    <div class="toast-content">
+      <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+      <span>${message}</span>
+    </div>
+    <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+  `;
+  
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 5000);
+}
+
+/* ---------- Styles pour onglets ---------- */
+const style = document.createElement('style');
+style.textContent = `
+.tabs{
+  display:flex;
+  gap:4px;
+  background:#e8f4ff;
+  padding:3px;
+  border-radius:6px;
+  border:1px solid #c2e0ff;
+  box-shadow:0 1px 2px rgba(137,207,240,.12);
+  width:fit-content;
+}
+
+.tab-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  padding:6px 10px;
+  background:transparent;
+  border:none;
+  border-radius:5px;
+  font-size:13px;        /* 🔥 taille augmentée */
+  font-weight:600;
+  color:#4a90e2;
+  cursor:pointer;
+  transition:all .2s ease;
+  position:relative;
+  overflow:hidden;
+  white-space:nowrap;
+}
+
+.tab-btn i{
+  font-size:13px;        /* 🔥 icône plus grande */
+}
+
+.tab-btn:hover{
+  background:#d4ecff;
+  color:#357abd;
+}
+
+.tab-btn.active{
+  background:linear-gradient(135deg,#89cff0 0%,#b6d8f2 100%);
+  color:#fff;
+  border:1px solid #8ac6f0;
+  box-shadow:0 1px 3px rgba(137,207,240,.25);
+}
+
+.tab-btn.active::before{
+  content:'';
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  height:2px;
+  background:linear-gradient(90deg,#4a90e2,#89cff0);
+}
+
+.tab-btn:active{
+  transform:scale(.96);
+}
+
+.tab-btn:focus{
+  outline:none;
+  box-shadow:0 0 0 2px rgba(137,207,240,.35);
+}
+
+.tab-btn.has-notification::after{
+  content:'';
+  position:absolute;
+  top:4px;
+  right:4px;
+  width:5px;
+  height:5px;
+  background:#ff6b6b;
+  border-radius:50%;
+}
+
+/* Mobile */
+@media (max-width:640px){
+  .tab-btn{
+    padding:5px 8px;
+    font-size:12px;      /* 🔥 mobile lisible */
+  }
+  .tab-btn i{
+    font-size:12px;
+  }
+}
+`;
+document.head.appendChild(style);
+/* ---------- Init ---------- */
+document.addEventListener('DOMContentLoaded', function(){
+  fetchPatientsCount();
+  loadGlobalRDVStatistics();
+  renderRDV('today');
+  setInterval(refreshData, 30000); // Actualiser toutes les 30 secondes
+});
+</script>
+
+
+<style>
+/* --- User Info Card --- */
+.user-info-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  margin-bottom: 20px;
+}
+
+.user-info-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+}
+
+.user-avatar {
+  width: 70px;
+  height: 70px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+}
+
+.user-details h2 {
+  margin: 0 0 10px 0;
+  color: white;
+  font-weight: 600;
+}
+
+.user-meta {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.user-badge {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.role-badge {
+  background: rgba(255, 255, 255, 0.25);
+  font-weight: 600;
+}
+
+/* --- Stats Grid --- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border: 1px solid #e9ecef;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.stat-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.icon-blue { background: #e3f2fd; color: #1976d2; }
+.icon-yellow { background: #fff8e1; color: #ff8f00; }
+
+.stat-number {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0 0 5px 0;
+  color: #2c3e50;
+}
+
+.stat-label {
+  margin: 0;
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+/* --- Table Header --- */
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e9ecef;
+  background: #f8f9fa;
+  border-radius: 12px 12px 0 0;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.header-left h3 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.header-right {
+  display: flex;
+  gap: 10px;
+}
+
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-blue {
+  background: #1976d2;
+  color: white;
+}
+
+/* --- Data Table --- */
+.table-container {
+  overflow-x: auto;
+  border-radius: 0 0 12px 12px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+
+.data-table thead {
+  background: #f8f9fa;
+}
+
+.data-table th {
+  padding: 16px 20px;
+  text-align: left;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.data-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e9ecef;
+  vertical-align: middle;
+}
+
+.data-table tbody tr {
+  transition: background 0.2s;
+}
+
+.data-table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+/* --- Table Cells --- */
+.time-cell .time-badge {
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  display: inline-block;
+}
+
+.patient-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.patient-info small {
+  color: #6c757d;
+  font-size: 12px;
+}
+
+.truncate-text {
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.contact-link {
+  color: #495057;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.2s;
+}
+
+.contact-link:hover {
+  color: #1976d2;
+}
+
+.text-muted {
+  color: #6c757d;
+}
+
+/* --- Status Badges --- */
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+  text-transform: capitalize;
+}
+
+.status-confirme {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-attente {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-annule {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.status-termine {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
+/* --- Actions --- */
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  background: white;
+  color: #495057;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background: #f8f9fa;
+  transform: translateY(-1px);
+}
+
+.btn-icon.btn-success {
+  border-color: #28a745;
+  color: #28a745;
+}
+
+.btn-icon.btn-success:hover {
+  background: #28a745;
+  color: white;
+}
+
+.btn-icon.btn-danger {
+  border-color: #dc3545;
+  color: #dc3545;
+}
+
+.btn-icon.btn-danger:hover {
+  background: #dc3545;
+  color: white;
+}
+
+/* --- Empty State --- */
+.empty-state {
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.empty-state-icon {
+  font-size: 64px;
+  color: #adb5bd;
+  margin-bottom: 20px;
+}
+
+.empty-state h4 {
+  margin: 0 0 10px 0;
+  color: #495057;
+}
+
+.empty-state p {
+  color: #6c757d;
+  margin-bottom: 20px;
+}
+
+/* --- Alert Messages --- */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  margin: 10px 0;
+}
+
+.alert-error {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
+.alert-error i {
+  color: #721c24;
+  font-size: 20px;
+  margin-top: 2px;
+}
+
+.alert-error div {
+  flex: 1;
+}
+
+.alert-error strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.alert-error p {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+}
+
+/* --- Toast --- */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 300px;
+  z-index: 1000;
+  animation: slideIn 0.3s ease;
+}
+
+.toast-success {
+  border-left: 4px solid #28a745;
+}
+
+.toast-error {
+  border-left: 4px solid #dc3545;
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #6c757d;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* --- Loading Spinner --- */
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #6c757d;
+  gap: 10px;
+}
+
+.loading-spinner i {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+/* --- Buttons --- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: #e9ecef;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-primary {
+  background: #0d6efd;
+  color: #fff;
+  border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+  background: #0b5ed7;
+  border-color: #0a58ca;
+}
+
+.btn-outline {
+  background: transparent;
+  border-color: #dee2e6;
+  color: #495057;
+}
+
+.btn-outline:hover {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+  .user-info-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .user-meta {
+    justify-content: center;
+  }
+  
+  .table-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+  
+  .header-right {
+    justify-content: flex-end;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .data-table {
+    min-width: 100%;
+  }
+  
+  .truncate-text {
+    max-width: 200px;
+  }
+}
+
+.mt-30 { margin-top: 30px; }
+.mb-20 { margin-bottom: 20px; }
+.mr-10 { margin-right: 10px; }
+.text-center { text-align: center; }
+</style>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends 'medecin/base.html' %}
+
+{% block title %}Modifier Rendez-vous • Médecin{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>Modifier un rendez-vous</h2>
+  <form id="rdvEditForm">
+    <input type="hidden" id="rdv_id">
+    
+    <div class="form-group">
+      <label>Patient *</label>
+      <select name="patient_id" id="patient_id" class="input" required></select>
+    </div>
+
+    <div class="form-group">
+      <label>Motif de la consultation</label>
+      <textarea name="notes" id="notes" class="input" rows="3"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Date et heure du rendez-vous *</label>
+      <input type="datetime-local" name="date_heure" id="date_heure" class="input" required>
+    </div>
+
+    <div class="form-group">
+      <label>Statut</label>
+      <select name="statut" id="statut" class="input">
+        <option value="En attente">En attente</option>
+        <option value="Confirmé">Confirmé</option>
+        <option value="Annulé">Annulé</option>
+      </select>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top: 20px;">
+      <button type="submit" class="btn primary">Sauvegarder</button>
+      <a href="/medecin/rdv" class="btn secondary">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Charger les patients pour le select
+async function loadPatients(selectedId=null) {
+  try {
+    const response = await fetch('/medecin/api/patients');
+    if (!response.ok) throw new Error(`Erreur ${response.status}`);
+    const patients = await response.json();
+    
+    const select = document.getElementById('patient_id');
+    select.innerHTML = '<option value="">Sélectionner un patient...</option>';
+    
+    patients.forEach(p => {
+      const option = document.createElement('option');
+      option.value = p.id;
+      option.textContent = p.nom;
+      if (selectedId && selectedId === p.id) option.selected = true;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error('Erreur chargement patients:', error);
+    alert('Impossible de charger les patients');
+  }
+}
+
+// Charger les infos du RDV
+async function loadRdv(rdvId) {
+  try {
+    const res = await fetch(`/medecin/api/rendezvous/${rdvId}`);
+    if (!res.ok) throw new Error(`Erreur ${res.status}`);
+    const rdv = await res.json();
+    
+    document.getElementById('rdv_id').value = rdv.id;
+    document.getElementById('notes').value = rdv.notes || '';
+    document.getElementById('date_heure').value = rdv.date_heure.slice(0,16);
+    document.getElementById('statut').value = rdv.statut || 'En attente';
+    
+    loadPatients(rdv.patient_id);
+    
+  } catch (error) {
+    console.error('Erreur loadRdv:', error);
+    alert('Impossible de charger les détails du rendez-vous');
+  }
+}
+
+// Soumission du formulaire
+document.getElementById('rdvEditForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  
+  const payload = {
+    patient_id: parseInt(document.getElementById('patient_id').value),
+    date_heure: document.getElementById('date_heure').value,
+    statut: document.getElementById('statut').value,
+    notes: document.getElementById('notes').value.trim()
+  };
+
+  if (!payload.patient_id || !payload.date_heure) {
+    alert('Veuillez remplir tous les champs obligatoires');
+    return;
+  }
+
+  const rdvId = document.getElementById('rdv_id').value;
+
+  try {
+    const res = await fetch(`/medecin/api/rendezvous/${rdvId}`, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    
+    if (!res.ok) {
+      const errorData = await res.json().catch(()=>({}));
+      throw new Error(errorData.error || `Erreur ${res.status}`);
+    }
+
+    const result = await res.json().catch(()=>({}));
+    alert('✅ ' + (result.message || 'Rendez-vous mis à jour avec succès !'));
+    window.location.href = '/medecin/rdv';
+
+  } catch (error) {
+    console.error('Erreur update RDV:', error);
+    alert('❌ Erreur: ' + error.message);
+  }
+});
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+  const rdvId = window.location.pathname.split('/').pop();
+  loadRdv(rdvId);
+});
+</script>
+{% endblock %}
