@@ -1,7 +1,6 @@
-# app/routes/authentification/auth_rpc.py
 from flask import Blueprint, request, jsonify, make_response
 import jwt, datetime, re
-from werkzeug.security import generate_password_hash, check_password_hash
+import bcrypt
 from models.User import User
 
 auth_rpc = Blueprint("auth_rpc", __name__)
@@ -22,8 +21,13 @@ def get_user_by_email(email):
 
 def create_user(nom, email, password, role, telephone=None):
     user = User(nom=nom, email=email, role=role, telephone=telephone)
-    # Hash du mot de passe
-    user.password = generate_password_hash(password)
+
+    # 🔐 bcrypt (UNIFIÉ)
+    user.password = bcrypt.hashpw(
+        password.encode("utf-8"),
+        bcrypt.gensalt()
+    ).decode("utf-8")
+
     user.save()
     return user
 
@@ -32,10 +36,16 @@ def rpc_login(params):
     email = params.get("email", "").strip().lower()
     password = params.get("password", "")
 
-
     user = get_user_by_email(email)
-    if not user or not check_password_hash(user.password, password):
-        return jsonify({"success": False, "message": "Email ou mot de passe incorrect"}), 401
+
+    if not user or not bcrypt.checkpw(
+        password.encode("utf-8"),
+        user.password.encode("utf-8")
+    ):
+        return jsonify({
+            "success": False,
+            "message": "Email ou mot de passe incorrect"
+        }), 401
 
     access_token = jwt.encode({
         "user_id": user.id,
@@ -52,8 +62,7 @@ def rpc_login(params):
     redirect_map = {
         "PATIENT": "http://localhost:5001/patient/dashboard",
         "MEDECIN": "http://localhost:5002/medecin/dashboard",
-        "ADMIN"  :   "http://127.0.0.1:5003/admin/dashboard"
-
+        "ADMIN":   "http://127.0.0.1:5003/admin/dashboard"
     }
 
     response = make_response(jsonify({
@@ -85,7 +94,12 @@ def rpc_register(params, role="PATIENT"):
         return jsonify({"success": False, "message": "Email déjà utilisé"}), 400
 
     user = create_user(nom, email, password, role, telephone)
-    return jsonify({"success": True, "message": f"Compte {role.lower()} créé avec succès", "user_id": user.id})
+
+    return jsonify({
+        "success": True,
+        "message": f"Compte {role.lower()} créé avec succès",
+        "user_id": user.id
+    })
 
 # ---------------- HANDLER ----------------
 @auth_rpc.route("/api/rpc", methods=["POST"])
@@ -102,11 +116,16 @@ def handler():
         elif method == "register_medecin":
             return rpc_register(params, role="MEDECIN")
         elif method == "logout":
-            response = make_response(jsonify({"success": True, "redirect": "/login"}))
+            response = make_response(jsonify({
+                "success": True,
+                "redirect": "/login"
+            }))
             response.delete_cookie("access_token")
             response.delete_cookie("refresh_token")
             return response
+
         return jsonify({"success": False, "message": "Méthode RPC inconnue"}), 400
+
     except Exception as e:
         import traceback
         traceback.print_exc()

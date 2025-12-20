@@ -32,13 +32,16 @@ def login():
     if request.method == "GET":
         return render_template("auth/login.html")
 
-    # POST
-    email = request.form.get("login_email")
-    password = request.form.get("login_password")
+    email = request.form.get("login_email", "").strip().lower()
+    password = request.form.get("login_password", "")
 
     user = User.get_by_email(email)
+
     if not user or not user.check_password(password):
-        return "Login incorrect", 401
+        return render_template(
+            "auth/login.html",
+            error="Email ou mot de passe incorrect"
+        )
 
     access_token = jwt.encode({
         "user_id": user.id,
@@ -53,16 +56,16 @@ def login():
     }, REFRESH_SECRET_KEY, algorithm="HS256")
 
     url_map = {
-    "PATIENT": "http://localhost:5001/dashboard",
-    "MEDECIN": "http://localhost:5002/dashboard",
-    "ADMIN": "http://127.0.0.1:5003/admin/dashboard"
-}
-
+        "PATIENT": "http://localhost:5001/dashboard",
+        "MEDECIN": "http://localhost:5002/dashboard",
+        "ADMIN": "http://127.0.0.1:5003/admin/dashboard"
+    }
 
     response = make_response(redirect(url_map.get(user.role, "/")))
     response.set_cookie("access_token", access_token, httponly=True, samesite="Lax")
     response.set_cookie("refresh_token", refresh_token, httponly=True, samesite="Lax")
     return response
+
 
 # ---------------- REGISTER ----------------
 

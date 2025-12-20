@@ -9,9 +9,14 @@ from datetime import date
 import secrets
 import string
 
-def generate_password(length=10):
-    chars = string.ascii_letters + string.digits
-    return ''.join(secrets.choice(chars) for _ in range(length))
+from models import User
+from xmlrpc.server import SimpleXMLRPCServer
+from socketserver import ThreadingMixIn
+
+class ThreadedXMLRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
+    pass
+
+
 
 # =====================================================
 # ✅ liste SPECIALISATIONS
@@ -131,19 +136,20 @@ def ajouter_medecin(data):
     cursor = conn.cursor()
 
     # 🔐 mot de passe généré
-    plain_password = generate_password()
+    plain_password = "00000"
     hashed_password = bcrypt.hashpw(
-        plain_password.encode(),
-        bcrypt.gensalt()
-    ).decode()
+    plain_password.encode("utf-8"),
+    bcrypt.gensalt()
+    ).decode("utf-8")
 
+    email = data["email"].strip().lower()
     # 1️⃣ USER (authentification)
     cursor.execute("""
         INSERT INTO users (nom, email, telephone, password, role)
         VALUES (%s, %s, %s, %s, 'MEDECIN')
     """, (
         data["nom_complet"],
-        data["email"],
+        email,
         data.get("telephone"),
         hashed_password
     ))
@@ -165,7 +171,7 @@ def ajouter_medecin(data):
     """, (
         user_id,
         data["nom_complet"],
-        data["email"],
+        email,
         data.get("telephone"),
         data.get("id_specialisation"),
         data.get("tarif_consultation"),
@@ -325,37 +331,32 @@ def ajouter_patient(data):
     if not data.get("nom") or not data.get("email"):
         raise Exception("DONNEES_INCOMPLETES")
 
+    email = data["email"].strip().lower()
+    plain_password = "00000"
+
+    # ✅ UTILISER LE MODÈLE USER
+    user = User(
+        nom=data["nom"],
+        email=email,
+        role="PATIENT",
+        telephone=data.get("telephone")
+    )
+    user.set_password(plain_password)
+    user.save()
+
+    user_id = user.id
+
+    # 2️⃣ PATIENT
     conn = create_connection()
     cursor = conn.cursor()
 
-    # 🔐 mot de passe généré
-    plain_password = generate_password()
-    hashed_password = bcrypt.hashpw(
-        plain_password.encode(),
-        bcrypt.gensalt()
-    ).decode()
-
-    # 1️⃣ USER
-    cursor.execute("""
-        INSERT INTO users (nom, email, telephone, password, role)
-        VALUES (%s, %s, %s, %s, 'PATIENT')
-    """, (
-        data["nom"],
-        data["email"],
-        data.get("telephone"),
-        hashed_password
-    ))
-
-    user_id = cursor.lastrowid
-
-    # 2️⃣ PATIENT - Include nom, email, telephone to match table structure
     cursor.execute("""
         INSERT INTO patients (user_id, nom, email, telephone, sexe)
         VALUES (%s, %s, %s, %s, %s)
     """, (
         user_id,
         data["nom"],
-        data["email"],
+        email,
         data.get("telephone"),
         data.get("sexe")
     ))
@@ -368,7 +369,6 @@ def ajouter_patient(data):
         "success": True,
         "generated_password": plain_password
     }
-
 
 # =========================
 # EDIT PATIENT
@@ -1446,8 +1446,11 @@ def liste_rdv_aujourdhui():
 # =====================================================
 
 if __name__ == "__main__":
-    server = SimpleXMLRPCServer(("localhost", 8002), allow_none=True)
-    print("Serveur RPC lance sur http://localhost:8002")
+    server = ThreadedXMLRPCServer(
+        ("localhost", 8002),
+        allow_none=True
+    )
+    print("🚀 RPC THREADED lancé sur http://localhost:8002")
 
     # Médecins
     server.register_function(liste_medecins, "liste_medecins")

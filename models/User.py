@@ -1,5 +1,6 @@
 from database.connection import create_connection
-from werkzeug.security import generate_password_hash, check_password_hash
+import bcrypt
+
 
 class User:
     def __init__(self, nom, email, role, password=None, telephone=None, id=None):
@@ -10,24 +11,45 @@ class User:
         self.role = role
         self.telephone = telephone
 
+    # =========================
+    # 🔐 PASSWORD (bcrypt)
+    # =========================
     def set_password(self, password):
-        self.password = generate_password_hash(password)
+        self.password = bcrypt.hashpw(
+            password.encode("utf-8"),
+            bcrypt.gensalt()
+        ).decode("utf-8")
 
     def check_password(self, password):
-        return check_password_hash(self.password, password)
+        if not self.password:
+            return False
+        return bcrypt.checkpw(
+            password.encode("utf-8"),
+            self.password.encode("utf-8")
+        )
 
+    # =========================
+    # 💾 SAVE (INSERT / UPDATE)
+    # =========================
     def save(self):
         conn = create_connection()
         cursor = conn.cursor(dictionary=True)
 
-        if self.id:  # update existant
+        if self.id:  # UPDATE
             cursor.execute(
-                "UPDATE users SET nom=%s, email=%s, password=%s, role=%s, telephone=%s WHERE id=%s",
+                """
+                UPDATE users
+                SET nom=%s, email=%s, password=%s, role=%s, telephone=%s
+                WHERE id=%s
+                """,
                 (self.nom, self.email, self.password, self.role, self.telephone, self.id)
             )
-        else:  # insert nouveau
+        else:  # INSERT
             cursor.execute(
-                "INSERT INTO users (nom, email, password, role, telephone) VALUES (%s, %s, %s, %s, %s)",
+                """
+                INSERT INTO users (nom, email, password, role, telephone)
+                VALUES (%s, %s, %s, %s, %s)
+                """,
                 (self.nom, self.email, self.password, self.role, self.telephone)
             )
             self.id = cursor.lastrowid
@@ -37,36 +59,56 @@ class User:
         conn.close()
         return True
 
+    # =========================
+    # 🔍 GET BY EMAIL
+    # =========================
     @classmethod
     def get_by_email(cls, email):
         conn = create_connection()
         if not conn:
             raise Exception("Impossible de se connecter à la base de données")
+
         cursor = conn.cursor(dictionary=True)
         cursor.execute(
-            "SELECT id, nom, email, password, role, telephone FROM users WHERE email=%s",
+            """
+            SELECT id, nom, email, password, role, telephone
+            FROM users
+            WHERE email=%s
+            """,
             (email,)
         )
         row = cursor.fetchone()
         cursor.close()
         conn.close()
+
         if not row:
             return None
+
         return cls(**row)
 
+    # =========================
+    # 🔍 GET BY ID
+    # =========================
     @classmethod
     def get_by_id(cls, user_id):
         conn = create_connection()
         if not conn:
             raise Exception("Impossible de se connecter à la base de données")
+
         cursor = conn.cursor(dictionary=True)
         cursor.execute(
-            "SELECT id, nom, email, password, role, telephone FROM users WHERE id=%s",
+            """
+            SELECT id, nom, email, password, role, telephone
+            FROM users
+            WHERE id=%s
+            """,
             (user_id,)
         )
         row = cursor.fetchone()
         cursor.close()
         conn.close()
+
         if not row:
             return None
+
         return cls(**row)
