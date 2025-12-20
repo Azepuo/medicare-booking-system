@@ -10,12 +10,14 @@
     
     <div class="form-group">
       <label>Patient *</label>
-      <select name="patient_id" id="patient_id" class="input" required></select>
+      <select name="patient_id" id="patient_id" class="input" required>
+        <option value="">Sélectionner un patient...</option>
+      </select>
     </div>
 
     <div class="form-group">
       <label>Motif de la consultation</label>
-      <textarea name="notes" id="notes" class="input" rows="3"></textarea>
+      <textarea name="notes" id="notes" class="input" rows="3" placeholder="Décrire le motif de la consultation..."></textarea>
     </div>
 
     <div class="form-group">
@@ -34,7 +36,7 @@
 
     <div style="display:flex; gap:10px; margin-top: 20px;">
       <button type="submit" class="btn primary">Sauvegarder</button>
-      <a href="/medecin/rdv" class="btn secondary">Annuler</a>
+      <a href="/medecin/rdv?all=1" class="btn secondary">Annuler</a>
     </div>
   </form>
 </div>
@@ -43,10 +45,21 @@
 {% block scripts %}
 <script>
 // Charger les patients pour le select
-async function loadPatients(selectedId=null) {
+async function loadPatients(selectedId = null) {
   try {
-    const response = await fetch('/medecin/api/patients');
-    if (!response.ok) throw new Error(`Erreur ${response.status}`);
+    const response = await fetch('/medecin/api/patients', {
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        alert('Session expirée. Redirection vers la page de connexion...');
+        window.location.href = '/login';
+        return;
+      }
+      throw new Error(`Erreur ${response.status}`);
+    }
+    
     const patients = await response.json();
     
     const select = document.getElementById('patient_id');
@@ -55,7 +68,7 @@ async function loadPatients(selectedId=null) {
     patients.forEach(p => {
       const option = document.createElement('option');
       option.value = p.id;
-      option.textContent = p.nom;
+      option.textContent = p.nom + (p.email ? ` - ${p.email}` : '');
       if (selectedId && selectedId === p.id) option.selected = true;
       select.appendChild(option);
     });
@@ -68,20 +81,56 @@ async function loadPatients(selectedId=null) {
 // Charger les infos du RDV
 async function loadRdv(rdvId) {
   try {
-    const res = await fetch(`/medecin/api/rendezvous/${rdvId}`);
-    if (!res.ok) throw new Error(`Erreur ${res.status}`);
-    const rdv = await res.json();
+    // Récupérer tous les RDV et filtrer par ID
+    const res = await fetch('/medecin/rpc/rdv/list', {
+      credentials: 'include'
+    });
     
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        alert('Session expirée. Veuillez vous reconnecter.');
+        window.location.href = '/login';
+        return;
+      }
+      throw new Error(`Erreur ${res.status}: ${res.statusText}`);
+    }
+    
+    const data = await res.json();
+    
+    if (!data.ok) {
+      throw new Error(data.error || 'Erreur serveur');
+    }
+    
+    // Trouver le RDV avec l'ID correspondant
+    const rdv = data.data.find(r => r.id == rdvId);
+    
+    if (!rdv) {
+      throw new Error('Rendez-vous non trouvé');
+    }
+    
+    // Remplir le formulaire
     document.getElementById('rdv_id').value = rdv.id;
     document.getElementById('notes').value = rdv.notes || '';
-    document.getElementById('date_heure').value = rdv.date_heure.slice(0,16);
+    
+    // Formater la date pour le champ datetime-local
+    if (rdv.date_heure) {
+      const date = new Date(rdv.date_heure);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      document.getElementById('date_heure').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+    
     document.getElementById('statut').value = rdv.statut || 'En attente';
     
+    // Charger les patients avec le patient sélectionné
     loadPatients(rdv.patient_id);
     
   } catch (error) {
     console.error('Erreur loadRdv:', error);
-    alert('Impossible de charger les détails du rendez-vous');
+    alert('❌ Erreur: ' + error.message);
   }
 }
 
@@ -96,6 +145,7 @@ document.getElementById('rdvEditForm').addEventListener('submit', async function
     notes: document.getElementById('notes').value.trim()
   };
 
+  // Validation
   if (!payload.patient_id || !payload.date_heure) {
     alert('Veuillez remplir tous les champs obligatoires');
     return;
@@ -104,20 +154,54 @@ document.getElementById('rdvEditForm').addEventListener('submit', async function
   const rdvId = document.getElementById('rdv_id').value;
 
   try {
-    const res = await fetch(`/medecin/api/rendezvous/${rdvId}`, {
-      method: 'PUT',
-      headers: {'Content-Type':'application/json'},
+    const res = await fetch(`/medecin/rpc/rdv/update/${rdvId}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      credentials: 'include',
       body: JSON.stringify(payload)
     });
     
-    if (!res.ok) {
-      const errorData = await res.json().catch(()=>({}));
-      throw new Error(errorData.error || `Erreur ${res.status}`);
+    const contentType = res.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await res.text();
+      console.error('Réponse non JSON:', text.substring(0, 200));
+      throw new Error('Réponse serveur invalide');
     }
-
-    const result = await res.json().catch(()=>({}));
-    alert('✅ ' + (result.message || 'Rendez-vous mis à jour avec succès !'));
-    window.location.href = '/medecin/rdv';
+    
+    const data = await res.json();
+    console.log('Réponse du serveur:', data);
+    
+    if (!res.ok) {
+      if (res.status === 401) {
+        alert('Session expirée. Veuillez vous reconnecter.');
+        window.location.href = '/login';
+        return;
+      }
+      
+      if (res.status === 403) {
+        alert('Accès non autorisé. Vous devez être médecin pour modifier un rendez-vous.');
+        window.location.href = '/login';
+        return;
+      }
+      
+      if (res.status === 404) {
+        if (data.error && data.error.includes('Rendez-vous non trouvé')) {
+          alert('Erreur: Le rendez-vous n\'existe pas ou a été supprimé.');
+          window.location.href = '/medecin/rdv?all=1';
+          return;
+        }
+      }
+      
+      throw new Error(data.error || `Erreur serveur (${res.status})`);
+    }
+    
+    if (!data.ok) {
+      throw new Error(data.error || 'Erreur lors de la mise à jour du rendez-vous');
+    }
+    
+    alert('✅ Rendez-vous mis à jour avec succès !');
+    // Rediriger vers la page qui montre TOUS les rendez-vous
+    window.location.href = '/medecin/rdv?all=1';
 
   } catch (error) {
     console.error('Erreur update RDV:', error);
@@ -127,8 +211,27 @@ document.getElementById('rdvEditForm').addEventListener('submit', async function
 
 // Initialisation
 document.addEventListener('DOMContentLoaded', function() {
-  const rdvId = window.location.pathname.split('/').pop();
-  loadRdv(rdvId);
+  // Récupérer l'ID du RDV depuis l'URL
+  const pathParts = window.location.pathname.split('/');
+  const rdvId = pathParts[pathParts.length - 1];
+  
+  if (rdvId && !isNaN(rdvId)) {
+    loadRdv(rdvId);
+  } else {
+    alert('ID de rendez-vous invalide');
+    window.location.href = '/medecin/rdv';
+  }
+  
+  // Définir la date minimale pour le champ datetime (aujourd'hui)
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  
+  const minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+  document.getElementById('date_heure').min = minDateTime;
 });
 </script>
 {% endblock %}
