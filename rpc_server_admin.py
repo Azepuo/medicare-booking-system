@@ -437,6 +437,12 @@ def normalize_rdv(row):
 
     data = dict(row)
 
+    # ✅ Convertir TOUS les Decimal → float
+    for k, v in data.items():
+        if isinstance(v, Decimal):
+            data[k] = float(v)
+
+    # ✅ Formater les dates
     if data.get("date_heure") and hasattr(data["date_heure"], "strftime"):
         dt = data["date_heure"]
         data["date_rdv"] = dt.strftime("%Y-%m-%d")
@@ -444,6 +450,19 @@ def normalize_rdv(row):
         data["date_heure"] = dt.strftime("%Y-%m-%d %H:%M:%S")
 
     return data
+# def normalize_rdv(row):
+#     if not row:
+#         return None
+
+#     data = dict(row)
+
+#     if data.get("date_heure") and hasattr(data["date_heure"], "strftime"):
+#         dt = data["date_heure"]
+#         data["date_rdv"] = dt.strftime("%Y-%m-%d")
+#         data["heure_rdv"] = dt.strftime("%H:%M")
+#         data["date_heure"] = dt.strftime("%Y-%m-%d %H:%M:%S")
+
+#     return data
 
 
 # =====================================================
@@ -495,7 +514,8 @@ def get_rdv(rdv_id):
     cursor.execute("""
         SELECT r.*,
                p.nom AS patient_nom,
-               m.nom AS medecin_nom
+               m.nom AS medecin_nom,
+               m.tarif_consultation
         FROM rendezvous r
         JOIN patients p ON r.patient_id = p.id
         JOIN medecins m ON r.medecin_id = m.id
@@ -503,6 +523,7 @@ def get_rdv(rdv_id):
     """, (rdv_id,))
 
     row = cursor.fetchone()
+
     cursor.close()
     conn.close()
 
@@ -857,14 +878,15 @@ def get_facture(facture_id):
             p.email AS patient_email,
             p.telephone AS patient_telephone,
             m.nom AS medecin_nom,
-            m.specialite AS medecin_specialite,
+            s.nom AS medecin_specialite,  -- ✅ CHANGÉ : depuis la table specialisations
             m.email AS medecin_email,
             m.telephone AS medecin_telephone,
-            m.tarif_consultation  -- ✅ NOUVEAU : tarif du médecin
+            m.tarif_consultation
         FROM factures f
         JOIN rendezvous r ON f.rdv_id = r.id
         JOIN patients p ON r.patient_id = p.id
         JOIN medecins m ON r.medecin_id = m.id
+        LEFT JOIN specialisations s ON m.id_specialisation = s.id  -- ✅ AJOUTÉ
         WHERE f.id = %s
     """, (facture_id,))
 
@@ -893,32 +915,71 @@ def get_facture(facture_id):
 
     return row
 
-
-
 def ajouter_facture(data):
     conn = create_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
-        INSERT INTO factures 
-        (rdv_id, statut, moyen_paiement, services, montant_total, date_facture)
-        VALUES (%s, %s, %s, %s, %s, %s)
-    """, (
-        data.get("rdv_id"),
-        data.get("statut"),
-        data.get("moyen_paiement"),
-        data.get("services"),
-        data.get("montant_total"),
-        data.get("date_facture")
-    ))
+    # ✅ Validation du montant_total
+    montant_total = data.get("montant_total", "0")
+    
+    # Nettoyer et convertir
+    if isinstance(montant_total, str):
+        montant_total = montant_total.strip()
+    
+    # Si vide ou None, mettre 0
+    if not montant_total or montant_total == "" or montant_total == "0":
+        cursor.close()
+        conn.close()
+        return {"error": "MONTANT_DOIT_ETRE_SUPERIEUR_A_ZERO"}
+    
+    # Convertir en float
+    try:
+        montant_total = float(montant_total)
+    except (ValueError, TypeError):
+        cursor.close()
+        conn.close()
+        return {"error": "MONTANT_INVALIDE"}
+    
+    # Vérifier que le montant est positif
+    if montant_total <= 0:
+        cursor.close()
+        conn.close()
+        return {"error": "MONTANT_DOIT_ETRE_POSITIF"}
 
-    conn.commit()
-    facture_id = cursor.lastrowid
+    # Vérifier que des services sont fournis
+    services = data.get("services", "").strip()
+    if not services:
+        cursor.close()
+        conn.close()
+        return {"error": "SERVICES_REQUIS"}
 
-    cursor.close()
-    conn.close()
+    try:
+        cursor.execute("""
+            INSERT INTO factures 
+            (rdv_id, statut, moyen_paiement, services, montant_total, date_facture)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (
+            data.get("rdv_id"),
+            data.get("statut", "non_payé"),
+            data.get("moyen_paiement", "non_defini"),
+            services,
+            montant_total,  # ✅ Maintenant c'est un float valide
+            data.get("date_facture")
+        ))
 
-    return {"success": True, "facture_id": facture_id}
+        conn.commit()
+        facture_id = cursor.lastrowid
+
+        cursor.close()
+        conn.close()
+
+        return {"success": True, "facture_id": facture_id}
+    
+    except Exception as e:
+        if conn:
+            conn.close()
+        print(f"❌ Erreur ajouter_facture: {e}")
+        return {"error": f"ERREUR_BDD: {str(e)}"}
 
 
 def editer_facture(facture_id, data):
