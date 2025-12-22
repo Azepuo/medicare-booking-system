@@ -886,6 +886,67 @@ function displayRdvDetails(rdv) {
             })
             .catch(error => console.error('[NOTIF] Erreur:', error));
     }
+    function loadNextAppointment() {
+    fetch('/patient/get_next_appointment')
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.getElementById('nextRdvBadge');
+            
+            if (!badge) return;
+            
+            if (data.success && data.appointment) {
+                // Mettre à jour le badge avec les vraies données
+                badge.innerHTML = `
+                    <i class="fas fa-calendar-day"></i>
+                    <div class="rdv-info">
+                        <small>Prochain RDV</small>
+                        <strong>${data.appointment.date}</strong>
+                    </div>
+                `;
+                
+                // Ajouter un tooltip au survol
+                badge.title = `${data.appointment.medecin} à ${data.appointment.time}`;
+                
+                console.log('[NEXT-RDV] ✅ Chargé:', data.appointment);
+            } else {
+                // Aucun RDV à venir
+                badge.innerHTML = `
+                    <i class="fas fa-calendar-day"></i>
+                    <div class="rdv-info">
+                        <small>Prochain RDV</small>
+                        <strong>Aucun</strong>
+                    </div>
+                `;
+                badge.style.opacity = '0.6';
+                
+                console.log('[NEXT-RDV] ⚠️ Aucun RDV');
+            }
+        })
+        .catch(error => {
+            console.error('[NEXT-RDV] ❌ Erreur:', error);
+            
+            // En cas d'erreur, afficher "Indisponible"
+            const badge = document.getElementById('nextRdvBadge');
+            if (badge) {
+                badge.innerHTML = `
+                    <i class="fas fa-calendar-day"></i>
+                    <div class="rdv-info">
+                        <small>Prochain RDV</small>
+                        <strong>--</strong>
+                    </div>
+                `;
+            }
+        });
+}
+
+// Charger au démarrage de la page
+document.addEventListener('DOMContentLoaded', function() {
+    loadNextAppointment();
+    
+    // Optionnel: Rafraîchir toutes les 5 minutes
+     setInterval(loadNextAppointment, 5 * 60 * 1000);
+});
+
 </script>
 
 {% endblock %}

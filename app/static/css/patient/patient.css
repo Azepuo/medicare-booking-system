@@ -2365,7 +2365,7 @@ input:checked + .slider:before {
     }
 
     .section-title i {
-        color: #667eea;
+        color: #007aff;
         font-size: 1.75rem;
     }
 
@@ -2542,3 +2542,280 @@ input:checked + .slider:before {
     }
 
 
+
+    .password-security-section {
+    background: white;
+    border-radius: 24px;
+    padding: 2.5rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    margin-top: 2rem;
+}
+
+.password-section-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+.password-section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+}
+
+.password-section-title i {
+    color: #007aff;
+    font-size: 1.75rem;
+}
+
+/* Form Layout */
+.password-info-form {
+    display: grid;
+    gap: 2rem;
+}
+
+.password-form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.password-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.password-form-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #4b5563;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.password-form-group label i {
+    color: #007aff;
+    font-size: 1rem;
+}
+
+/* Password Input Container */
+.password-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-form-input {
+    width: 100%;
+    padding: 1rem 3rem 1rem 1.25rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: #f9fafb;
+    color: #1f2937;
+    font-weight: 500;
+}
+
+.password-form-input:focus {
+    outline: none;
+    border-color: #007aff;
+    background: white;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+}
+
+.password-form-input::placeholder {
+    color: #9ca3af;
+}
+
+/* Toggle Password Button */
+.password-toggle-btn {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 8px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+}
+
+.password-toggle-btn:hover {
+    color: #007aff;
+    background: #fee2e2;
+}
+
+.password-toggle-btn i {
+    font-size: 18px;
+}
+
+/* Hint Text */
+.password-form-hint {
+    display: block;
+    font-size: 0.85rem;
+    color: #6b7280;
+    font-style: italic;
+    margin-top: 0.25rem;
+}
+
+/* Form Actions */
+.password-form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    padding-top: 1.5rem;
+    border-top: 2px solid #f3f4f6;
+    margin-top: 1rem;
+}
+
+.password-btn-cancel {
+    padding: 0.875rem 2rem;
+    border: 2px solid #e5e7eb;
+    background: white;
+    color: #6b7280;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.password-btn-cancel:hover {
+    border-color: #d1d5db;
+    background: #f9fafb;
+    transform: translateY(-2px);
+}
+
+.password-btn-save {
+    padding: 0.875rem 2.5rem;
+    border: none;
+    background: linear-gradient(135deg, #007aff, #007aff);
+    color: white;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.password-btn-save:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+}
+
+.password-btn-save i,
+.password-btn-cancel i {
+    font-size: 1rem;
+}
+
+/* Validation States */
+.password-form-input.is-invalid {
+    border-color: #007aff;
+    background: #fef2f2;
+}
+
+.password-form-input.is-valid {
+    border-color: #10b981;
+    background: #f0fdf4;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .password-security-section {
+        padding: 1.5rem;
+    }
+
+    .password-form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .password-form-actions {
+        flex-direction: column-reverse;
+    }
+
+    .password-btn-save,
+    .password-btn-cancel {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+.next-rdv-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    background: white;
+    border-radius: 12px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.next-rdv-badge:hover {
+    background: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.next-rdv-badge i {
+    color: #3498db;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.rdv-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.rdv-info small {
+    display: block;
+    color: #95a5a6;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.rdv-info strong {
+    color: #2c3e50;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .next-rdv-badge {
+        padding: 6px 10px;
+    }
+    
+    .next-rdv-badge i {
+        font-size: 18px;
+    }
+    
+    .rdv-info small {
+        font-size: 10px;
+    }
+    
+    .rdv-info strong {
+        font-size: 12px;
+    }
+}

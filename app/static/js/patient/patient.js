@@ -1,38 +1,9 @@
 console.log("✅ patient.js est chargé avec succès !");
 
 // DEBUG: Afficher tous les rendez-vous et leurs statuts
-console.log('📋 Tous les rendez-vous:', appointments);
-console.log('🔍 Statuts uniques trouvés:', [...new Set(appointments.map(a => a.status))]);
-
 let currentFilter = 'tous';
 let searchQuery = '';
-/**
- * 1️⃣ FONCTION POUR RECHARGER LES RENDEZ-VOUS
- * Appelez cette fonction après création/modification/annulation
- */
-async function rechargerRendezVous() {
-    try {
-        console.log('🔄 Rechargement des rendez-vous...');
-        
-        const response = await fetch('/patient/get_all_appointments');
-        const data = await response.json();
-        
-        if (Array.isArray(data)) {
-            // Mettre à jour le tableau global
-            appointments = data;
-            
-            // Rafraîchir l'affichage
-            renderAppointments();
-            updateStats();
-            
-            console.log('✅ Rendez-vous rechargés:', data.length);
-        } else {
-            console.error('❌ Format de données invalide');
-        }
-    } catch (error) {
-        console.error('❌ Erreur rechargement:', error);
-    }
-}
+
 // Fonction pour normaliser les statuts
 function normalizeStatus(status) {
     const statusMap = {
@@ -64,47 +35,25 @@ function hideAppointmentForm() {
     const formContainer = document.getElementById('appointmentFormContainer');
     if (formContainer) formContainer.style.display = 'none';
 }
+function addNewAppointment(patientName, patientAge, doctor, appointmentDate, appointmentTime, reason) {
+    const doctorNames = { dr_dupont: "Dr. Dupont" };
+    const doctorSpecs = { dr_dupont: "Cardiologie" };
 
-// Ajouter un rendez-vous
-/**
- * 2️⃣ MODIFIER LA FONCTION addNewAppointment
- * Remplacez votre fonction existante par celle-ci
- */
-async function addNewAppointment(doctorId, appointmentDate, appointmentTime, reason) {
-    try {
-        console.log('📝 Création du rendez-vous...');
-        
-        const formData = new FormData();
-        formData.append('doctor_id', doctorId);
-        formData.append('consultation_date', appointmentDate);
-        formData.append('consultation_time', appointmentTime);
-        formData.append('reason', reason || '');
-        
-        const response = await fetch('/patient/book_appointment', {
-            method: 'POST',
-            body: formData
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showToast('✅ Rendez-vous créé avec succès !');
-            hideAppointmentForm();
-            
-            // ⭐ RECHARGER LES DONNÉES AUTOMATIQUEMENT
-            await rechargerRendezVous();
-            
-            // Optionnel : Recharger aussi les notifications
-            loadNotificationCount();
-            
-        } else {
-            showToast('❌ ' + (result.message || 'Erreur lors de la création'), true);
-        }
-        
-    } catch (error) {
-        console.error('❌ Erreur:', error);
-        showToast('❌ Erreur de connexion', true);
-    }
+    const newAppointment = {
+        id: appointments.length + 1,
+        medecin_name: doctorNames[doctor] || "Médecin inconnu",
+        medecin_spec: doctorSpecs[doctor] || "Spécialité non définie",
+        date: appointmentDate,
+        time: appointmentTime,
+        clinic: "Clinique Principale",
+        notes: reason || "",
+        status: "En attente", // CORRECTION: Utiliser "En attente" pour la cohérence
+    };
+
+    appointments.push(newAppointment);
+    renderAppointments();
+    updateStats();
+    hideAppointmentForm();
 }
 function modifier(appointment) {
     console.log('🔧 Modification du RDV:', appointment);
@@ -306,50 +255,46 @@ function modifier(appointment) {
     }
 
     // Soumission du formulaire
-   document.getElementById('editAppointmentForm').addEventListener('submit', async function (e) {
-    e.preventDefault();
+    document.getElementById('editAppointmentForm').addEventListener('submit', function (e) {
+        e.preventDefault();
 
-    const id = document.getElementById('editId').value;
-    const medecin_id = document.getElementById('editDoctor').value;
-    const date = document.getElementById('editDate').value;
-    const time = document.getElementById('editTime').value;
-    const notes = document.getElementById('editNotes').value;
+        const id = document.getElementById('editId').value;
+        const medecin_id = document.getElementById('editDoctor').value;
+        const date = document.getElementById('editDate').value;
+        const time = document.getElementById('editTime').value;
+        const notes = document.getElementById('editNotes').value;
 
-    if (!medecin_id || !date || !time) {
-        showToast("Veuillez remplir tous les champs", true);
-        return;
-    }
+        if (!medecin_id || !date || !time) {
+            showToast("Veuillez remplir tous les champs", true);
+            return;
+        }
 
-    const formData = new FormData();
-    formData.append('id', id);
-    formData.append('medecin_id', medecin_id);
-    formData.append('date', date);
-    formData.append('time', time);
-    formData.append('notes', notes);
+        const formData = new FormData();
+        formData.append('id', id);
+        formData.append('medecin_id', medecin_id);
+        formData.append('date', date);
+        formData.append('time', time);
+        formData.append('notes', notes);
 
-    try {
-        const response = await fetch('/patient/update_appointment', {
+        fetch('/patient/update_appointment', {
             method: 'POST',
             body: formData
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showToast("✅ Rendez-vous mis à jour !");
-            hideEditForm();
-            
-            // ⭐ RECHARGER LES DONNÉES
-            await rechargerRendezVous();
-            
-        } else {
-            showToast("❌ " + (data.message || "Erreur"), true);
-        }
-    } catch (err) {
-        showToast("❌ Erreur serveur", true);
-        console.error(err);
-    }
-});
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast("✅ Rendez-vous mis à jour !");
+                    hideEditForm();
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showToast("❌ " + (data.message || "Erreur"), true);
+                }
+            })
+            .catch(err => {
+                showToast("❌ Erreur serveur", true);
+                console.error(err);
+            });
+    });
 }
 
 // Ajoutez la fonction showToast si elle n'existe pas
@@ -377,9 +322,27 @@ function showToast(message, isError = false) {
         toast.remove();
     }, 3000);
 }
-
-
-
+async function refreshAppointments() {
+    try {
+        // Recharger la page pour récupérer les nouvelles données
+        // OU faire un appel AJAX pour récupérer uniquement les RDV
+        window.location.reload();
+        
+        // Alternative AJAX (si vous préférez ne pas recharger toute la page) :
+        /*
+        const response = await fetch('/patient/get_all_appointments_json');
+        const data = await response.json();
+        
+        if (data.success) {
+            appointments = data.appointments;
+            renderAppointments();
+            updateStats();
+        }
+        */
+    } catch (error) {
+        console.error('Erreur rafraîchissement:', error);
+    }
+}
 
 function saveAppointmentChanges(id) {
     const idx = appointments.findIndex(a => a.id === id);
@@ -406,42 +369,46 @@ function hideEditForm() {
     if (f) f.remove();
 }
 
-async function cancelAppointment(id) {
+function cancelAppointment(id) {
     if (confirm('Êtes-vous sûr de vouloir annuler ce rendez-vous ?')) {
         console.log(`🚫 Tentative d'annulation du RDV ${id}`);
 
-        try {
-            const response = await fetch('/patient/cancel_appointment', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ appointment_id: id })
+        // Envoyer la requête au serveur
+        fetch('/patient/cancel_appointment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ appointment_id: id })
+        })
+            .then(res => {
+                console.log('Réponse reçue, statut:', res.status);
+                if (!res.ok) {
+                    throw new Error('Erreur réseau: ' + res.status);
+                }
+                return res.json();
+            })
+            .then(data => {
+                console.log('Réponse du serveur:', data);
+                if (data.success) {
+                    // Mettre à jour le statut localement
+                    const idx = appointments.findIndex(a => a.id === id);
+                    if (idx !== -1) {
+                        appointments[idx].status = 'Annulé';
+                        renderAppointments();
+                        updateStats();
+                        showToast("✅ Rendez-vous annulé avec succès !");
+                    }
+                } else {
+                    showToast("❌ Erreur: " + (data.message || "Échec de l'annulation"), true);
+                }
+            })
+            .catch(err => {
+                console.error('Erreur lors de l\'annulation:', err);
+                showToast("❌ Erreur serveur lors de l'annulation", true);
             });
-            
-            if (!response.ok) {
-                throw new Error('Erreur réseau: ' + response.status);
-            }
-            
-            const data = await response.json();
-            console.log('Réponse du serveur:', data);
-            
-            if (data.success) {
-                showToast("✅ Rendez-vous annulé avec succès !");
-                
-                // ⭐ RECHARGER LES DONNÉES
-                await rechargerRendezVous();
-                
-            } else {
-                showToast("❌ Erreur: " + (data.message || "Échec de l'annulation"), true);
-            }
-        } catch (err) {
-            console.error('Erreur lors de l\'annulation:', err);
-            showToast("❌ Erreur serveur lors de l'annulation", true);
-        }
     }
 }
-
 
 // Stats - VERSION CORRIGÉE
 function updateStats() {
@@ -790,12 +757,8 @@ async function sendReviewToBackend(appointmentId, rating, comment) {
         const data = await response.json();
         
         if (response.ok) {
-            displayUserAlert('✅ Votre avis a été enregistré avec succès!', 'success');
+            displayUserAlert('✅ Votre avis a été Enregistrer avec succès!', 'success');
             console.log('Avis publié:', data);
-            
-            // ⭐ RECHARGER LES DONNÉES (pour mettre à jour le statut)
-            await rechargerRendezVous();
-            
         } else {
             displayUserAlert('❌ Erreur lors de la publication', 'danger');
         }
@@ -1628,3 +1591,330 @@ function markAsRead(notifId) {
     })
     .catch(error => console.error('[NOTIF] Erreur:', error));
 }
+
+
+//profile:
+
+// ✅ DÉPLACER showMessage() EN DEHORS pour être accessible partout
+function showMessage(message, type) {
+    const flashMessage = document.getElementById('flashMessage');
+    const icon = type === 'success' 
+        ? '<i class="fas fa-check-circle"></i>' 
+        : '<i class="fas fa-exclamation-circle"></i>';
+    
+    flashMessage.innerHTML = icon + '<span>' + message + '</span>';
+    flashMessage.className = 'flash-message ' + (type === 'success' ? 'flash-success' : 'flash-error');
+    flashMessage.style.display = 'flex';
+    
+    setTimeout(() => {
+        flashMessage.style.opacity = '0';
+        setTimeout(() => { 
+            flashMessage.style.display = 'none'; 
+            flashMessage.style.opacity = '1'; 
+        }, 300);
+    }, 3500);
+}
+
+// Fonction pour afficher/masquer le mot de passe
+function togglePasswordVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    const button = input.parentElement.querySelector('.password-toggle-btn i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        button.classList.remove('fa-eye');
+        button.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        button.classList.remove('fa-eye-slash');
+        button.classList.add('fa-eye');
+    }
+}
+
+// Réinitialiser le formulaire
+function resetPasswordChangeForm() {
+    const form = document.getElementById('passwordChangeForm');
+    form.reset();
+    
+    const passwordInputs = form.querySelectorAll('input[type="text"]');
+    passwordInputs.forEach(input => {
+        if (input.id.includes('pwd_')) {
+            input.type = 'password';
+            const icon = input.parentElement.querySelector('.password-toggle-btn i');
+            if (icon) {
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    });
+    
+    form.querySelectorAll('.password-form-input').forEach(input => {
+        input.classList.remove('is-valid', 'is-invalid');
+    });
+}
+ // ========================================
+    // 1️⃣ GESTION DU PROFIL
+    // ========================================
+document.addEventListener('DOMContentLoaded', function () {
+    // ========================================
+    // 1️⃣ GESTION DU PROFIL (uniquement si sur la page profil)
+    // ========================================
+    const form = document.getElementById('personalInfoForm');
+    
+    // ✅ Vérifier que le formulaire existe avant de continuer
+    if (form) {
+        const btnEdit = document.getElementById('btnEdit');
+        const btnCancel = document.getElementById('btnCancel');
+        const actions = document.getElementById('personalInfoActions');
+        const inputs = form.querySelectorAll('input');
+
+        let originalValues = {};
+        inputs.forEach(input => {
+            originalValues[input.name] = input.value;
+        });
+
+        btnEdit.addEventListener('click', function() {
+            inputs.forEach(input => input.removeAttribute('readonly'));
+            inputs[0].focus();
+            actions.style.display = 'flex';
+            btnEdit.style.display = 'none';
+        });
+
+        btnCancel.addEventListener('click', function() {
+            inputs.forEach(input => {
+                input.value = originalValues[input.name];
+                input.setAttribute('readonly', true);
+            });
+            actions.style.display = 'none';
+            btnEdit.style.display = 'flex';
+        });
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const nom = form.querySelector('#nom').value.trim();
+            const email = form.querySelector('#email').value.trim();
+            const telephone = form.querySelector('#telephone').value.trim();
+
+            if (!nom || !email || !telephone) {
+                showMessage("Tous les champs sont requis.", 'error');
+                return;
+            }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showMessage("Veuillez entrer une adresse email valide.", 'error');
+                return;
+            }
+
+            const phoneRegex = /^[0-9]{10}$/;
+            if (!phoneRegex.test(telephone)) {
+                showMessage("Le numéro de téléphone doit contenir exactement 10 chiffres.", 'error');
+                return;
+            }
+
+            const formData = new FormData(form);
+
+            fetch(form.action, {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    
+                    inputs.forEach(input => {
+                        originalValues[input.name] = input.value;
+                        input.setAttribute('readonly', true);
+                    });
+                    
+                    actions.style.display = 'none';
+                    btnEdit.style.display = 'flex';
+                    
+                    document.querySelector('.profile-hero-name').textContent = nom;
+                    document.querySelector('.profile-hero-email').innerHTML = 
+                        '<i class="fas fa-envelope"></i>' + email;
+                    document.querySelector('.avatar-circle').textContent = nom[0].toUpperCase();
+                } else {
+                    showMessage(data.message || "Erreur lors de la mise à jour.", 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showMessage("Erreur de connexion au serveur.", 'error');
+            });
+        });
+    } // ✅ Fin du if (form)
+
+    // ========================================
+    // 2️⃣ GESTION DU CHANGEMENT DE MOT DE PASSE (uniquement si sur la page profil)
+    // ========================================
+    const passwordForm = document.getElementById('passwordChangeForm');
+    
+    if (passwordForm) {
+        passwordForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const currentPassword = document.getElementById('pwd_current_password').value.trim();
+            const newPassword = document.getElementById('pwd_new_password').value.trim();
+            const confirmPassword = document.getElementById('pwd_confirm_password').value.trim();
+            
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                showMessage("Tous les champs sont requis.", 'error');
+                return;
+            }
+            
+            if (newPassword.length < 8) {
+                showMessage("Le nouveau mot de passe doit contenir au moins 8 caractères.", 'error');
+                document.getElementById('pwd_new_password').classList.add('is-invalid');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                showMessage("Les nouveaux mots de passe ne correspondent pas.", 'error');
+                document.getElementById('pwd_confirm_password').classList.add('is-invalid');
+                return;
+            }
+            
+            if (newPassword === currentPassword) {
+                showMessage("Le nouveau mot de passe doit être différent de l'ancien.", 'error');
+                return;
+            }
+            
+            const submitBtn = passwordForm.querySelector('.password-btn-save');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Traitement...';
+            
+            const formData = new FormData(passwordForm);
+            
+            fetch('/patient/change_password', {  // ✅ URL en dur au lieu de {{ url_for }}
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage(data.message || 'Mot de passe modifié avec succès', 'success');
+                    resetPasswordChangeForm();
+                } else {
+                    showMessage(data.message || "Erreur lors du changement de mot de passe.", 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showMessage("Erreur de connexion au serveur.", 'error');
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            });
+        });
+        
+        // Validation en temps réel
+        const newPasswordInput = document.getElementById('pwd_new_password');
+        const confirmPasswordInput = document.getElementById('pwd_confirm_password');
+        
+        if (newPasswordInput) {
+            newPasswordInput.addEventListener('input', function() {
+                if (this.value.length >= 8) {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                } else {
+                    this.classList.remove('is-valid');
+                    this.classList.add('is-invalid');
+                }
+                
+                if (confirmPasswordInput && confirmPasswordInput.value) {
+                    if (this.value === confirmPasswordInput.value) {
+                        confirmPasswordInput.classList.remove('is-invalid');
+                        confirmPasswordInput.classList.add('is-valid');
+                    } else {
+                        confirmPasswordInput.classList.remove('is-valid');
+                        confirmPasswordInput.classList.add('is-invalid');
+                    }
+                }
+            });
+        }
+        
+        if (confirmPasswordInput) {
+            confirmPasswordInput.addEventListener('input', function() {
+                if (newPasswordInput && this.value === newPasswordInput.value && this.value.length >= 8) {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                } else {
+                    this.classList.remove('is-valid');
+                    this.classList.add('is-invalid');
+                }
+            });
+        }
+    } // ✅ Fin du if (passwordForm)
+});
+/**
+ * Charge le prochain rendez-vous pour le badge
+ */
+function loadNextAppointment() {
+    fetch('/patient/get_next_appointment')
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.getElementById('nextRdvBadge');
+            
+            if (!badge) return;
+            
+            if (data.success && data.appointment) {
+                // Mettre à jour le badge avec les vraies données
+                badge.innerHTML = `
+                    <i class="fas fa-calendar-day"></i>
+                    <div class="rdv-info">
+                        <small>Prochain RDV</small>
+                        <strong>${data.appointment.date}</strong>
+                    </div>
+                `;
+                
+                // Ajouter un tooltip au survol
+                badge.title = `${data.appointment.medecin} à ${data.appointment.time}`;
+                
+                console.log('[NEXT-RDV] ✅ Chargé:', data.appointment);
+            } else {
+                // Aucun RDV à venir
+                badge.innerHTML = `
+                    <i class="fas fa-calendar-day"></i>
+                    <div class="rdv-info">
+                        <small>Prochain RDV</small>
+                        <strong>Aucun</strong>
+                    </div>
+                `;
+                badge.style.opacity = '0.6';
+                
+                console.log('[NEXT-RDV] ⚠️ Aucun RDV');
+            }
+        })
+        .catch(error => {
+            console.error('[NEXT-RDV] ❌ Erreur:', error);
+            
+            // En cas d'erreur, afficher "Indisponible"
+            const badge = document.getElementById('nextRdvBadge');
+            if (badge) {
+                badge.innerHTML = `
+                    <i class="fas fa-calendar-day"></i>
+                    <div class="rdv-info">
+                        <small>Prochain RDV</small>
+                        <strong>--</strong>
+                    </div>
+                `;
+            }
+        });
+}
+
+// Charger au démarrage de la page
+document.addEventListener('DOMContentLoaded', function() {
+    loadNextAppointment();
+    
+    // Optionnel: Rafraîchir toutes les 5 minutes
+     setInterval(loadNextAppointment, 5 * 60 * 1000);
+});
+
+
+
+

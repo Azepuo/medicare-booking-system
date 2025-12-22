@@ -92,7 +92,6 @@
         }
     </style>
 </head>
-
 <body>
 
     <div class="appointment-form-container" id="appointmentFormContainer">
@@ -358,13 +357,13 @@
                         if (response.success) {
                             // Message de succès stylisé
                             showToast('Votre rendez-vous a été enregistré avec succès !');
-
                             // Réinitialiser le formulaire
                             resetForm();
+                            hideAppointmentForm();
 
                             // Fermer le formulaire
                             setTimeout(() => {
-                                hideAppointmentForm();
+                                window.location.reload();
                             }, 1000);
 
                         } else {

@@ -5,6 +5,7 @@ from mysql.connector import Error
 from datetime import datetime, timedelta, time, date
 import calendar
 from decimal import Decimal
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Fonction pour obtenir une connexion à la base de données
 def get_db_connection():
@@ -1193,7 +1194,6 @@ class ServerRPC:
                 "success": False,
                 "message": f"Erreur lors de la récupération: {str(e)}"
             }
-
     # ==========================================
     # MÉTHODE: mark_notification_as_read
     # ==========================================
@@ -1265,7 +1265,6 @@ class ServerRPC:
             except:
                 pass
             return {"success": False, "message": str(e)}
-
     # ==========================================
     # MÉTHODE: get_unread_count
     # ==========================================
@@ -1305,7 +1304,6 @@ class ServerRPC:
         except Exception as e:
             print(f"[RPC] ❌ Erreur get_unread_count: {e}")
             return {"success": False, "count": 0}
-
     # ==========================================
     # MÉTHODE: get_notifications
     # ==========================================
@@ -1380,7 +1378,230 @@ class ServerRPC:
             import traceback
             traceback.print_exc()
             return {"success": False, "notifications": []}
+    # ==========================================
+    # MÉTHODE: change_password
+    # ==========================================
+    def change_password(self, user_id, old_password, new_password):
+     """
+    Change le mot de passe d'un patient en utilisant Werkzeug (comme l'inscription)
+    """
+     try:
+        print("="*50)
+        print(f"[RPC] change_password appelée:")
+        print(f"  - User ID: {user_id}")
+        
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
 
+        # Récupérer le mot de passe actuel depuis la table users
+        cursor.execute("SELECT password FROM users WHERE id=%s", (user_id,))
+        row = cursor.fetchone()
+        
+        if not row:
+            cursor.close()
+            conn.close()
+            return {"success": False, "message": "Utilisateur introuvable"}
+
+        stored_password = row["password"]
+        print(f"[DEBUG] Mot de passe stocké: {stored_password[:60]}...")
+
+        # Vérifier l'ancien mot de passe avec Werkzeug
+        if not check_password_hash(stored_password, old_password):
+            print(f"[DEBUG] ❌ Mot de passe incorrect")
+            cursor.close()
+            conn.close()
+            return {"success": False, "message": "Mot de passe actuel incorrect"}
+
+        print(f"[DEBUG] ✅ Ancien mot de passe vérifié")
+
+        # Générer le nouveau hash avec Werkzeug (cohérent avec l'inscription)
+        new_hashed_password = generate_password_hash(new_password)
+        
+        print(f"[DEBUG] Nouveau hash généré avec Werkzeug")
+        print(f"[DEBUG]   - Hash: {new_hashed_password[:60]}...")
+
+        # Mise à jour dans la table users
+        cursor.execute("UPDATE users SET password=%s WHERE id=%s", 
+                      (new_hashed_password, user_id))
+        conn.commit()
+        
+        print(f"[DEBUG] ✅ Mot de passe mis à jour en base")
+        
+        cursor.close()
+        conn.close()
+
+        return {"success": True, "message": "Mot de passe mis à jour avec succès"}
+
+     except Exception as e:
+        print(f"[RPC] ❌ Erreur: {e}")
+        import traceback
+        traceback.print_exc()
+        try:
+            if 'conn' in locals():
+                conn.rollback()
+            if 'cursor' in locals():
+                cursor.close()
+            if 'conn' in locals():
+                conn.close()
+        except:
+            pass
+        return {"success": False, "message": f"Erreur: {str(e)}"}
+    def get_next_appointment(self, user_id):
+     """
+    Récupère le prochain rendez-vous à venir pour un patient
+    """
+     patient_id = user_id
+    
+     try:
+        print("="*60)
+        print(f"[RPC-DEBUG] 🚀 get_next_appointment() appelée")
+        print(f"[RPC-DEBUG] 📋 Paramètres reçus:")
+        print(f"  - user_id (patient): {patient_id}")
+        print("="*60)
+        
+        conn = get_db_connection()
+        if not conn:
+            print("[RPC-DEBUG] ❌ ÉCHEC: Impossible de se connecter à la base de données")
+            return {"success": False, "appointment": None, "debug": "DB connection failed"}
+        
+        print("[RPC-DEBUG] ✅ Connexion DB établie")
+        
+        cursor = conn.cursor(dictionary=True)
+        
+        # ÉTAPE 1: Récupérer l'ID interne du patient
+        print(f"[RPC-DEBUG] 🔍 ÉTAPE 1: Recherche patient avec user_id={patient_id}")
+        cursor.execute("SELECT id, nom, email FROM patients WHERE user_id=%s", (patient_id,))
+        patient_row = cursor.fetchone()
+        
+        if not patient_row:
+            print("[RPC-DEBUG] ❌ ÉCHEC: Patient introuvable dans la table patients")
+            cursor.close()
+            conn.close()
+            return {
+                "success": False, 
+                "appointment": None, 
+                "debug": f"Patient user_id={patient_id} non trouvé"
+            }
+        
+        internal_patient_id = patient_row['id']
+        print(f"[RPC-DEBUG] ✅ Patient trouvé:")
+        print(f"  - ID interne: {internal_patient_id}")
+        print(f"  - Nom: {patient_row['nom']}")
+        print(f"  - Email: {patient_row['email']}")
+        
+        # ÉTAPE 5: Recherche finale avec la bonne condition
+        print(f"[RPC-DEBUG] 🔍 ÉTAPE 5: Recherche du prochain RDV")
+        cursor.execute("""
+            SELECT 
+                r.id,
+                r.date_heure,
+                m.nom as medecin_nom,
+                s.nom as specialite,
+                DATE(r.date_heure) as date_only,
+                TIME_FORMAT(r.date_heure, '%H:%i') as time_only,
+                r.statut
+            FROM rendezvous r
+            JOIN medecins m ON r.medecin_id = m.id
+            LEFT JOIN specialisations s ON m.id_specialisation = s.id
+            WHERE r.patient_id = %s 
+              AND r.date_heure >= NOW()
+              AND LOWER(r.statut) IN ('confirmé')
+            ORDER BY r.date_heure ASC
+            LIMIT 1
+        """, (internal_patient_id,))
+        
+        next_appointment = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        if next_appointment:
+            print(f"[RPC-DEBUG] ✅ SUCCÈS: RDV trouvé!")
+            print(f"  - ID: {next_appointment['id']}")
+            print(f"  - Date brute: {next_appointment['date_heure']} (type: {type(next_appointment['date_heure'])})")
+            print(f"  - date_only: {next_appointment['date_only']} (type: {type(next_appointment['date_only'])})")
+            print(f"  - time_only: {next_appointment['time_only']} (type: {type(next_appointment['time_only'])})")
+            print(f"  - Statut: '{next_appointment['statut']}'")
+            print(f"  - Médecin: {next_appointment['medecin_nom']}")
+            
+            # ============================================
+            # CORRECTION CRITIQUE: Convertir TOUS les dates en strings
+            # ============================================
+            for key in list(next_appointment.keys()):
+                value = next_appointment[key]
+                if value is not None:
+                    if isinstance(value, (datetime, date)):
+                        print(f"[RPC-DEBUG] 🔄 Conversion {key}: {value} (type: {type(value)}) -> string")
+                        if isinstance(value, datetime):
+                            next_appointment[key] = value.strftime("%Y-%m-%d %H:%M:%S")
+                        else:  # c'est un date
+                            next_appointment[key] = value.strftime("%Y-%m-%d")
+                    elif isinstance(value, Decimal):
+                        # Convertir aussi les Decimal en float
+                        next_appointment[key] = float(value)
+            
+            # Assurer que time_only est bien une string
+            if next_appointment.get('time_only') and isinstance(next_appointment['time_only'], (time, timedelta)):
+                if isinstance(next_appointment['time_only'], time):
+                    next_appointment['time_only'] = next_appointment['time_only'].strftime("%H:%M")
+                else:  # timedelta
+                    hours = next_appointment['time_only'].seconds // 3600
+                    minutes = (next_appointment['time_only'].seconds % 3600) // 60
+                    next_appointment['time_only'] = f"{hours:02d}:{minutes:02d}"
+            
+            print(f"[RPC-DEBUG] 📦 Données après conversion:")
+            for key, value in next_appointment.items():
+                print(f"  {key}: {value} (type: {type(value)})")
+            
+            result = {
+                "success": True,
+                "appointment": next_appointment,
+                "debug": {
+                    "patient_found": True,
+                    "query_used": "LOWER(r.statut) IN ('confirmé', 'en attente')"
+                }
+            }
+        else:
+            print(f"[RPC-DEBUG] ⚠️ ATTENTION: Aucun RDV trouvé avec les conditions actuelles")
+            result = {
+                "success": False,
+                "appointment": None,
+                "debug": {
+                    "patient_found": True,
+                    "message": "Aucun RDV futur avec statut 'confirmé' ou 'en attente'"
+                }
+            }
+        
+        print("[RPC-DEBUG] ✅ Connexion DB fermée")
+        print("="*60)
+        
+        return result
+    
+     except Exception as e:
+        print(f"[RPC-DEBUG] ❌ ERREUR CRITIQUE: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        try:
+            if 'cursor' in locals():
+                cursor.close()
+            if 'conn' in locals():
+                conn.close()
+        except:
+            pass
+            
+        return {
+            "success": False, 
+            "appointment": None,
+            "debug": f"Exception: {str(e)}"
+        }
+    def logout(self):
+     """
+    Gère la déconnexion (méthode simple)
+    """
+     print("[RPC-LOGOUT] ✅ Déconnexion traitée côté serveur")
+     return {"success": True, "message": "Déconnexion réussie"}
+     
 # ==========================================
 # LANCEMENT DU SERVEUR RPC
 # ==========================================

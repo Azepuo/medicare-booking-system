@@ -56,6 +56,7 @@ def get_rpc_server():
 @patient.route("/accueil")
 def accueil():
     return render_template("patient/accueil.html")
+
 @patient.route("/get_unread_count")
 def get_unread_count():
     """Route pour récupérer le nombre de notifications non lues"""
@@ -72,6 +73,7 @@ def get_unread_count():
     except Exception as e:
         print(f"[GET_UNREAD_COUNT] ❌ Erreur: {e}")
         return jsonify({"success": False, "count": 0})
+
 @patient.route("/get_notifications")
 def get_notifications():
     """Récupère les notifications du patient"""
@@ -91,6 +93,7 @@ def get_notifications():
     except Exception as e:
         print(f"[GET_NOTIFICATIONS] ❌ Erreur: {e}")
         return jsonify({"success": False, "notifications": []})
+
 @patient.route("/mark_notification_read/<int:notif_id>", methods=["POST"])
 def mark_notification_read(notif_id):
     """Marque une notification comme lue"""
@@ -109,6 +112,7 @@ def mark_notification_read(notif_id):
     except Exception as e:
         print(f"[MARK_READ] ❌ Erreur: {e}")
         return jsonify({"success": False})
+
 @patient.route("/dashboard")
 def dashboard():
     user_id, role = get_current_user()
@@ -136,6 +140,7 @@ def dashboard():
         upcoming_appointments=upcoming_appointments,
         last_consults=last_consults
     )
+
 @patient.route('/rdv/details/<int:rdv_id>', methods=['GET'])
 def get_rdv_details(rdv_id):
     # 🔒 Vérifier authentification
@@ -173,6 +178,7 @@ def get_rdv_details(rdv_id):
             'success': False,
             'message': f'Erreur serveur: {str(e)}'
         }), 500
+
 @patient.route("/mes_rdv")
 def mes_rdv():
     user_id, role = get_current_user()
@@ -441,8 +447,7 @@ def update_profile():
             "message": f"Erreur lors de la mise à jour: {str(e)}"
         })
 
-@patient.route("/logout")
-def logout():
+
     return render_template("patient/logout.html")
 
 @patient.route("/prise_rdv")
@@ -482,9 +487,6 @@ def get_doctors():
         traceback.print_exc()
         return jsonify([])
 
-# Ajouter UNIQUEMENT cette route dans votre fichier patient_routes.py
-# Ajouter UNIQUEMENT cette route dans votre fichier patient_routes.py
-
 @patient.route("/get_appointment_review/<int:appointment_id>")
 def get_appointment_review(appointment_id):
     """
@@ -501,6 +503,16 @@ def get_appointment_review(appointment_id):
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         
+        # Récupérer l'ID interne du patient
+        cursor.execute("SELECT id FROM patients WHERE user_id = %s", (user_id,))
+        patient_row = cursor.fetchone()
+        if not patient_row:
+            cursor.close()
+            conn.close()
+            return jsonify({"success": False, "message": "Patient introuvable"}), 404
+        
+        internal_patient_id = patient_row['id']
+        
         cursor.execute("""
             SELECT 
                 a.id,
@@ -509,7 +521,7 @@ def get_appointment_review(appointment_id):
                 a.date_avis
             FROM avis a
             WHERE a.rendezvous_id = %s AND a.patient_id = %s
-        """, (appointment_id, user_id))
+        """, (appointment_id, internal_patient_id))
         
         existing_review = cursor.fetchone()
         cursor.close()
@@ -539,10 +551,11 @@ def get_appointment_review(appointment_id):
             "success": False,
             "message": str(e)
         }), 500
+
 @patient.route("/submit_review", methods=["POST"])
 def submit_review():
     """
-    Route pour soumettre un avis patient
+    Route pour soumettre un avis patient - VERSION CORRIGÉE
     """
     user_id, role = get_current_user()
     
@@ -559,7 +572,7 @@ def submit_review():
         
         print("="*50)
         print(f"[SUBMIT_REVIEW] Soumission d'avis:")
-        print(f"  - Patient: {user_id}")
+        print(f"  - Patient User ID: {user_id}")
         print(f"  - RDV: {appointment_id}")
         print(f"  - Note: {rating}")
         print(f"  - Commentaire: {comment[:50] if comment else 'N/A'}...")
@@ -583,14 +596,30 @@ def submit_review():
                 "message": "Le commentaire doit contenir au moins 10 caractères"
             }), 400
         
-        # Récupérer le médecin_id depuis le rendez-vous
+        # Récupérer l'ID interne du patient et du médecin depuis le rendez-vous
         conn = get_db_connection()
         cursor = conn.cursor()
+        
+        # D'abord récupérer l'ID interne du patient
+        cursor.execute("SELECT id FROM patients WHERE user_id = %s", (user_id,))
+        patient_row = cursor.fetchone()
+        if not patient_row:
+            cursor.close()
+            conn.close()
+            return jsonify({
+                "success": False,
+                "message": "Patient introuvable"
+            }), 404
+        
+        internal_patient_id = patient_row[0]
+        
+        # Ensuite récupérer les infos du rendez-vous (avec medecin_id interne)
         cursor.execute("""
-            SELECT medecin_id, statut 
-            FROM rendezvous 
-            WHERE id = %s AND patient_id = %s
-        """, (appointment_id, user_id))
+            SELECT r.medecin_id, r.statut, m.user_id as medecin_user_id
+            FROM rendezvous r
+            JOIN medecins m ON r.medecin_id = m.id
+            WHERE r.id = %s AND r.patient_id = %s
+        """, (appointment_id, internal_patient_id))
         
         rdv_info = cursor.fetchone()
         cursor.close()
@@ -602,12 +631,19 @@ def submit_review():
                 "message": "Rendez-vous introuvable"
             }), 404
         
-        medecin_id = rdv_info[0]
+        internal_medecin_id = rdv_info[0]
+        medecin_user_id = rdv_info[2]
         
-        # Appel RPC pour enregistrer l'avis
+        print(f"[SUBMIT_REVIEW] IDs trouvés:")
+        print(f"  - Internal Patient ID: {internal_patient_id}")
+        print(f"  - Internal Medecin ID: {internal_medecin_id}")
+        print(f"  - Medecin User ID: {medecin_user_id}")
+        
+        # Appel RPC pour enregistrer l'avis avec l'ID interne du médecin
         rpc_server = get_rpc_server()
         result = rpc_server.save_patient_review(
-            medecin_id,
+            internal_patient_id,
+            internal_medecin_id,  # ✅ On passe l'ID interne, pas le user_id
             appointment_id,
             rating,
             comment
@@ -630,6 +666,7 @@ def submit_review():
             "success": False,
             "message": f"Erreur serveur: {str(e)}"
         }), 500
+
 @patient.route("/get_available_slots")
 def get_available_slots():
     patient_id = 1  # à remplacer par session['patient_id']
@@ -811,3 +848,193 @@ def get_available_dates():
         import traceback
         traceback.print_exc()
         return jsonify({"success": False, "dates": []})
+
+@patient.route("/get_next_appointment")
+def get_next_appointment():
+    """
+    Retourne le prochain rendez-vous à venir
+    """
+    user_id, role = get_current_user()
+    
+    if not user_id or role != "PATIENT":
+        return jsonify({
+            "success": False,
+            "appointment": None
+        }), 403
+    
+    try:
+        rpc_server = get_rpc_server()
+        result = rpc_server.get_next_appointment(user_id)
+        
+        if result.get("success") and result.get("appointment"):
+            appointment = result["appointment"]
+            
+            # Formater la date en français (ex: "15 Jan")
+            from datetime import datetime
+            
+            date_str = appointment['date_only']  # Format: 2025-01-15
+            date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+            
+            # Mois en français
+            mois_fr = {
+                1: 'Jan', 2: 'Fév', 3: 'Mar', 4: 'Avr',
+                5: 'Mai', 6: 'Juin', 7: 'Juil', 8: 'Août',
+                9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Déc'
+            }
+            
+            date_formatee = f"{date_obj.day} {mois_fr[date_obj.month]}"
+            
+            return jsonify({
+                "success": True,
+                "appointment": {
+                    "date": date_formatee,  # "15 Jan"
+                    "time": appointment['time_only'],  # "10:30"
+                    "medecin": appointment['medecin_nom'],
+                    "specialite": appointment.get('specialite', '')
+                }
+            }), 200
+        else:
+            return jsonify({
+                "success": False,
+                "appointment": None,
+                "message": "Aucun rendez-vous à venir"
+            }), 200
+            
+    except Exception as e:
+        print(f"[FLASK] ❌ Erreur get_next_appointment: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "appointment": None,
+            "message": "Erreur serveur"
+        }), 500
+@patient.route("/change_password", methods=["POST"])
+def change_password():
+    """
+    Change le mot de passe du patient - VERSION CORRIGÉE
+    """
+    # 🔒 Vérifier authentification avec get_current_user()
+    user_id, role = get_current_user()
+    
+    print(f"[FLASK] 🔍 change_password appelée")
+    print(f"[FLASK]   - User ID: {user_id}")
+    print(f"[FLASK]   - Rôle: {role}")
+    print(f"[FLASK]   - Données reçues: {request.form}")
+    
+    if not user_id or role != "PATIENT":
+        print(f"[FLASK] ❌ Non autorisé")
+        return jsonify({
+            "success": False,
+            "message": "Non autorisé"
+        }), 403
+    
+    try:
+        print("="*50)
+        print(f"[FLASK] Changement de mot de passe:")
+        
+        current_password = request.form.get('current_password', '').strip()
+        new_password = request.form.get('new_password', '').strip()
+        confirm_password = request.form.get('confirm_password', '').strip()
+        
+        print(f"[FLASK]   - Current: '{current_password}'")
+        print(f"[FLASK]   - New: '{new_password}'")
+        print(f"[FLASK]   - Confirm: '{confirm_password}'")
+        
+        # Validation des champs
+        if not all([current_password, new_password, confirm_password]):
+            print(f"[FLASK] ❌ Champs manquants")
+            return jsonify({
+                "success": False,
+                "message": "Tous les champs sont requis"
+            }), 400
+        
+        # Vérification correspondance
+        if new_password != confirm_password:
+            print(f"[FLASK] ❌ Mots de passe différents")
+            return jsonify({
+                "success": False,
+                "message": "Les mots de passe ne correspondent pas"
+            }), 400
+        
+        # Validation longueur
+        if len(new_password) < 8:
+            print(f"[FLASK] ❌ Mot de passe trop court")
+            return jsonify({
+                "success": False,
+                "message": "Le mot de passe doit contenir au moins 8 caractères"
+            }), 400
+        
+        # Vérifier que le nouveau mot de passe est différent
+        if new_password == current_password:
+            print(f"[FLASK] ❌ Même mot de passe")
+            return jsonify({
+                "success": False,
+                "message": "Le nouveau mot de passe doit être différent de l'ancien"
+            }), 400
+        
+        # Appeler RPC
+        print(f"[FLASK] 📞 Appel RPC...")
+        rpc_server = get_rpc_server()
+        result = rpc_server.change_password(
+            user_id,
+            current_password,
+            new_password
+        )
+        
+        print(f"[FLASK] ✅ Résultat RPC: {result}")
+        print("="*50)
+        
+        if result.get("success"):
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 400
+            
+    except Exception as e:
+        print(f"[FLASK] ❌ Erreur: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "message": "Erreur serveur"
+        }), 500
+@patient.route("/logout")
+def logout():
+    """
+    Déconnecte l'utilisateur en supprimant le cookie JWT
+    """
+    print("[FLASK-LOGOUT] 🔒 Déconnexion en cours...")
+    
+    user_id, role = get_current_user()
+    
+    if user_id:
+        print(f"[FLASK-LOGOUT] Utilisateur {user_id} ({role}) se déconnecte")
+        
+        # Optionnel: Appel RPC pour log
+        try:
+            rpc_server = get_rpc_server()
+            rpc_server.logout()
+            print("[FLASK-LOGOUT] ✅ RPC appelé avec succès")
+        except Exception as e:
+            print(f"[FLASK-LOGOUT] ⚠️ RPC non disponible: {e}")
+    
+    # Créer une réponse de redirection
+    response = redirect("http://localhost:5000/login")
+    
+    # Supprimer le cookie JWT
+    response.set_cookie(
+        'access_token', 
+        '', 
+        expires=0,  # Expire immédiatement
+        httponly=True,
+        secure=False,  # Mettre à True en production avec HTTPS
+        samesite='Lax',
+        path='/'
+    )
+    
+    # Optionnel: Supprimer d'autres cookies
+    response.set_cookie('session', '', expires=0, path='/')
+    response.set_cookie('user_id', '', expires=0, path='/')
+    
+    print("[FLASK-LOGOUT] ✅ Cookies supprimés, redirection vers /login")
+    return response
