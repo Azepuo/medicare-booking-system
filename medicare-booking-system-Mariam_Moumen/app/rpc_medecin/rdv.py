@@ -2,8 +2,32 @@
 from flask import Blueprint, request, jsonify
 from .rdv_rpc_methods import list_rdv, get_rdv, create_rdv, update_rdv, delete_rdv
 from app.rpc.auth_rpc.auth_rpc import get_user_from_token
+from database.connection import create_connection
 
 rdv_rpc = Blueprint("rdv_rpc", __name__, url_prefix="/medecin/rpc/rdv")
+
+def get_medecin_id_from_user_id(user_id):
+    """Récupérer l'ID du médecin à partir du user_id"""
+    conn = create_connection()
+    if not conn:
+        return None
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id FROM medecins WHERE user_id = %s", (user_id,))
+        medecin = cursor.fetchone()
+        
+        if medecin:
+            return medecin['id']
+        return None
+    except Exception as e:
+        print(f"Erreur lors de la récupération du médecin: {e}")
+        return None
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if conn:
+            conn.close()
 
 # ----------------- LIST -----------------
 @rdv_rpc.route("/list", methods=["GET"])
@@ -13,10 +37,14 @@ def list_all_rdvs():
         if not user or user.get("role") != "MEDECIN":
             return jsonify({"ok": False, "error": "Accès non autorisé"}), 403
         
-        user_id = user["user_id"]
+        # Récupérer le medecin_id à partir du user_id
+        medecin_id = get_medecin_id_from_user_id(user["user_id"])
+        if not medecin_id:
+            return jsonify({"ok": False, "error": "Médecin non trouvé"}), 404
+        
         today = request.args.get('today') == '1'
         
-        rdvs = list_rdv(user_id, today=today)
+        rdvs = list_rdv(medecin_id, today=today)
         return jsonify({"ok": True, "data": rdvs})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
@@ -29,8 +57,11 @@ def get_single_rdv(rdv_id):
         if not user or user.get("role") != "MEDECIN":
             return jsonify({"ok": False, "error": "Accès non autorisé"}), 403
         
-        user_id = user["user_id"]
-        rdv = get_rdv(rdv_id, user_id)
+        medecin_id = get_medecin_id_from_user_id(user["user_id"])
+        if not medecin_id:
+            return jsonify({"ok": False, "error": "Médecin non trouvé"}), 404
+        
+        rdv = get_rdv(rdv_id, medecin_id)
         
         if rdv:
             return jsonify({"ok": True, "data": rdv})
@@ -50,7 +81,9 @@ def create_new_rdv():
         if not user or user.get("role") != "MEDECIN":
             return jsonify({"ok": False, "error": "Accès non autorisé"}), 403
         
-        user_id = user["user_id"]
+        medecin_id = get_medecin_id_from_user_id(user["user_id"])
+        if not medecin_id:
+            return jsonify({"ok": False, "error": "Médecin non trouvé"}), 404
 
         # Validation
         required_fields = ['patient_id', 'date_heure']
@@ -59,7 +92,7 @@ def create_new_rdv():
             return jsonify({"ok": False, "error": f"Champs requis: {', '.join(missing)}"}), 400
 
         payload = {
-            "user_id": user_id,  # ✅ Directement user_id
+            "medecin_id": medecin_id,
             "patient_id": data["patient_id"],
             "date_heure": data["date_heure"],
             "statut": data.get("statut", "En attente"),
@@ -83,10 +116,12 @@ def update_existing_rdv(rdv_id):
         if not user or user.get("role") != "MEDECIN":
             return jsonify({"ok": False, "error": "Accès non autorisé"}), 403
         
-        user_id = user["user_id"]
+        medecin_id = get_medecin_id_from_user_id(user["user_id"])
+        if not medecin_id:
+            return jsonify({"ok": False, "error": "Médecin non trouvé"}), 404
         
         payload = {k: data[k] for k in ['patient_id','date_heure','statut','notes'] if k in data}
-        updated_rdv = update_rdv(rdv_id, user_id, payload)
+        updated_rdv = update_rdv(rdv_id, medecin_id, payload)
         
         if updated_rdv:
             return jsonify({"ok": True, "data": updated_rdv})
@@ -102,9 +137,11 @@ def delete_existing_rdv(rdv_id):
         if not user or user.get("role") != "MEDECIN":
             return jsonify({"ok": False, "error": "Accès non autorisé"}), 403
         
-        user_id = user["user_id"]
+        medecin_id = get_medecin_id_from_user_id(user["user_id"])
+        if not medecin_id:
+            return jsonify({"ok": False, "error": "Médecin non trouvé"}), 404
         
-        success = delete_rdv(rdv_id, user_id)
+        success = delete_rdv(rdv_id, medecin_id)
         if success:
             return jsonify({"ok": True, "message": "Rendez-vous supprimé"})
         return jsonify({"ok": False, "error": "Rendez-vous non trouvé"}), 404
