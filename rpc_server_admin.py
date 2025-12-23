@@ -1190,21 +1190,31 @@ def update_admin_password(current_pwd, new_pwd):
     admin = cursor.fetchone()
 
     if not admin:
-        cursor.close()
-        conn.close()
-        return {"error": "ADMIN_NOT_FOUND"}
+        return {"success": False, "error": "ADMIN_NOT_FOUND"}
 
-    if not bcrypt.checkpw(current_pwd.encode(), admin["password"].encode()):
-        cursor.close()
-        conn.close()
-        return {"error": "WRONG_PASSWORD"}
+    stored_pwd = admin["password"]
 
-    new_hash = bcrypt.hashpw(new_pwd.encode(), bcrypt.gensalt()).decode()
+    # 🔒 Vérifier si c'est bien bcrypt
+    if not stored_pwd.startswith("$2"):
+        return {
+            "success": False,
+            "error": "PASSWORD_NOT_BCRYPT",
+            "message": "Ancien mot de passe détecté, reset requis"
+        }
+
+    if not bcrypt.checkpw(
+        current_pwd.encode("utf-8"),
+        stored_pwd.encode("utf-8")
+    ):
+        return {"success": False, "error": "WRONG_PASSWORD"}
+
+    new_hash = bcrypt.hashpw(
+        new_pwd.encode("utf-8"),
+        bcrypt.gensalt()
+    ).decode("utf-8")
 
     cursor.execute("""
-        UPDATE users
-        SET password=%s
-        WHERE id=%s
+        UPDATE users SET password=%s WHERE id=%s
     """, (new_hash, admin["id"]))
 
     conn.commit()
