@@ -1,0 +1,73 @@
+{% extends "patient/base.html" %}
+{% block title %}Rendez-vous{% endblock %}
+{% set active_page = 'mes_rdv' %}
+
+{% block content %}
+<div class="content">
+    <div class="container">
+        <div class="heade">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h1>Mes Rendez-vous</h1>
+                <button class="btn-add-appointment" onclick="showAppointmentForm()">
+                    <i class="fas fa-plus" style="color: white;"></i> Ajouter un Rendez-vous
+                </button>
+            </div>
+
+            <div class="filters">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Rechercher par médecin, spécialité ou date...">
+                </div>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="tous">Tous</button>
+                    <button class="filter-btn" data-filter="confirmé">Confirmés</button>
+                    <button class="filter-btn" data-filter="terminé">Terminés</button>
+                    <button class="filter-btn" data-filter="annulé">Annulés</button>
+                    <button class="filter-btn" data-filter="En attente">En Attente</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="stats" class="stats"></div>
+
+        <div id="appointmentsGrid" class="appointments-grid"></div>
+
+        <div id="emptyState" class="empty-state" style="display:none;">
+            <div class="empty-state-icon">📅</div>
+            <h3>Aucun rendez-vous trouvé</h3>
+            <p>Essayez de modifier vos critères de recherche</p>
+        </div>
+
+    </div>
+</div>
+
+{% include "patient/prise_rdv.html" %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const specialisations = {{ specialisations|tojson }};
+    
+    const appointments = [
+        {% for rdv in upcoming_appointments %}
+        {
+            id: {{ rdv.id }},
+            medecin_id: {{ rdv.medecin_id }},
+            medecin_name: "{{ rdv.medecin_nom }}",
+            medecin_spec: "{{ rdv.specialite }}",
+            date: "{{ rdv.date_only }}",
+            time: "{{ rdv.time_only }}",
+            clinic: "{{ rdv.clinic or '' }}",
+            status: "{{ rdv.statut }}",
+            notes: {{ rdv.notes|tojson if rdv.notes else '""' }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    console.log('📋 Appointments chargés:', appointments);
+    console.log('🔍 Exemple d\'heure:', appointments.length > 0 ? appointments[0].time : 'Aucun RDV');
+    console.log('🏥 Spécialisations:', specialisations);
+</script>
+
+<script src="{{ url_for('static', filename='js/patient/patient.js') }}"></script>
+{% endblock %}

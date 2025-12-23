@@ -17,7 +17,8 @@ async function rpcCall(method, params = {}) {
     const response = await fetch("/api/rpc", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ method, params })
+        body: JSON.stringify({ method, params }),
+        credentials: "include" // ✅ ajoute cette ligne
     });
 
     // Toujours récupérer JSON, même en cas d'erreur 400 ou 500

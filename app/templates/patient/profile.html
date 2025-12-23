@@ -1,0 +1,194 @@
+{% extends "patient/base.html" %}
+
+{% block title %}Mon Profil - WeCare{% endblock %}
+
+{% block page_title %}Mon Compte{% endblock %}
+
+{% block header %}
+<div style="display: none;">
+    {{ super() }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="profile-wrapper">
+    <!-- Flash Message -->
+    <div id="flashMessage" class="flash-message" style="display:none;">
+        <i class="fas fa-check-circle"></i>
+        <span></span>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="profile-hero">
+        <div class="profile-hero-content">
+            <div class="profile-avatar-large">
+                <div class="avatar-circle">
+                    {{ patient.nom[0]|upper if patient.nom else 'P' }}
+                </div>
+                <div class="avatar-badge">
+                    <i class="fas fa-camera"></i>
+                </div>
+            </div>
+            <div class="profile-hero-info">
+                <h1 class="profile-hero-name">{{ patient.nom }}</h1>
+                <p class="profile-hero-email">
+                    <i class="fas fa-envelope"></i>
+                    {{ patient.email }}
+                </p>
+                <span class="profile-hero-role">
+                    <i class="fas fa-user"></i>
+                    Patient
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+   
+    <!-- Personal Info Section -->
+    <div class="info-section">
+        <div class="section-header">
+            <h3 class="section-title">
+                <i class="fas fa-id-card"></i>
+                Informations Personnelles
+            </h3>
+            <button class="btn-edit" id="btnEdit">
+                <i class="fas fa-edit"></i>
+                Modifier
+            </button>
+        </div>
+
+        <form id="personalInfoForm" class="info-form" method="POST" action="{{ url_for('patient.update_profile') }}">
+            <div class="form-row1">
+                <div class="form-group1">
+                    <label for="nom">
+                        <i class="fas fa-user"></i>
+                        Nom Complet
+                    </label>
+                    <input type="text" id="nom" name="nom" class="form-control1"
+                           value="{{ patient.nom }}" readonly required>
+                </div>
+            </div>
+
+            <div class="form-row1">
+                <div class="form-group1">
+                    <label for="email">
+                        <i class="fas fa-envelope"></i>
+                        Adresse Email
+                    </label>
+                    <input type="email" id="email" name="email" class="form-control"
+                           value="{{ patient.email }}" readonly required>
+                </div>
+                <div class="form-group1">
+                    <label for="telephone">
+                        <i class="fas fa-phone"></i>
+                        Téléphone
+                    </label>
+                    <input type="tel" id="telephone" name="telephone" class="form-control"
+                           value="{{ patient.telephone }}" readonly required>
+                </div>
+                
+            </div>
+
+            <div class="form-actions" id="personalInfoActions" style="display: none;">
+                <button type="button" class="btn-cancel" id="btnCancel">
+                    <i class="fas fa-times"></i>
+                    Annuler
+                </button>
+                <button type="submit" class="btn-save">
+                    <i class="fas fa-save"></i>
+                    Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- Security Section -->
+<div class="password-security-section">
+    <div class="password-section-header">
+        <h3 class="password-section-title">
+            <i class="fas fa-lock"></i>
+            Sécurité du Compte
+        </h3>
+    </div>
+
+    <form id="passwordChangeForm" class="password-info-form">
+        <div class="password-form-row">
+            <div class="password-form-group">
+                <label for="pwd_current_password">
+                    <i class="fas fa-key"></i>
+                    Mot de passe actuel
+                </label>
+                <div class="password-input-container">
+                    <input type="password" 
+                           id="pwd_current_password" 
+                           name="current_password" 
+                           class="password-form-input"
+                           required>
+                    <button type="button" 
+                            class="password-toggle-btn" 
+                            onclick="togglePasswordVisibility('pwd_current_password')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="password-form-row">
+            <div class="password-form-group">
+                <label for="pwd_new_password">
+                    <i class="fas fa-lock"></i>
+                    Nouveau mot de passe
+                </label>
+                <div class="password-input-container">
+                    <input type="password" 
+                           id="pwd_new_password" 
+                           name="new_password" 
+                           class="password-form-input"
+                           required 
+                           minlength="8">
+                    <button type="button" 
+                            class="password-toggle-btn" 
+                            onclick="togglePasswordVisibility('pwd_new_password')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <small class="password-form-hint">Minimum 8 caractères</small>
+            </div>
+            
+            <div class="password-form-group">
+                <label for="pwd_confirm_password">
+                    <i class="fas fa-check-circle"></i>
+                    Confirmer le mot de passe
+                </label>
+                <div class="password-input-container">
+                    <input type="password" 
+                           id="pwd_confirm_password" 
+                           name="confirm_password" 
+                           class="password-form-input"
+                           required 
+                           minlength="8">
+                    <button type="button" 
+                            class="password-toggle-btn" 
+                            onclick="togglePasswordVisibility('pwd_confirm_password')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="password-form-actions">
+            <button type="button" 
+                    class="password-btn-cancel" 
+                    onclick="resetPasswordChangeForm()">
+                <i class="fas fa-times"></i>
+                Annuler
+            </button>
+            <button type="submit" class="password-btn-save">
+                <i class="fas fa-save"></i>
+                Changer le mot de passe
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
