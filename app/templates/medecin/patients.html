@@ -1,0 +1,151 @@
+{% extends "medecin/base.html" %}
+
+{% block title %}Patients • Médecin{% endblock %}
+
+{% block content %}
+<div class="header-row">
+  <h1 class="h1">Gestion des Patients</h1>
+  <div>
+    <button class="btn primary" onclick="window.location.href='/medecin/patients/add'">
+      <i class="fas fa-plus"></i> Nouveau Patient
+    </button>
+    <button class="btn" onclick="loadPatients()">
+      <i class="fas fa-sync-alt"></i> Actualiser
+    </button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-responsive" style="margin-top:12px;">
+    <table class="table rdv-table" role="table">
+      <thead>
+        <tr>
+          <th class="col-patient">Nom</th>
+          <th class="col-email">Email</th>
+          <th class="col-contact">Téléphone</th>
+          <th class="col-sexe">Sexe</th>
+          <th class="col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="patientsTableBody">
+        <!-- rempli par JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <div id="noDataMessage" style="display:none; text-align:center; padding:20px;">
+    <p>Aucun patient trouvé</p>
+  </div>
+
+  <div id="errorMessage" style="display:none; text-align:center; padding:20px; color:#dc3545;">
+    <p id="errorText"></p>
+    <button class="btn" onclick="loadPatients()">Réessayer</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const API = {
+  LIST: '/medecin/api/patients',
+  DELETE: '/medecin/api/patients'
+};
+
+function escapeHtml(text) {
+  if (text === null || text === undefined) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function showLoading() {
+  document.getElementById('patientsTableBody').innerHTML =
+    '<tr><td colspan="5" class="centered-cell">Chargement des patients...</td></tr>';
+}
+
+function showNoData() {
+  document.getElementById('patientsTableBody').innerHTML = '';
+  document.getElementById('noDataMessage').style.display = 'block';
+}
+
+function showError(message) {
+  document.getElementById('patientsTableBody').innerHTML = '';
+  document.getElementById('errorText').textContent = message;
+  document.getElementById('errorMessage').style.display = 'block';
+}
+
+async function loadPatients() {
+  showLoading();
+  document.getElementById('noDataMessage').style.display = 'none';
+  document.getElementById('errorMessage').style.display = 'none';
+
+  try {
+    const response = await fetch(API.LIST);
+    if (!response.ok) throw new Error(`Erreur ${response.status}`);
+
+    const patients = await response.json();
+    const tbody = document.getElementById('patientsTableBody');
+    tbody.innerHTML = '';
+
+    if (!patients || patients.length === 0) {
+      showNoData();
+      return;
+    }
+
+    patients.forEach(p => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="cell-patient"><strong>${escapeHtml(p.nom)}</strong></td>
+        <td class="cell-email">${escapeHtml(p.email)}</td>
+        <td class="cell-contact">${escapeHtml(p.telephone)}</td>
+        <td class="cell-sexe">${escapeHtml(p.sexe)}</td>
+        <td class="cell-actions">
+          <div class="actions">
+            <button class="btn action-btn" onclick="editPatient(${p.id})">
+              <i class="fas fa-edit"></i> Modifier
+            </button>
+            <button class="btn action-btn danger" onclick="confirmDelete(${p.id})">
+              <i class="fas fa-trash"></i> Supprimer
+            </button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+  } catch (err) {
+    console.error(err);
+    showError(err.message);
+  }
+}
+
+function editPatient(id) {
+  window.location.href = `/medecin/patients/edit/${id}`;
+}
+
+function confirmDelete(id) {
+  if (!confirm('Êtes-vous sûr de vouloir supprimer ce patient ?')) return;
+  deletePatient(id);
+}
+async function deletePatient(id) {
+  try {
+    const response = await fetch(`${API.DELETE}/${id}`, { 
+      method: 'DELETE' 
+    });
+    
+    const result = await response.json();  // Ajoutez cette ligne
+    
+    if (response.ok) {  // Vérifiez le statut HTTP
+      alert('✅ Patient supprimé');
+      loadPatients();
+    } else {
+      throw new Error(result.error || 'Erreur lors de la suppression');
+    }
+  } catch (err) {
+    alert('❌ ' + err.message);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadPatients);
+</script>
+{% endblock %}
