@@ -331,25 +331,32 @@ def ajouter_patient(data):
     if not data.get("nom") or not data.get("email"):
         raise Exception("DONNEES_INCOMPLETES")
 
-    email = data["email"].strip().lower()
-    plain_password = "00000"
-
-    # ✅ UTILISER LE MODÈLE USER
-    user = User(
-        nom=data["nom"],
-        email=email,
-        role="PATIENT",
-        telephone=data.get("telephone")
-    )
-    user.set_password(plain_password)
-    user.save()
-
-    user_id = user.id
-
-    # 2️⃣ PATIENT
     conn = create_connection()
     cursor = conn.cursor()
 
+    # 🔐 mot de passe généré
+    plain_password = "00000"
+    hashed_password = bcrypt.hashpw(
+        plain_password.encode("utf-8"),
+        bcrypt.gensalt()
+    ).decode("utf-8")
+
+    email = data["email"].strip().lower()
+
+    # 1️⃣ USER (authentification)
+    cursor.execute("""
+        INSERT INTO users (nom, email, telephone, password, role)
+        VALUES (%s, %s, %s, %s, 'PATIENT')
+    """, (
+        data["nom"],
+        email,
+        data.get("telephone"),
+        hashed_password
+    ))
+
+    user_id = cursor.lastrowid
+
+    # 2️⃣ PATIENT (profil)
     cursor.execute("""
         INSERT INTO patients (user_id, nom, email, telephone, sexe)
         VALUES (%s, %s, %s, %s, %s)
