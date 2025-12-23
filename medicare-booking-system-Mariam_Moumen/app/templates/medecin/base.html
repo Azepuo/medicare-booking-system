@@ -89,10 +89,9 @@
                 </a>
 
                 <!-- LOGOUT -->
-               <a href="{{ url_for('auth.logout') }}"class="btn-ghost logout-btn">
+               <a href="/logout" class="btn-ghost logout-btn">
                  <i class="fas fa-sign-out-alt"></i> Se déconnecter
                </a>
-                   
             </nav>
         </aside>
 
@@ -100,23 +99,30 @@
         <main class="main">
             {% block topbar %}
             <div class="dashboard-header">
+                <!-- Titre en haut à gauche -->
                 <div class="header-left">
                     <h1 class="h1">{% block page_title %}Tableau de Bord{% endblock %}</h1>
                 </div>
-                <div class="header-center">
-                    <div class="search-bar">
-                        <input type="text" placeholder="Search..." id="searchInput">
-                        <button class="btn search-btn"><i class="fas fa-search"></i></button>
-                    </div>
-                </div>
+                
+                <!-- Carte utilisateur avec dégradés latéraux - Hauteur réduite -->
                 <div class="header-right">
-                    <button class="icon-btn">
-                        <i class="fas fa-bell"></i>
-                        <span class="badge">8</span>
-                    </button>
-                    <button class="icon-btn profile-btn">
-                        <img src="/static/images/avatar.jpeg" alt="Profil">
-                    </button>
+                    <div class="user-info-card">
+                        <div class="gradient-left"></div>
+                        <div class="user-info-content">
+                            <div class="user-avatar">
+                                <i class="fas fa-user-md"></i>
+                            </div>
+                            <div class="user-details">
+                                <h3>Dr. {{ username if username else 'Médecin' }}</h3>
+                                <div class="user-meta">
+                                    <span class="user-badge"><i class="fas fa-id-card"></i> ID: {{ user_id if user_id else '---' }}</span>
+                                    <span class="user-badge role-badge"><i class="fas fa-user-tag"></i> {{ role if role else 'MÉDECIN' }}</span>
+                                    <span class="user-badge"><i class="fas fa-calendar-day"></i> <span id="currentDate">--/--/----</span></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="gradient-right"></div>
+                    </div>
                 </div>
             </div>
             {% endblock %}
@@ -138,14 +144,27 @@
     </div>
 
     <script>
-        function logout() {
-            if (confirm('Voulez-vous vraiment vous déconnecter ?')) {
-                window.location.href = '/logout';
-            }
+        // Fonction pour formater la date
+        function formatCurrentDate() {
+            const now = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            return now.toLocaleDateString('fr-FR', options);
         }
 
-        // Gestion des dropdowns
+        // Mettre à jour la date actuelle
         document.addEventListener('DOMContentLoaded', function() {
+            // Mettre à jour la date
+            const dateElement = document.getElementById('currentDate');
+            if (dateElement) {
+                dateElement.textContent = formatCurrentDate();
+            }
+
+            // Gestion des dropdowns
             function setupDropdown(dropdownElement) {
                 const dropdownToggle = dropdownElement.querySelector('.dropdown-toggle');
                 const dropdownMenu = dropdownElement.querySelector('.dropdown-menu');
@@ -177,8 +196,275 @@
 
             const dropdowns = document.querySelectorAll('.nav-dropdown');
             dropdowns.forEach(setupDropdown);
+
+            // Actualiser la date toutes les minutes
+            setInterval(() => {
+                const dateElement = document.getElementById('currentDate');
+                if (dateElement) {
+                    dateElement.textContent = formatCurrentDate();
+                }
+            }, 60000);
         });
+
+        // Fonction pour se déconnecter
+        function logout() {
+            if (confirm('Voulez-vous vraiment vous déconnecter ?')) {
+                window.location.href = '/logout';
+            }
+        }
     </script>
+
+    <!-- Styles pour la topbar - Hauteur réduite -->
+    <style>
+        /* Dashboard Header - MODIFIÉ */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 25px;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            min-height: 60px;
+        }
+
+        .header-left {
+            flex: 1;
+        }
+
+        .header-left .h1 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .header-right {
+            flex: 2;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        /* User Info Card avec dégradés latéraux - Hauteur réduite */
+        .user-info-card {
+            display: flex;
+            align-items: stretch;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 3px 12px rgba(0, 114, 255, 0.12);
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+            border: 1px solid #e9ecef;
+            height: 70px;
+        }
+
+        .gradient-left, .gradient-right {
+            width: 8px;
+            flex-shrink: 0;
+        }
+
+        .gradient-left {
+            background: linear-gradient(to right, #667eea, #4a90e2);
+        }
+
+        .gradient-right {
+            background: linear-gradient(to left, #667eea, #4a90e2);
+        }
+
+        .user-info-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 15px;
+            background: linear-gradient(135deg, #f8f9ff 0%, #eef2ff 100%);
+        }
+
+        .user-info-content .user-avatar {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .user-info-content .user-details h3 {
+            margin: 0 0 5px 0;
+            color: #2c3e50;
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .user-info-content .user-meta {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .user-info-content .user-badge {
+            background: linear-gradient(135deg, #667eea 0%, #4a90e2 100%);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 500;
+            box-shadow: 0 1px 3px rgba(102, 126, 234, 0.3);
+            line-height: 1.2;
+        }
+
+        .user-info-content .role-badge {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            font-weight: 600;
+        }
+
+        /* Flash Messages */
+        .flash-messages {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 400px;
+        }
+
+        .flash-message {
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #667eea;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .dashboard-header {
+                padding: 12px 20px;
+            }
+            
+            .user-info-card {
+                max-width: 450px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .dashboard-header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: stretch;
+                padding: 12px 15px;
+                min-height: auto;
+            }
+            
+            .header-left {
+                width: 100%;
+                text-align: center;
+            }
+            
+            .header-right {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .user-info-card {
+                max-width: 100%;
+                height: 65px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .user-info-content {
+                padding: 8px 12px;
+                gap: 10px;
+            }
+            
+            .user-info-content .user-avatar {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+            
+            .user-info-content .user-details h3 {
+                font-size: 15px;
+                margin-bottom: 4px;
+            }
+            
+            .user-info-content .user-meta {
+                gap: 4px;
+            }
+            
+            .user-info-content .user-badge {
+                font-size: 10px;
+                padding: 2px 6px;
+            }
+            
+            .gradient-left, .gradient-right {
+                width: 6px;
+            }
+            
+            .header-left .h1 {
+                font-size: 22px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .user-info-card {
+                height: auto;
+                min-height: 60px;
+            }
+            
+            .user-info-content {
+                flex-direction: column;
+                text-align: center;
+                padding: 10px;
+                gap: 8px;
+            }
+            
+            .user-info-content .user-avatar {
+                width: 35px;
+                height: 35px;
+                font-size: 16px;
+            }
+            
+            .user-info-content .user-details h3 {
+                font-size: 14px;
+            }
+            
+            .user-info-content .user-meta {
+                justify-content: center;
+            }
+            
+            .user-info-content .user-badge {
+                font-size: 9px;
+            }
+            
+            .header-left .h1 {
+                font-size: 20px;
+            }
+        }
+    </style>
 
     {% block scripts %}{% endblock %}
 </body>
