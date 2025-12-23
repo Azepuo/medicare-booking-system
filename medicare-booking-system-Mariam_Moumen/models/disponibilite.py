@@ -2,9 +2,9 @@
 from database.connection import create_connection
 
 class Disponibilite:
-    def __init__(self, id=None, user_id=None, jour_semaine=None, heure_debut=None, heure_fin=None):
+    def __init__(self, id=None, medecin_id=None, jour_semaine=None, heure_debut=None, heure_fin=None):
         self.id = id
-        self.user_id = user_id
+        self.medecin_id = medecin_id  # CHANGÉ: user_id -> medecin_id
         self.jour_semaine = jour_semaine
         self.heure_debut = heure_debut
         self.heure_fin = heure_fin
@@ -21,14 +21,14 @@ class Disponibilite:
                 cursor.execute("""
                     UPDATE disponibilites 
                     SET jour_semaine = %s, heure_debut = %s, heure_fin = %s
-                    WHERE id = %s AND user_id = %s
-                """, (self.jour_semaine, self.heure_debut, self.heure_fin, self.id, self.user_id))
+                    WHERE id = %s AND medecin_id = %s
+                """, (self.jour_semaine, self.heure_debut, self.heure_fin, self.id, self.medecin_id))
             else:
                 # Insertion
                 cursor.execute("""
-                    INSERT INTO disponibilites (user_id, jour_semaine, heure_debut, heure_fin)
+                    INSERT INTO disponibilites (medecin_id, jour_semaine, heure_debut, heure_fin)
                     VALUES (%s, %s, %s, %s)
-                """, (self.user_id, self.jour_semaine, self.heure_debut, self.heure_fin))
+                """, (self.medecin_id, self.jour_semaine, self.heure_debut, self.heure_fin))
                 self.id = cursor.lastrowid
             
             conn.commit()
@@ -47,8 +47,8 @@ class Disponibilite:
         
         try:
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM disponibilites WHERE id = %s AND user_id = %s", 
-                          (self.id, self.user_id))
+            cursor.execute("DELETE FROM disponibilites WHERE id = %s AND medecin_id = %s", 
+                          (self.id, self.medecin_id))  # CHANGÉ: user_id -> medecin_id
             conn.commit()
             return cursor.rowcount > 0
         except Exception as e:
@@ -59,16 +59,16 @@ class Disponibilite:
             conn.close()
 
     @staticmethod
-    def get_by_id(dispo_id, user_id=None):
+    def get_by_id(dispo_id, medecin_id=None):
         conn = create_connection()
         if not conn:
             return None
         
         try:
             cursor = conn.cursor(dictionary=True)
-            if user_id:
-                cursor.execute("SELECT * FROM disponibilites WHERE id = %s AND user_id = %s", 
-                             (dispo_id, user_id))
+            if medecin_id:
+                cursor.execute("SELECT * FROM disponibilites WHERE id = %s AND medecin_id = %s", 
+                             (dispo_id, medecin_id))  # CHANGÉ: user_id -> medecin_id
             else:
                 cursor.execute("SELECT * FROM disponibilites WHERE id = %s", (dispo_id,))
             
@@ -76,7 +76,7 @@ class Disponibilite:
             if row:
                 return Disponibilite(
                     id=row['id'],
-                    user_id=row['user_id'],
+                    medecin_id=row['medecin_id'],  # CHANGÉ: user_id -> medecin_id
                     jour_semaine=row['jour_semaine'],
                     heure_debut=row['heure_debut'],
                     heure_fin=row['heure_fin']
@@ -90,7 +90,7 @@ class Disponibilite:
             conn.close()
 
     @staticmethod
-    def get_all_by_user(user_id, jour_semaine=None):
+    def get_all_by_medecin(medecin_id, jour_semaine=None):
         conn = create_connection()
         if not conn:
             return []
@@ -100,33 +100,33 @@ class Disponibilite:
             if jour_semaine:
                 cursor.execute("""
                     SELECT * FROM disponibilites 
-                    WHERE user_id = %s AND jour_semaine = %s
+                    WHERE medecin_id = %s AND jour_semaine = %s
                     ORDER BY 
                         FIELD(jour_semaine, 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'),
                         heure_debut
-                """, (user_id, jour_semaine))
+                """, (medecin_id, jour_semaine))  # CHANGÉ: user_id -> medecin_id
             else:
                 cursor.execute("""
                     SELECT * FROM disponibilites 
-                    WHERE user_id = %s
+                    WHERE medecin_id = %s
                     ORDER BY 
                         FIELD(jour_semaine, 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'),
                         heure_debut
-                """, (user_id,))
+                """, (medecin_id,))  # CHANGÉ: user_id -> medecin_id
             
             rows = cursor.fetchall()
             disponibilites = []
             for row in rows:
                 disponibilites.append(Disponibilite(
                     id=row['id'],
-                    user_id=row['user_id'],
+                    medecin_id=row['medecin_id'],  # CHANGÉ: user_id -> medecin_id
                     jour_semaine=row['jour_semaine'],
                     heure_debut=row['heure_debut'],
                     heure_fin=row['heure_fin']
                 ))
             return disponibilites
         except Exception as e:
-            print(f"❌ Erreur get_all_by_user Disponibilite: {e}")
+            print(f"❌ Erreur get_all_by_medecin Disponibilite: {e}")
             return []
         finally:
             cursor.close()
@@ -142,7 +142,7 @@ class Disponibilite:
             cursor = conn.cursor(dictionary=True)
             cursor.execute("""
                 SELECT * FROM disponibilites 
-                ORDER BY user_id, jour_semaine, heure_debut
+                ORDER BY medecin_id, jour_semaine, heure_debut
             """)
             
             rows = cursor.fetchall()
@@ -150,7 +150,7 @@ class Disponibilite:
             for row in rows:
                 disponibilites.append(Disponibilite(
                     id=row['id'],
-                    user_id=row['user_id'],
+                    medecin_id=row['medecin_id'],  # CHANGÉ: user_id -> medecin_id
                     jour_semaine=row['jour_semaine'],
                     heure_debut=row['heure_debut'],
                     heure_fin=row['heure_fin']
@@ -166,7 +166,7 @@ class Disponibilite:
     def to_dict(self):
         return {
             'id': self.id,
-            'user_id': self.user_id,
+            'medecin_id': self.medecin_id,  # CHANGÉ: user_id -> medecin_id
             'jour_semaine': self.jour_semaine,
             'heure_debut': str(self.heure_debut) if self.heure_debut else None,
             'heure_fin': str(self.heure_fin) if self.heure_fin else None
