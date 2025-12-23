@@ -130,3 +130,41 @@ def handler():
         import traceback
         traceback.print_exc()
         return jsonify({"success": False, "message": str(e)}), 500
+# ---------------- JWT / UTIL ----------------
+def get_user_from_token(token=None):
+    """
+    Récupère les informations de l'utilisateur depuis le JWT.
+    Si token non fourni, le prend depuis le cookie 'access_token'.
+    Retourne un dictionnaire {'user_id': ..., 'role': ...} ou None si invalide.
+    """
+    if not token:
+        token = request.cookies.get("access_token")
+    if not token:
+        return None
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        return {
+            "user_id": payload.get("user_id"),
+            "role": payload.get("role")
+        }
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
+
+def generate_tokens(user: User) -> dict:
+    """Génère access_token et refresh_token JWT"""
+    access_token = jwt.encode({
+        "user_id": user.id,
+        "role": user.role,
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
+    }, SECRET_KEY, algorithm="HS256")
+
+    refresh_token = jwt.encode({
+        "user_id": user.id,
+        "role": user.role,
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(days=7)
+    }, REFRESH_SECRET_KEY, algorithm="HS256")
+
+    return {"access_token": access_token, "refresh_token": refresh_token}
