@@ -52,7 +52,7 @@ def _row_to_dispo(row: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     
     return {
         'id': row.get('id'),
-        'user_id': row.get('user_id'),  # CHANGÉ: medecin_id -> user_id
+        'medecin_id': row.get('medecin_id'),  # CORRIGÉ: Retour à medecin_id
         'jour_semaine': row.get('jour_semaine'),
         'heure_debut': heure_debut_str,
         'heure_fin': heure_fin_str,
@@ -62,8 +62,8 @@ def _row_to_dispo(row: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     }
 
 # ----------------- LIST -----------------
-def list_dispo(user_id: int, today_only: bool = False) -> List[Dict[str, Any]]:
-    """Liste les disponibilités pour un utilisateur"""
+def list_dispo(medecin_id: int, today_only: bool = False) -> List[Dict[str, Any]]:
+    """Liste les disponibilités pour un médecin"""
     with get_cursor() as (conn, cur):
         # Jour de la semaine en français pour today
         jours_fr = {
@@ -85,18 +85,18 @@ def list_dispo(user_id: int, today_only: bool = False) -> List[Dict[str, Any]]:
             # Disponibilités pour aujourd'hui seulement
             cur.execute("""
                 SELECT * FROM disponibilites 
-                WHERE user_id = %s AND jour_semaine = %s
+                WHERE medecin_id = %s AND jour_semaine = %s
                 ORDER BY heure_debut
-            """, (user_id, jour_aujourdhui))
+            """, (medecin_id, jour_aujourdhui))
         else:
             # Toutes les disponibilités
             cur.execute("""
                 SELECT * FROM disponibilites 
-                WHERE user_id = %s
+                WHERE medecin_id = %s
                 ORDER BY 
                     FIELD(jour_semaine, 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'),
                     heure_debut
-            """, (user_id,))
+            """, (medecin_id,))
         
         rows = cur.fetchall()
         result = []
@@ -106,6 +106,7 @@ def list_dispo(user_id: int, today_only: bool = False) -> List[Dict[str, Any]]:
                 result.append(dispo)
         
         return result
+
 # ----------------- GET SINGLE -----------------
 def get_dispo(dispo_id: int) -> Optional[Dict[str, Any]]:
     with get_cursor() as (conn, cur):
@@ -115,26 +116,26 @@ def get_dispo(dispo_id: int) -> Optional[Dict[str, Any]]:
 
 # ----------------- CREATE -----------------
 def create_dispo(payload: Dict[str, Any]) -> Dict[str, Any]:
-    user_id = payload.get('user_id')  # CHANGÉ: medecin_id -> user_id
+    medecin_id = payload.get('medecin_id')  # CORRIGÉ: Retour à medecin_id
     jour_semaine = payload.get('jour_semaine')
     heure_debut = payload.get('heure_debut')
     heure_fin = payload.get('heure_fin')
     
-    if not user_id or not jour_semaine or not heure_debut or not heure_fin:
-        raise ValueError("user_id, jour_semaine, heure_debut et heure_fin sont requis")
+    if not medecin_id or not jour_semaine or not heure_debut or not heure_fin:
+        raise ValueError("medecin_id, jour_semaine, heure_debut et heure_fin sont requis")
     
     # Vérifier les conflits
     with get_cursor() as (conn, cur):
         cur.execute("""
             SELECT * FROM disponibilites 
-            WHERE user_id = %s AND jour_semaine = %s 
+            WHERE medecin_id = %s AND jour_semaine = %s 
             AND (
                 (heure_debut <= %s AND heure_fin > %s) OR
                 (heure_debut < %s AND heure_fin >= %s) OR
                 (heure_debut >= %s AND heure_fin <= %s)
             )
         """, (
-            user_id, jour_semaine,
+            medecin_id, jour_semaine,
             heure_debut, heure_debut,
             heure_fin, heure_fin,
             heure_debut, heure_fin
@@ -146,11 +147,11 @@ def create_dispo(payload: Dict[str, Any]) -> Dict[str, Any]:
     
     # Insérer
     sql = """
-        INSERT INTO disponibilites (user_id, jour_semaine, heure_debut, heure_fin)
+        INSERT INTO disponibilites (medecin_id, jour_semaine, heure_debut, heure_fin)
         VALUES (%s, %s, %s, %s)
     """
     with get_cursor() as (conn, cur):
-        cur.execute(sql, (user_id, jour_semaine, heure_debut, heure_fin))
+        cur.execute(sql, (medecin_id, jour_semaine, heure_debut, heure_fin))
         new_id = cur.lastrowid
         cur.execute("SELECT * FROM disponibilites WHERE id = %s", (new_id,))
         row = cur.fetchone()

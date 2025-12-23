@@ -5,6 +5,28 @@ from app.rpc.auth_rpc.auth_rpc import get_user_from_token
 
 disponibilites_rpc = Blueprint("disponibilites_rpc", __name__, url_prefix="/medecin/rpc/disponibilites")
 
+def get_medecin_id_from_user_id(user_id):
+    """
+    Récupère le vrai medecin_id à partir du user_id
+    en interrogeant la table medecins.
+    
+    Retourne:
+        - int: medecin_id si trouvé
+        - None: si non trouvé
+    """
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute(
+            "SELECT id FROM medecins WHERE user_id = %s",
+            (user_id,)
+        )
+        result = cursor.fetchone()
+        return result['id'] if result else None
+    except Exception as e:
+        print(f"Erreur lors de la récupération du medecin_id: {e}")
+        return None
+
 # ----------------- LIST -----------------
 @disponibilites_rpc.route("/list", methods=["GET"])
 def list_all_dispos():
@@ -12,12 +34,16 @@ def list_all_dispos():
         user = get_user_from_token()
         if not user:
             return jsonify({"ok": False, "error": "Utilisateur non authentifié"}), 401
-        user_id = user["user_id"]
+        
+        # Récupérer le vrai medecin_id
+        medecin_id = get_medecin_id_from_user_id(user["user_id"])
+        if medecin_id is None:
+            return jsonify({"ok": False, "error": "Médecin non trouvé"}), 404
         
         # Vérifier si on veut seulement aujourd'hui
         today_only = request.args.get('today') == '1'
         
-        dispos = list_dispo(user_id, today_only)
+        dispos = list_dispo(medecin_id, today_only)
         return jsonify({
             "ok": True, 
             "data": dispos,
@@ -33,10 +59,15 @@ def get_single_dispo(dispo_id):
         user = get_user_from_token()
         if not user:
             return jsonify({"ok": False, "error": "Utilisateur non authentifié"}), 401
-        user_id = user["user_id"]
+        
+        # Récupérer le vrai medecin_id
+        medecin_id = get_medecin_id_from_user_id(user["user_id"])
+        if medecin_id is None:
+            return jsonify({"ok": False, "error": "Médecin non trouvé"}), 404
 
         dispo = get_dispo(dispo_id)
-        if dispo and dispo['user_id'] == user_id:  # CHANGÉ: medecin_id -> user_id
+        # Vérifier que la disponibilité appartient à ce médecin
+        if dispo and dispo['medecin_id'] == medecin_id:
             return jsonify({"ok": True, "data": dispo})
         return jsonify({"ok": False, "error": "Disponibilité non trouvée ou accès non autorisé"}), 404
     except Exception as e:
@@ -53,7 +84,11 @@ def create_new_dispo():
         user = get_user_from_token()
         if not user:
             return jsonify({"ok": False, "error": "Utilisateur non authentifié"}), 401
-        user_id = user["user_id"]
+        
+        # Récupérer le vrai medecin_id
+        medecin_id = get_medecin_id_from_user_id(user["user_id"])
+        if medecin_id is None:
+            return jsonify({"ok": False, "error": "Médecin non trouvé"}), 404
 
         # Validation des champs obligatoires
         required_fields = ['jour_semaine', 'heure_debut', 'heure_fin']
@@ -66,7 +101,7 @@ def create_new_dispo():
             return jsonify({"ok": False, "error": "L'heure de début doit être avant l'heure de fin"}), 400
 
         payload = {
-            'user_id': user_id,  # CHANGÉ: medecin_id -> user_id
+            'medecin_id': medecin_id,  # Utiliser le vrai medecin_id
             'jour_semaine': data.get('jour_semaine'),
             'heure_debut': data.get('heure_debut'),
             'heure_fin': data.get('heure_fin')
@@ -95,11 +130,15 @@ def update_existing_dispo(dispo_id):
         user = get_user_from_token()
         if not user:
             return jsonify({"ok": False, "error": "Utilisateur non authentifié"}), 401
-        user_id = user["user_id"]
+        
+        # Récupérer le vrai medecin_id
+        medecin_id = get_medecin_id_from_user_id(user["user_id"])
+        if medecin_id is None:
+            return jsonify({"ok": False, "error": "Médecin non trouvé"}), 404
 
         # Vérifier que la disponibilité existe et appartient à l'utilisateur
         dispo = get_dispo(dispo_id)
-        if not dispo or dispo['user_id'] != user_id:  # CHANGÉ: medecin_id -> user_id
+        if not dispo or dispo['medecin_id'] != medecin_id:
             return jsonify({"ok": False, "error": "Disponibilité non trouvée ou accès non autorisé"}), 404
         
         # Vérifier les heures si fournies
@@ -128,11 +167,15 @@ def delete_existing_dispo(dispo_id):
         user = get_user_from_token()
         if not user:
             return jsonify({"ok": False, "error": "Utilisateur non authentifié"}), 401
-        user_id = user["user_id"]
+        
+        # Récupérer le vrai medecin_id
+        medecin_id = get_medecin_id_from_user_id(user["user_id"])
+        if medecin_id is None:
+            return jsonify({"ok": False, "error": "Médecin non trouvé"}), 404
 
         # Vérifier que la disponibilité existe et appartient à l'utilisateur
         dispo = get_dispo(dispo_id)
-        if not dispo or dispo['user_id'] != user_id:  # CHANGÉ: medecin_id -> user_id
+        if not dispo or dispo['medecin_id'] != medecin_id:
             return jsonify({"ok": False, "error": "Disponibilité non trouvée ou accès non autorisé"}), 404
 
         success = delete_dispo(dispo_id)
