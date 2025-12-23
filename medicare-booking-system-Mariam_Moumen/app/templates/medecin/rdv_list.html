@@ -21,6 +21,9 @@
   <button class="tab-btn" onclick="showAllRDV()">
     <i class="fas fa-calendar-week"></i> Tous les RDV
   </button>
+  <button class="tab-btn" onclick="showFutureRDV()">
+    <i class="fas fa-calendar-alt"></i> RDV Futurs
+  </button>
 </div>
 
 <div class="card mt-15">
@@ -78,7 +81,7 @@
 
 {% block scripts %}
 <script>
-// Routes API
+// Routes API - CORRIGÉES pour utiliser les bonnes routes RPC
 const API_ROUTES = {
   LIST_TODAY: '/medecin/rpc/rdv/list?today=1',
   LIST_ALL: '/medecin/rpc/rdv/list',
@@ -149,6 +152,11 @@ async function renderRDV(viewType = 'today') {
     const res = await fetch(apiUrl);
     
     if (!res.ok) {
+      // Vérifier si c'est une erreur d'authentification
+      if (res.status === 401 || res.status === 403) {
+        window.location.href = '/login';
+        return;
+      }
       throw new Error(`Erreur ${res.status}: ${res.statusText}`);
     }
     
@@ -176,9 +184,18 @@ async function renderRDV(viewType = 'today') {
       tr.dataset.id = rdv.id;
       tr.dataset.status = rdv.statut || '';
       
+      // Nom complet du patient
+     // Nom du patient
+      let patientNom = rdv.patient_nom || 'N/A';
+      if (rdv.patient_nom || rdv.patient_prenom) {
+        patientNom = `${rdv.patient_prenom || ''} ${rdv.patient_nom || ''}`.trim();
+      } else if (rdv.patient_nom) {
+        patientNom = rdv.patient_nom;
+      }
+      
       tr.innerHTML = `
-        <td class="cell-hour">${formatDateTime(rdv.date_heure)}</td>
-        <td class="cell-patient"><strong>${escapeHtml(rdv.patient_nom || 'N/A')}</strong></td>
+        <td class="cell-hour">${formatDateTime(rdv.date_heure_display || rdv.date_heure)}</td>
+        <td class="cell-patient"><strong>${escapeHtml(patientNom)}</strong></td>
         <td class="cell-motif">${escapeHtml(rdv.notes || 'Non spécifié')}</td>
         <td class="cell-contact">${escapeHtml(rdv.patient_telephone || 'N/A')}</td>
         <td class="cell-status">
@@ -204,6 +221,8 @@ async function renderRDV(viewType = 'today') {
       document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
     } else if (viewType === 'all') {
       document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+    } else if (viewType === 'future') {
+      document.querySelector('.tab-btn:nth-child(3)').classList.add('active');
     }
     
   } catch (error) {
@@ -262,13 +281,16 @@ async function confirmDelete(id) {
   
   try {
     const res = await fetch(`${API_ROUTES.DELETE}/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
     
     const data = await res.json();
     
     if (!res.ok) {
-      throw new Error(data.error || 'Erreur suppression');
+      throw new Error(data.error || `Erreur ${res.status}`);
     }
     
     if (!data.ok) {
@@ -298,6 +320,10 @@ function showAllRDV() {
   renderRDV('all');
 }
 
+function showFutureRDV() {
+  renderRDV('future');
+}
+
 function refreshRDV() {
   // Recharger les statistiques globales et la vue actuelle
   loadGlobalStatistics();
@@ -313,6 +339,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('all') === '1') {
     showAllRDV();
+  } else if (urlParams.get('future') === '1') {
+    showFutureRDV();
   } else {
     showTodayRDV();
   }
@@ -409,6 +437,41 @@ style.textContent = `
   .tab-btn i{
     font-size:12px;
   }
+}
+
+/* Styles pour les badges de statut */
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.en-attente {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fbbf24;
+}
+
+.status-badge.confirmé {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.status-badge.terminé {
+  background-color: #e0e7ff;
+  color: #3730a3;
+  border: 1px solid #6366f1;
+}
+
+.status-badge.annulé {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #ef4444;
 }
 `;
 document.head.appendChild(style);
