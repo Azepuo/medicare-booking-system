@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Medicare - Espace Médecin{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='medcin/css/medcin.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app">
+        <!-- Sidebar Verticale -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">
+                    <i class="fas fa-stethoscope"></i>
+                </div>
+                <h1>Medicare</h1>
+            </div>
+
+            <nav>
+                <!-- DASHBOARD -->
+                <a href="{{ url_for('medecin.dashboard') }}" 
+                   class="nav-link {% if request.endpoint == 'medecin.dashboard' %}active{% endif %}">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </a>
+
+                <!-- MENU PATIENTS -->
+                <div class="nav-dropdown">
+                    <a href="#" class="nav-link dropdown-toggle
+                       {% if request.endpoint in ['medecin.patients_page', 'medecin.patient_add_page'] %}active{% endif %}">
+                        <i class="fas fa-users"></i> Patients 
+                        <i class="fas fa-chevron-down dropdown-arrow"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="{{ url_for('medecin.patients_page') }}"
+                           class="dropdown-link {% if request.endpoint == 'medecin.patients_page' %}active{% endif %}">
+                            <i class="fas fa-list"></i> Liste des patients
+                        </a>
+                        <a href="{{ url_for('medecin.patient_add_page') }}"
+                           class="dropdown-link {% if request.endpoint == 'medecin.patient_add_page' %}active{% endif %}">
+                            <i class="fas fa-user-plus"></i> Nouveau patient
+                        </a>
+                    </div>
+                </div>
+
+                <!-- MENU RENDEZ-VOUS -->
+                <div class="nav-dropdown">
+                    <a href="#" class="nav-link dropdown-toggle
+                       {% if request.endpoint in ['medecin.rdv_list', 'medecin.rdv_add_page'] %}active{% endif %}">
+                        <i class="fas fa-calendar-check"></i> Rendez-vous 
+                        <i class="fas fa-chevron-down dropdown-arrow"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="{{ url_for('medecin.rdv_list') }}"
+                           class="dropdown-link {% if request.endpoint == 'medecin.rdv_list' %}active{% endif %}">
+                            <i class="fas fa-calendar-day"></i> RDV du jour
+                        </a>
+                        <a href="{{ url_for('medecin.rdv_add_page') }}"
+                           class="dropdown-link {% if request.endpoint == 'medecin.rdv_add_page' %}active{% endif %}">
+                            <i class="fas fa-plus-circle"></i> Nouveau RDV
+                        </a>
+                    </div>
+                </div>
+
+                <!-- MENU DISPONIBILITÉS -->
+                <div class="nav-dropdown">
+                    <a href="#" class="nav-link dropdown-toggle
+                       {% if request.endpoint in ['medecin.dispo_list', 'medecin.dispo_add'] %}active{% endif %}">
+                        <i class="fas fa-clock"></i> Disponibilités
+                        <i class="fas fa-chevron-down dropdown-arrow"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="{{ url_for('medecin.dispo_list') }}"
+                           class="dropdown-link {% if request.endpoint == 'medecin.dispo_list' %}active{% endif %}">
+                            <i class="fas fa-list"></i> Liste des disponibilités
+                        </a>
+                        <a href="{{ url_for('medecin.dispo_add') }}"
+                           class="dropdown-link {% if request.endpoint == 'medecin.dispo_add' %}active{% endif %}">
+                            <i class="fas fa-plus-circle"></i> Nouvelle disponibilité
+                        </a>
+                    </div>
+                </div>
+
+                <!-- COMPTE -->
+                <a href="{{ url_for('medecin.profil') }}" 
+                   class="nav-link {% if request.endpoint == 'medecin.profil' %}active{% endif %}">
+                    <i class="fas fa-user-md"></i> Mon compte
+                </a>
+
+                <!-- LOGOUT -->
+               <a href="/logout" class="btn-ghost logout-btn">
+                 <i class="fas fa-sign-out-alt"></i> Se déconnecter
+               </a>
+            </nav>
+        </aside>
+
+        <!-- CONTENU PRINCIPAL -->
+        <main class="main">
+            {% block topbar %}
+            <div class="dashboard-header">
+                <!-- Titre en haut à gauche -->
+                <div class="header-left">
+                    <h1 class="h1">{% block page_title %}Tableau de Bord{% endblock %}</h1>
+                </div>
+                
+                <!-- Carte utilisateur avec dégradés latéraux - Hauteur réduite -->
+                <div class="header-right">
+                    <div class="user-info-card">
+                        <div class="gradient-left"></div>
+                        <div class="user-info-content">
+                            <div class="user-avatar">
+                                <i class="fas fa-user-md"></i>
+                            </div>
+                            <div class="user-details">
+                                <h3>Dr. {{ username if username else 'Médecin' }}</h3>
+                                <div class="user-meta">
+                                    <span class="user-badge"><i class="fas fa-id-card"></i> ID: {{ user_id if user_id else '---' }}</span>
+                                    <span class="user-badge role-badge"><i class="fas fa-user-tag"></i> {{ role if role else 'MÉDECIN' }}</span>
+                                    <span class="user-badge"><i class="fas fa-calendar-day"></i> <span id="currentDate">--/--/----</span></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="gradient-right"></div>
+                    </div>
+                </div>
+            </div>
+            {% endblock %}
+
+            <section class="content">
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        <div class="flash-messages">
+                            {% for message in messages %}
+                                <div class="flash-message">{{ message }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Fonction pour formater la date
+        function formatCurrentDate() {
+            const now = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            return now.toLocaleDateString('fr-FR', options);
+        }
+
+        // Mettre à jour la date actuelle
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mettre à jour la date
+            const dateElement = document.getElementById('currentDate');
+            if (dateElement) {
+                dateElement.textContent = formatCurrentDate();
+            }
+
+            // Gestion des dropdowns
+            function setupDropdown(dropdownElement) {
+                const dropdownToggle = dropdownElement.querySelector('.dropdown-toggle');
+                const dropdownMenu = dropdownElement.querySelector('.dropdown-menu');
+
+                dropdownToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const isOpen = dropdownMenu.style.display === 'block';
+                    dropdownMenu.style.display = isOpen ? 'none' : 'block';
+                    dropdownElement.classList.toggle('open', !isOpen);
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (!dropdownElement.contains(e.target)) {
+                        dropdownMenu.style.display = 'none';
+                        dropdownElement.classList.remove('open');
+                    }
+                });
+
+                dropdownElement.addEventListener('mouseenter', function() {
+                    dropdownMenu.style.display = 'block';
+                    dropdownElement.classList.add('open');
+                });
+
+                dropdownElement.addEventListener('mouseleave', function() {
+                    dropdownMenu.style.display = 'none';
+                    dropdownElement.classList.remove('open');
+                });
+            }
+
+            const dropdowns = document.querySelectorAll('.nav-dropdown');
+            dropdowns.forEach(setupDropdown);
+
+            // Actualiser la date toutes les minutes
+            setInterval(() => {
+                const dateElement = document.getElementById('currentDate');
+                if (dateElement) {
+                    dateElement.textContent = formatCurrentDate();
+                }
+            }, 60000);
+        });
+
+        // Fonction pour se déconnecter
+        function logout() {
+            if (confirm('Voulez-vous vraiment vous déconnecter ?')) {
+                window.location.href = '/logout';
+            }
+        }
+    </script>
+
+    <!-- Styles pour la topbar - Hauteur réduite -->
+    <style>
+        /* Dashboard Header - MODIFIÉ */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 25px;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            min-height: 60px;
+        }
+
+        .header-left {
+            flex: 1;
+        }
+
+        .header-left .h1 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .header-right {
+            flex: 2;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        /* User Info Card avec dégradés latéraux - Hauteur réduite */
+        .user-info-card {
+            display: flex;
+            align-items: stretch;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 3px 12px rgba(0, 114, 255, 0.12);
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+            border: 1px solid #e9ecef;
+            height: 70px;
+        }
+
+        .gradient-left, .gradient-right {
+            width: 8px;
+            flex-shrink: 0;
+        }
+
+        .gradient-left {
+            background: linear-gradient(to right, #667eea, #4a90e2);
+        }
+
+        .gradient-right {
+            background: linear-gradient(to left, #667eea, #4a90e2);
+        }
+
+        .user-info-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 15px;
+            background: linear-gradient(135deg, #f8f9ff 0%, #eef2ff 100%);
+        }
+
+        .user-info-content .user-avatar {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .user-info-content .user-details h3 {
+            margin: 0 0 5px 0;
+            color: #2c3e50;
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .user-info-content .user-meta {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .user-info-content .user-badge {
+            background: linear-gradient(135deg, #667eea 0%, #4a90e2 100%);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 500;
+            box-shadow: 0 1px 3px rgba(102, 126, 234, 0.3);
+            line-height: 1.2;
+        }
+
+        .user-info-content .role-badge {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            font-weight: 600;
+        }
+
+        /* Flash Messages */
+        .flash-messages {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 400px;
+        }
+
+        .flash-message {
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #667eea;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .dashboard-header {
+                padding: 12px 20px;
+            }
+            
+            .user-info-card {
+                max-width: 450px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .dashboard-header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: stretch;
+                padding: 12px 15px;
+                min-height: auto;
+            }
+            
+            .header-left {
+                width: 100%;
+                text-align: center;
+            }
+            
+            .header-right {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .user-info-card {
+                max-width: 100%;
+                height: 65px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .user-info-content {
+                padding: 8px 12px;
+                gap: 10px;
+            }
+            
+            .user-info-content .user-avatar {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+            
+            .user-info-content .user-details h3 {
+                font-size: 15px;
+                margin-bottom: 4px;
+            }
+            
+            .user-info-content .user-meta {
+                gap: 4px;
+            }
+            
+            .user-info-content .user-badge {
+                font-size: 10px;
+                padding: 2px 6px;
+            }
+            
+            .gradient-left, .gradient-right {
+                width: 6px;
+            }
+            
+            .header-left .h1 {
+                font-size: 22px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .user-info-card {
+                height: auto;
+                min-height: 60px;
+            }
+            
+            .user-info-content {
+                flex-direction: column;
+                text-align: center;
+                padding: 10px;
+                gap: 8px;
+            }
+            
+            .user-info-content .user-avatar {
+                width: 35px;
+                height: 35px;
+                font-size: 16px;
+            }
+            
+            .user-info-content .user-details h3 {
+                font-size: 14px;
+            }
+            
+            .user-info-content .user-meta {
+                justify-content: center;
+            }
+            
+            .user-info-content .user-badge {
+                font-size: 9px;
+            }
+            
+            .header-left .h1 {
+                font-size: 20px;
+            }
+        }
+    </style>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

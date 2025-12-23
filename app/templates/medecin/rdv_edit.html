@@ -1,0 +1,234 @@
+{% extends 'medecin/base.html' %}
+{% block title %}Modifier Rendez-vous{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>Modifier le rendez-vous #{{ rid }}</h2>
+  <form id="rdvEditForm">
+    <div class="form-group">
+      <label>Patient *</label>
+      <select name="patient_id" id="patient_id" class="input" required>
+        <option value="">Sélectionner un patient...</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Motif de la consultation</label>
+      <textarea name="notes" id="notes" class="input" rows="3" placeholder="Décrire le motif de la consultation..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Date et heure *</label>
+      <input type="datetime-local" id="date_heure" class="input" required>
+    </div>
+    <div class="form-group">
+      <label>Statut</label>
+      <select id="statut" class="input">
+        <option value="En attente">En attente</option>
+        <option value="Confirmé">Confirmé</option>
+        <option value="terminé">terminé</option>
+        <option value="Annulé">Annulé</option>
+      </select>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:20px;">
+      <button type="submit" class="btn primary">Mettre à jour</button>
+      <a href="/medecin/rdv" class="btn secondary">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Récupérer l'ID du rendez-vous depuis le template Flask
+const rdvId = "{{ rid }}";
+let currentRDV = null;
+
+// Charger la liste des patients
+async function loadPatients() {
+  try {
+    const res = await fetch('/medecin/api/patients');
+    if (!res.ok) {
+      throw new Error(`Erreur ${res.status}`);
+    }
+    
+    const patients = await res.json();
+    const select = document.getElementById('patient_id');
+    select.innerHTML = '<option value="">Sélectionner un patient...</option>';
+    
+    patients.forEach(patient => {
+      const option = document.createElement('option');
+      option.value = patient.id;
+      option.textContent = `${patient.nom}${patient.prenom ? ' ' + patient.prenom : ''} - ${patient.email}`;
+      select.appendChild(option);
+    });
+  } catch(e) { 
+    console.error('Erreur chargement patients:', e);
+    alert('Erreur chargement des patients'); 
+  }
+}
+
+// Charger les données du rendez-vous - CORRIGÉ
+async function loadRDV() {
+  try {
+    if (!rdvId) {
+      alert('ID du rendez-vous non valide');
+      window.location.href = '/medecin/rdv';
+      return;
+    }
+    
+    // CORRECTION: Récupérer le rendez-vous depuis la liste des RDV
+    const res = await fetch(`/medecin/rpc/rdv/list?all=1`);
+    
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        window.location.href = '/login';
+        return;
+      }
+      throw new Error(`Erreur ${res.status}`);
+    }
+    
+    const data = await res.json();
+    
+    if (!data.ok) {
+      throw new Error(data.error || 'Erreur serveur');
+    }
+    
+    // Chercher le rendez-vous spécifique par ID
+    const rdvList = data.data;
+    currentRDV = rdvList.find(rdv => rdv.id == rdvId);
+    
+    if (!currentRDV) {
+      alert('Rendez-vous non trouvé');
+      window.location.href = '/medecin/rdv';
+      return;
+    }
+    
+    // Remplir le formulaire
+    document.getElementById('patient_id').value = currentRDV.patient_id;
+    document.getElementById('notes').value = currentRDV.notes || '';
+    document.getElementById('statut').value = currentRDV.statut || 'En attente';
+    
+    // Formater la date pour l'input datetime-local
+    if (currentRDV.date_heure) {
+      let dateStr = currentRDV.date_heure;
+      
+      // Si c'est déjà au format ISO (avec 'T'), on l'utilise directement
+      if (dateStr.includes('T')) {
+        // Enlever les secondes si présentes
+        dateStr = dateStr.substring(0, 16);
+      } else {
+        // Sinon, convertir au format YYYY-MM-DDTHH:MM
+        try {
+          const date = new Date(dateStr);
+          if (!isNaN(date.getTime())) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            dateStr = `${year}-${month}-${day}T${hours}:${minutes}`;
+          }
+        } catch(e) {
+          console.error('Erreur formatage date:', e);
+        }
+      }
+      document.getElementById('date_heure').value = dateStr;
+    }
+    
+  } catch(e) {
+    console.error('Erreur chargement RDV:', e);
+    alert('Erreur: ' + e.message);
+    window.location.href = '/medecin/rdv';
+  }
+}
+
+// Soumission du formulaire - CORRIGÉ pour utiliser la bonne route
+document.getElementById('rdvEditForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  
+  if (!currentRDV) {
+    alert('Données du rendez-vous non chargées');
+    return;
+  }
+  
+  // Validation
+  const patientId = document.getElementById('patient_id').value;
+  const dateHeure = document.getElementById('date_heure').value;
+  
+  if (!patientId) {
+    alert('Veuillez sélectionner un patient');
+    return;
+  }
+  
+  if (!dateHeure) {
+    alert('Veuillez sélectionner une date et heure');
+    return;
+  }
+  
+  const payload = {
+    patient_id: parseInt(patientId),
+    date_heure: dateHeure,
+    statut: document.getElementById('statut').value,
+    notes: document.getElementById('notes').value.trim()
+  };
+  
+  console.log('Mise à jour du rendez-vous:', payload);
+  
+  try {
+    // CORRECTION: Utiliser la route update spécifique que vous avez définie
+    const res = await fetch(`/medecin/rpc/rdv/update/${rdvId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    const data = await res.json();
+    
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        alert('Session expirée ou accès non autorisé');
+        window.location.href = '/login';
+        return;
+      }
+      
+      if (res.status === 404) {
+        alert('Rendez-vous non trouvé ou accès non autorisé');
+        window.location.href = '/medecin/rdv';
+        return;
+      }
+      
+      if (res.status === 409 && data.error && data.error.includes('déjà réservé')) {
+        alert('❌ Erreur: Ce créneau est déjà réservé pour ce médecin. Veuillez choisir une autre heure.');
+        return;
+      }
+      
+      throw new Error(data.error || `Erreur serveur (${res.status})`);
+    }
+    
+    if (!data.ok) {
+      throw new Error(data.error || 'Erreur lors de la mise à jour');
+    }
+    
+    alert('✅ Rendez-vous mis à jour avec succès');
+    window.location.href = '/medecin/rdv';
+    
+  } catch(e) {
+    console.error('Erreur mise à jour:', e);
+    alert('❌ Erreur: ' + e.message);
+  }
+});
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', async function() {
+  if (!rdvId || rdvId === "0") {
+    alert('ID du rendez-vous invalide');
+    window.location.href = '/medecin/rdv';
+    return;
+  }
+  
+  await loadPatients();
+  await loadRDV();
+});
+</script>
+{% endblock %}

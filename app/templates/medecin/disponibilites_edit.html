@@ -1,0 +1,236 @@
+{% extends 'medecin/base.html' %}
+{% block title %}Modifier Disponibilité{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>Modifier Disponibilité</h2>
+  <form id="dispoEditForm">
+    <div class="form-group">
+      <label>Jour de la semaine *</label>
+      <select name="jour_semaine" id="jour_semaine" class="input" required>
+        <option value="">Sélectionner un jour...</option>
+        <option value="Lundi">Lundi</option>
+        <option value="Mardi">Mardi</option>
+        <option value="Mercredi">Mercredi</option>
+        <option value="Jeudi">Jeudi</option>
+        <option value="Vendredi">Vendredi</option>
+        <option value="Samedi">Samedi</option>
+        <option value="Dimanche">Dimanche</option>
+      </select>
+    </div>
+    
+    <div class="form-row">
+      <div class="form-group">
+        <label>Heure de début *</label>
+        <input type="time" id="heure_debut" class="input" required>
+      </div>
+      
+      <div class="form-group">
+        <label>Heure de fin *</label>
+        <input type="time" id="heure_fin" class="input" required>
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label id="dureeLabel">Durée: --</label>
+    </div>
+    
+    <div style="display:flex; gap:10px; margin-top:20px;">
+      <button type="submit" class="btn primary">Mettre à jour</button>
+      <a href="/medecin/disponibilites" class="btn secondary">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Récupérer l'ID de la disponibilité depuis l'URL
+const dispoId = window.location.pathname.split('/').pop();
+
+// Charger les données de la disponibilité
+async function loadDispoData() {
+  try {
+    // Vous devrez créer une route API pour récupérer une disponibilité par ID
+    // Pour l'instant, nous allons utiliser une approche temporaire
+    const res = await fetch(`/medecin/rpc/disponibilites/list`);
+    const data = await res.json();
+    
+    if (!data.ok) {
+      throw new Error(data.error || 'Erreur chargement');
+    }
+    
+    // Trouver la disponibilité avec l'ID correspondant
+    const dispo = data.data.find(d => d.id == dispoId);
+    
+    if (!dispo) {
+      throw new Error('Disponibilité non trouvée');
+    }
+    
+    // Remplir le formulaire
+    document.getElementById('jour_semaine').value = dispo.jour_semaine;
+    document.getElementById('heure_debut').value = dispo.heure_debut.substring(0, 5);
+    document.getElementById('heure_fin').value = dispo.heure_fin.substring(0, 5);
+    
+    calculerEtAfficherDuree();
+    
+  } catch (error) {
+    console.error('Erreur chargement disponibilité:', error);
+    alert('Erreur: ' + error.message);
+    window.location.href = '/medecin/disponibilites';
+  }
+}
+
+// Calculer et afficher la durée
+function calculerEtAfficherDuree() {
+  const debut = document.getElementById('heure_debut').value;
+  const fin = document.getElementById('heure_fin').value;
+  
+  if (debut && fin) {
+    const [h1, m1] = debut.split(':').map(Number);
+    const [h2, m2] = fin.split(':').map(Number);
+    
+    const totalMinutes1 = h1 * 60 + m1;
+    const totalMinutes2 = h2 * 60 + m2;
+    
+    if (totalMinutes2 <= totalMinutes1) {
+      document.getElementById('dureeLabel').innerHTML = 
+        '<span style="color: #dc3545;">⚠ L\'heure de fin doit être après l\'heure de début</span>';
+      return false;
+    }
+    
+    const difference = totalMinutes2 - totalMinutes1;
+    const heures = Math.floor(difference / 60);
+    const minutes = difference % 60;
+    
+    let dureeTexte = '';
+    if (heures > 0) dureeTexte += `${heures}h `;
+    if (minutes > 0) dureeTexte += `${minutes}min`;
+    
+    document.getElementById('dureeLabel').textContent = `Durée: ${dureeTexte}`;
+    return true;
+  }
+  
+  document.getElementById('dureeLabel').textContent = 'Durée: --';
+  return false;
+}
+
+// Soumission du formulaire
+document.getElementById('dispoEditForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  
+  // Validation
+  const jourSemaine = document.getElementById('jour_semaine').value;
+  const heureDebut = document.getElementById('heure_debut').value;
+  const heureFin = document.getElementById('heure_fin').value;
+  
+  if (!jourSemaine) {
+    alert('Veuillez sélectionner un jour');
+    return;
+  }
+  
+  if (!heureDebut || !heureFin) {
+    alert('Veuillez saisir les heures de début et de fin');
+    return;
+  }
+  
+  if (heureDebut >= heureFin) {
+    alert('L\'heure de début doit être avant l\'heure de fin');
+    return;
+  }
+  
+  const payload = {
+    jour_semaine: jourSemaine,
+    heure_debut: heureDebut,
+    heure_fin: heureFin
+  };
+  
+  console.log('Mise à jour disponibilité:', payload);
+  
+  try {
+    const res = await fetch(`/medecin/rpc/disponibilites/update/${dispoId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+    
+    const contentType = res.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await res.text();
+      console.error('Réponse non JSON:', text.substring(0, 200));
+      throw new Error('Réponse serveur invalide');
+    }
+    
+    const data = await res.json();
+    console.log('Réponse du serveur:', data);
+    
+    if (!res.ok) {
+      if (res.status === 401) {
+        alert('Session expirée. Veuillez vous reconnecter.');
+        window.location.href = '/login';
+        return;
+      }
+      
+      if (res.status === 403) {
+        alert('Accès non autorisé.');
+        window.location.href = '/login';
+        return;
+      }
+      
+      if (res.status === 409) {
+        alert('Erreur: Une disponibilité existe déjà pour cette plage horaire.');
+        return;
+      }
+      
+      throw new Error(data.error || `Erreur serveur (${res.status})`);
+    }
+    
+    if (!data.ok) {
+      throw new Error(data.error || 'Erreur lors de la mise à jour');
+    }
+    
+    alert('✅ Disponibilité mise à jour avec succès');
+    window.location.href = '/medecin/disponibilites';
+    
+  } catch(e) { 
+    console.error('Erreur complète:', e);
+    alert('❌ Erreur: ' + e.message); 
+  }
+});
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+  loadDispoData();
+  
+  // Écouter les changements d'heures
+  document.getElementById('heure_debut').addEventListener('change', calculerEtAfficherDuree);
+  document.getElementById('heure_fin').addEventListener('change', calculerEtAfficherDuree);
+});
+
+// Styles additionnels
+const style = document.createElement('style');
+style.textContent = `
+  .form-row {
+    display: flex;
+    gap: 20px;
+  }
+  
+  .form-row .form-group {
+    flex: 1;
+  }
+  
+  #dureeLabel {
+    font-weight: bold;
+    color: #28a745;
+    font-size: 1.1em;
+    padding: 8px 0;
+    border-top: 1px solid #e0e0e0;
+    margin-top: 10px;
+  }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}
