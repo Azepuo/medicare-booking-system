@@ -1,5 +1,4 @@
 # app/routes/medecin_routes.py
-
 from flask import Blueprint, render_template, jsonify, request, redirect 
 from models.patient import Patient
 from models.rendezvous import Rendezvous
@@ -13,7 +12,51 @@ from models.User import User
 
 medecin = Blueprint('medecin', __name__)
 
+# ------------------ HELPERS ------------------
+def verify_token(required_role="MEDECIN"):
+    token = request.cookies.get("access_token")
+    if not token:
+        auth_header = request.headers.get('Authorization')
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+    if not token:
+        return None, jsonify({'ok': False, 'error': 'Non authentifié'}), 401
 
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+    except jwt.ExpiredSignatureError:
+        return None, jsonify({'ok': False, 'error': 'Session expirée'}), 401
+    except jwt.InvalidTokenError:
+        return None, jsonify({'ok': False, 'error': 'Token invalide'}), 401
+
+    role = payload.get("role", "").upper()
+    if role != required_role.upper():
+        return None, jsonify({'ok': False, 'error': f'Accès non autorisé. Rôle requis: {required_role}'}), 403
+
+    return payload, None, None
+
+def get_medecin_id_from_user_id(user_id):
+    """Récupérer l'ID du médecin à partir du user_id"""
+    conn = create_connection()
+    if not conn:
+        return None
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id FROM medecins WHERE user_id = %s", (user_id,))
+        medecin = cursor.fetchone()
+        
+        if medecin:
+            return medecin['id']
+        return None
+    except Exception as e:
+        print(f"Erreur lors de la récupération du médecin: {e}")
+        return None
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if conn:
+            conn.close()
 
 # ------------------ PAGES ------------------
 @medecin.route('/dashboard')
@@ -93,9 +136,6 @@ def dispo_edit(dispo_id):
 def chat():
     return render_template('medecin/chat.html')
 
-# routes/medcin/medecin_routes.py
-
-# ------------------ PAGES ------------------
 @medecin.route('/profil')
 def profil():
     token = request.cookies.get("access_token")
@@ -111,31 +151,24 @@ def profil():
 
     user_id = payload["user_id"]
     
-    # Utiliser User.get_by_id pour récupérer les données de base
     user = User.get_by_id(user_id)
     
     if not user:
         return "Utilisateur non trouvé", 404
     
-    # Si User a un attribut created_at, l'utiliser, sinon utiliser une valeur par défaut
-    # Vérifier d'abord si l'attribut existe
     date_inscription = ''
     if hasattr(user, 'created_at') and user.created_at:
-        # Vérifier le type
         if isinstance(user.created_at, datetime):
             date_inscription = user.created_at.strftime('%d/%m/%Y')
         else:
             date_inscription = str(user.created_at)
     else:
-        # Valeur par défaut ou récupérer depuis la base
         date_inscription = "Non disponible"
     
-    # Récupérer le nom d'utilisateur depuis l'email
     username = ""
     if hasattr(user, 'email') and user.email:
         username = user.email.split('@')[0]
     
-    # Créer un objet user avec les champs disponibles
     user_data = {
         'nom_complet': user.nom if hasattr(user, 'nom') and user.nom else '',
         'email': user.email if hasattr(user, 'email') and user.email else '',
@@ -143,8 +176,6 @@ def profil():
         'role': payload.get('role', ''),
         'user_id': user_id,
         'date_inscription': date_inscription,
-        
-        # Champs par défaut (vides ou valeurs par défaut)
         'specialite': '',
         'tarif': 0,
         'titre': '',
@@ -166,28 +197,6 @@ def profil():
     }
     
     return render_template('medecin/profil.html', user=user_data)
-# ------------------ HELPERS ------------------
-def verify_token(required_role="MEDECIN"):
-    token = request.cookies.get("access_token")
-    if not token:
-        auth_header = request.headers.get('Authorization')
-        if auth_header and auth_header.startswith("Bearer "):
-            token = auth_header[7:]
-    if not token:
-        return None, jsonify({'ok': False, 'error': 'Non authentifié'}), 401
-
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-    except jwt.ExpiredSignatureError:
-        return None, jsonify({'ok': False, 'error': 'Session expirée'}), 401
-    except jwt.InvalidTokenError:
-        return None, jsonify({'ok': False, 'error': 'Token invalide'}), 401
-
-    role = payload.get("role", "").upper()
-    if role != required_role.upper():
-        return None, jsonify({'ok': False, 'error': f'Accès non autorisé. Rôle requis: {required_role}'}), 403
-
-    return payload, None, None
 
 # ------------------ RPC ROUTES POUR PROFIL ------------------
 @medecin.route('/api/profile', methods=['GET'])
@@ -233,7 +242,6 @@ def update_profile_api():
         if not user:
             return jsonify({'error': 'Utilisateur non trouvé'}), 404
         
-        # Mettre à jour les informations de base
         update_data = {}
         
         if 'nom_complet' in data:
@@ -245,25 +253,21 @@ def update_profile_api():
         if 'adresse' in data:
             update_data['adresse'] = data['adresse']
         
-        # Mettre à jour le mot de passe si fourni
         if data.get('password'):
             from werkzeug.security import generate_password_hash
             update_data['password'] = generate_password_hash(data.get('password'))
         
-        # Utiliser la méthode save du modèle User si elle existe
         if hasattr(user, 'save'):
             for key, value in update_data.items():
                 setattr(user, key, value)
             user.save()
         else:
-            # Sinon, utiliser une connexion directe
             conn = create_connection()
             if not conn:
                 return jsonify({'error': 'Erreur de connexion à la base'}), 500
             
             cursor = conn.cursor()
             
-            # Construire la requête SQL
             if update_data:
                 set_clause = ', '.join([f"{key} = %s" for key in update_data.keys()])
                 query = f"UPDATE users SET {set_clause} WHERE id = %s"
@@ -286,7 +290,7 @@ def update_profile_api():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-# ------------------ RPC ROUTES POUR RDV ------------------
+# ------------------ RPC ROUTES POUR RDV (CORRIGÉES) ------------------
 @medecin.route('/rpc/rdv/list', methods=['GET'])
 def list_rdv_rpc():
     """Lister les rendez-vous (avec paramètre today=1 pour aujourd'hui seulement)"""
@@ -295,10 +299,13 @@ def list_rdv_rpc():
         return err_response, status
     
     try:
-        # Vérifier si c'est pour aujourd'hui seulement
         today_only = request.args.get('today') == '1'
-        
         user_id = payload["user_id"]
+        
+        # Récupérer l'ID du médecin à partir du user_id
+        medecin_id = get_medecin_id_from_user_id(user_id)
+        if not medecin_id:
+            return jsonify({'ok': False, 'error': 'Médecin non trouvé'}), 404
         
         conn = create_connection()
         if not conn:
@@ -307,8 +314,6 @@ def list_rdv_rpc():
         cursor = conn.cursor(dictionary=True)
         
         if today_only:
-            # CORRECTION CRITIQUE: Rendez-vous d'aujourd'hui seulement
-            # On utilise DATE() pour extraire la partie date du DATETIME
             cursor.execute("""
                 SELECT 
                     r.*,
@@ -317,12 +322,11 @@ def list_rdv_rpc():
                     p.email as patient_email
                 FROM rendezvous r
                 LEFT JOIN patients p ON r.patient_id = p.id
-                WHERE r.user_id = %s 
+                WHERE r.medecin_id = %s
                 AND DATE(r.date_heure) = CURDATE()
                 ORDER BY r.date_heure ASC
-            """, (user_id,))
+            """, (medecin_id,))
         else:
-            # Tous les rendez-vous (pour d'autres vues)
             cursor.execute("""
                 SELECT 
                     r.*,
@@ -331,29 +335,25 @@ def list_rdv_rpc():
                     p.email as patient_email
                 FROM rendezvous r
                 LEFT JOIN patients p ON r.patient_id = p.id
-                WHERE r.user_id = %s
+                WHERE r.medecin_id = %s
                 ORDER BY r.date_heure DESC
-            """, (user_id,))
+            """, (medecin_id,))
         
         rdvs = cursor.fetchall()
-        
-        print(f"DEBUG: RDV trouvés: {len(rdvs)}")
-        for rdv in rdvs:
-            print(f"DEBUG: RDV id={rdv['id']}, date={rdv['date_heure']}, statut={rdv.get('statut')}")
         
         # Formater les dates pour JSON
         for rdv in rdvs:
             if 'date_heure' in rdv and rdv['date_heure']:
                 if isinstance(rdv['date_heure'], str):
-                    # Déjà un string, vérifier le format
                     try:
                         dt = datetime.fromisoformat(rdv['date_heure'].replace('Z', '+00:00'))
                         rdv['date_heure'] = dt.isoformat()
+                        rdv['date_heure_display'] = dt.strftime('%Y-%m-%d %H:%M')
                     except:
                         pass
                 else:
-                    # Objet datetime MySQL
                     rdv['date_heure'] = rdv['date_heure'].isoformat()
+                    rdv['date_heure_display'] = rdv['date_heure'].strftime('%Y-%m-%d %H:%M') if hasattr(rdv['date_heure'], 'strftime') else rdv['date_heure']
         
         cursor.close()
         conn.close()
@@ -366,7 +366,6 @@ def list_rdv_rpc():
         traceback.print_exc()
         return jsonify({'ok': False, 'error': str(e)}), 500
 
-# ------------------ NOUVELLE ROUTE POUR RDV FUTURS ------------------
 @medecin.route('/rpc/rdv/list/future', methods=['GET'])
 def list_future_rdv_rpc():
     """Lister les rendez-vous futurs (aujourd'hui et après)"""
@@ -377,13 +376,17 @@ def list_future_rdv_rpc():
     try:
         user_id = payload["user_id"]
         
+        # Récupérer l'ID du médecin à partir du user_id
+        medecin_id = get_medecin_id_from_user_id(user_id)
+        if not medecin_id:
+            return jsonify({'ok': False, 'error': 'Médecin non trouvé'}), 404
+        
         conn = create_connection()
         if not conn:
             return jsonify({'ok': False, 'error': 'Erreur de connexion à la base'}), 500
         
         cursor = conn.cursor(dictionary=True)
         
-        # Rendez-vous à partir d'aujourd'hui (futurs)
         cursor.execute("""
             SELECT 
                 r.*,
@@ -392,10 +395,10 @@ def list_future_rdv_rpc():
                 p.email as patient_email
             FROM rendezvous r
             LEFT JOIN patients p ON r.patient_id = p.id
-            WHERE r.user_id = %s 
+            WHERE r.medecin_id = %s
             AND DATE(r.date_heure) >= CURDATE()
             ORDER BY r.date_heure ASC
-        """, (user_id,))
+        """, (medecin_id,))
         
         rdvs = cursor.fetchall()
         
@@ -406,10 +409,12 @@ def list_future_rdv_rpc():
                     try:
                         dt = datetime.fromisoformat(rdv['date_heure'].replace('Z', '+00:00'))
                         rdv['date_heure'] = dt.isoformat()
+                        rdv['date_heure_display'] = dt.strftime('%Y-%m-d %H:%M')
                     except:
                         pass
                 else:
                     rdv['date_heure'] = rdv['date_heure'].isoformat()
+                    rdv['date_heure_display'] = rdv['date_heure'].strftime('%Y-%m-%d %H:%M') if hasattr(rdv['date_heure'], 'strftime') else rdv['date_heure']
         
         cursor.close()
         conn.close()
@@ -436,54 +441,56 @@ def create_rdv_rpc():
     try:
         user_id = payload["user_id"]
         
+        # Récupérer l'ID du médecin à partir du user_id
+        medecin_id = get_medecin_id_from_user_id(user_id)
+        if not medecin_id:
+            return jsonify({'ok': False, 'error': 'Médecin non trouvé'}), 404
+        
         # Vérifier que le patient existe
         patient = Patient.get_by_id(data['patient_id'])
         if not patient:
             return jsonify({'ok': False, 'error': 'Patient non trouvé'}), 404
         
-        # Vérifier que l'utilisateur est bien un médecin
-        medecin_user = Medecin.get_by_user_id(user_id)
-        if not medecin_user:
-            return jsonify({'ok': False, 'error': 'Médecin non trouvé'}), 404
-        
-        # CORRECTION: Formater correctement la date pour MySQL
+        # Formater la date pour MySQL
         date_heure = data['date_heure']
-        # Si la date contient 'T', la remplacer par un espace pour MySQL
         if 'T' in date_heure:
             date_heure = date_heure.replace('T', ' ')
-        # Supprimer le 'Z' si présent
         if date_heure.endswith('Z'):
             date_heure = date_heure[:-1]
         
-        print(f"DEBUG: Création RDV - user_id={user_id}, date_heure={date_heure}")
-        
-        # Insérer le rendez-vous
         conn = create_connection()
         if not conn:
             return jsonify({'ok': False, 'error': 'Erreur de connexion à la base'}), 500
         
         cursor = conn.cursor(dictionary=True)
         
-        # Utiliser user_id directement (comme vous le voulez)
+        # Vérifier la disponibilité
+        cursor.execute("""
+            SELECT id FROM rendezvous 
+            WHERE medecin_id = %s AND date_heure = %s
+        """, (medecin_id, date_heure))
+        
+        existing = cursor.fetchone()
+        if existing:
+            cursor.close()
+            conn.close()
+            return jsonify({'ok': False, 'error': 'Ce créneau est déjà réservé pour ce médecin'}), 409
+        
+        # Insérer le rendez-vous
         cursor.execute("""
             INSERT INTO rendezvous 
-            (date_heure, patient_id, user_id, statut, notes)
+            (date_heure, patient_id, medecin_id, statut, notes)
             VALUES (%s, %s, %s, %s, %s)
         """, (
             date_heure,
             data['patient_id'],
-            user_id,  # user_id du médecin
+            medecin_id,
             data.get('statut', 'En attente'),
             data.get('notes', '')
         ))
         
         conn.commit()
         rdv_id = cursor.lastrowid
-        
-        # Vérifier que le RDV a été inséré
-        cursor.execute("SELECT * FROM rendezvous WHERE id = %s", (rdv_id,))
-        rdv_inserted = cursor.fetchone()
-        print(f"DEBUG: RDV inséré - {rdv_inserted}")
         
         cursor.close()
         conn.close()
@@ -510,6 +517,11 @@ def update_rdv_rpc(rdv_id):
     try:
         user_id = payload["user_id"]
         
+        # Récupérer l'ID du médecin à partir du user_id
+        medecin_id = get_medecin_id_from_user_id(user_id)
+        if not medecin_id:
+            return jsonify({'ok': False, 'error': 'Médecin non trouvé'}), 404
+        
         conn = create_connection()
         if not conn:
             return jsonify({'ok': False, 'error': 'Erreur de connexion à la base'}), 500
@@ -519,8 +531,8 @@ def update_rdv_rpc(rdv_id):
         # Vérifier que le RDV appartient au médecin
         cursor.execute("""
             SELECT * FROM rendezvous 
-            WHERE id = %s AND user_id = %s
-        """, (rdv_id, user_id))
+            WHERE id = %s AND medecin_id = %s
+        """, (rdv_id, medecin_id))
         
         rdv = cursor.fetchone()
         if not rdv:
@@ -528,16 +540,38 @@ def update_rdv_rpc(rdv_id):
             conn.close()
             return jsonify({'ok': False, 'error': 'Rendez-vous non trouvé ou accès non autorisé'}), 404
         
+        # Si on change la date, vérifier qu'elle n'est pas déjà prise
+        if 'date_heure' in data:
+            date_heure = data['date_heure']
+            if 'T' in date_heure:
+                date_heure = date_heure.replace('T', ' ')
+            if date_heure.endswith('Z'):
+                date_heure = date_heure[:-1]
+            
+            cursor.execute("""
+                SELECT id FROM rendezvous 
+                WHERE medecin_id = %s AND date_heure = %s AND id != %s
+            """, (medecin_id, date_heure, rdv_id))
+            
+            existing = cursor.fetchone()
+            if existing:
+                cursor.close()
+                conn.close()
+                return jsonify({'ok': False, 'error': 'Ce créneau est déjà réservé pour ce médecin'}), 409
+            
+            data['date_heure'] = date_heure
+        
         # Mettre à jour
         cursor.execute("""
             UPDATE rendezvous
             SET date_heure = %s, statut = %s, notes = %s
-            WHERE id = %s
+            WHERE id = %s AND medecin_id = %s
         """, (
             data.get('date_heure', rdv['date_heure']),
             data.get('statut', rdv['statut']),
             data.get('notes', rdv['notes']),
-            rdv_id
+            rdv_id,
+            medecin_id
         ))
         
         conn.commit()
@@ -560,6 +594,11 @@ def delete_rdv_rpc(rdv_id):
     try:
         user_id = payload["user_id"]
         
+        # Récupérer l'ID du médecin à partir du user_id
+        medecin_id = get_medecin_id_from_user_id(user_id)
+        if not medecin_id:
+            return jsonify({'ok': False, 'error': 'Médecin non trouvé'}), 404
+        
         conn = create_connection()
         if not conn:
             return jsonify({'ok': False, 'error': 'Erreur de connexion à la base'}), 500
@@ -569,8 +608,8 @@ def delete_rdv_rpc(rdv_id):
         # Vérifier que le RDV appartient au médecin
         cursor.execute("""
             SELECT id FROM rendezvous 
-            WHERE id = %s AND user_id = %s
-        """, (rdv_id, user_id))
+            WHERE id = %s AND medecin_id = %s
+        """, (rdv_id, medecin_id))
         
         rdv = cursor.fetchone()
         if not rdv:
@@ -579,7 +618,7 @@ def delete_rdv_rpc(rdv_id):
             return jsonify({'ok': False, 'error': 'Rendez-vous non trouvé ou accès non autorisé'}), 404
         
         # Supprimer le RDV
-        cursor.execute("DELETE FROM rendezvous WHERE id = %s", (rdv_id,))
+        cursor.execute("DELETE FROM rendezvous WHERE id = %s AND medecin_id = %s", (rdv_id, medecin_id))
         conn.commit()
         
         cursor.close()
@@ -591,7 +630,7 @@ def delete_rdv_rpc(rdv_id):
         print(f"❌ Erreur delete_rdv_rpc: {e}")
         return jsonify({'ok': False, 'error': str(e)}), 500
 
-# ------------------ RPC ROUTES POUR DISPONIBILITES ------------------
+# ------------------ RPC ROUTES POUR DISPONIBILITES (ADAPTÉES POUR medecin_id) ------------------
 @medecin.route('/rpc/disponibilites/list', methods=['GET'])
 def list_dispo_rpc():
     """Lister les disponibilités (avec paramètre today=1 pour aujourd'hui)"""
@@ -602,12 +641,16 @@ def list_dispo_rpc():
         return err_response, status
     
     try:
-        # Vérifier si c'est pour aujourd'hui seulement
         today_only = request.args.get('today') == '1'
         user_id = payload["user_id"]
         print(f"DEBUG: user_id={user_id}, today_only={today_only}")
         
-        # Jour de la semaine en français pour today
+        # Récupérer l'ID du médecin à partir du user_id
+        medecin_id = get_medecin_id_from_user_id(user_id)
+        if not medecin_id:
+            return jsonify({'ok': False, 'error': 'Médecin non trouvé'}), 404
+        print(f"DEBUG: medecin_id={medecin_id}")
+        
         jours_fr = {
             'Monday': 'Lundi',
             'Tuesday': 'Mardi',
@@ -628,33 +671,28 @@ def list_dispo_rpc():
         cursor = conn.cursor(dictionary=True)
         
         if today_only and jour_aujourdhui:
-            # Disponibilités pour aujourd'hui seulement
             print(f"DEBUG: Recherche disponibilités pour {jour_aujourdhui}")
             cursor.execute("""
                 SELECT * FROM disponibilites 
-                WHERE user_id = %s AND jour_semaine = %s
+                WHERE medecin_id = %s AND jour_semaine = %s
                 ORDER BY heure_debut
-            """, (user_id, jour_aujourdhui))
+            """, (medecin_id, jour_aujourdhui))
         else:
-            # Toutes les disponibilités
             print("DEBUG: Recherche toutes les disponibilités")
             cursor.execute("""
                 SELECT * FROM disponibilites 
-                WHERE user_id = %s
+                WHERE medecin_id = %s
                 ORDER BY 
                     FIELD(jour_semaine, 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'),
                     heure_debut
-            """, (user_id,))
+            """, (medecin_id,))
         
         disponibilites = cursor.fetchall()
         print(f"DEBUG: Disponibilités trouvées: {len(disponibilites)}")
         
-        # CORRECTION CRITIQUE: Convertir les objets timedelta en strings
         for dispo in disponibilites:
-            # Convertir les champs TIME (timedelta) en strings
             if 'heure_debut' in dispo and dispo['heure_debut']:
                 if isinstance(dispo['heure_debut'], timedelta):
-                    # Convertir timedelta en string HH:MM:SS
                     total_seconds = int(dispo['heure_debut'].total_seconds())
                     hours = total_seconds // 3600
                     minutes = (total_seconds % 3600) // 60
@@ -665,7 +703,6 @@ def list_dispo_rpc():
             
             if 'heure_fin' in dispo and dispo['heure_fin']:
                 if isinstance(dispo['heure_fin'], timedelta):
-                    # Convertir timedelta en string HH:MM:SS
                     total_seconds = int(dispo['heure_fin'].total_seconds())
                     hours = total_seconds // 3600
                     minutes = (total_seconds % 3600) // 60
@@ -674,11 +711,10 @@ def list_dispo_rpc():
                 elif not isinstance(dispo['heure_fin'], str):
                     dispo['heure_fin'] = str(dispo['heure_fin'])
             
-            # Format simplifié pour le template
             if isinstance(dispo.get('heure_debut'), str) and ':' in dispo['heure_debut']:
-                dispo['heure_debut_display'] = dispo['heure_debut'][:5]  # Garder seulement HH:MM
+                dispo['heure_debut_display'] = dispo['heure_debut'][:5]
             if isinstance(dispo.get('heure_fin'), str) and ':' in dispo['heure_fin']:
-                dispo['heure_fin_display'] = dispo['heure_fin'][:5]  # Garder seulement HH:MM
+                dispo['heure_fin_display'] = dispo['heure_fin'][:5]
         
         cursor.close()
         conn.close()
@@ -712,7 +748,11 @@ def create_dispo_rpc():
     try:
         user_id = payload["user_id"]
         
-        # Vérifier les heures
+        # Récupérer l'ID du médecin à partir du user_id
+        medecin_id = get_medecin_id_from_user_id(user_id)
+        if not medecin_id:
+            return jsonify({'ok': False, 'error': 'Médecin non trouvé'}), 404
+        
         if data['heure_debut'] >= data['heure_fin']:
             return jsonify({'ok': False, 'error': 'L\'heure de début doit être avant l\'heure de fin'}), 400
         
@@ -722,7 +762,6 @@ def create_dispo_rpc():
         
         cursor = conn.cursor(dictionary=True)
         
-        # Vérifier d'abord si la table existe
         cursor.execute("SHOW TABLES LIKE 'disponibilites'")
         table_exists = cursor.fetchone()
         if not table_exists:
@@ -730,28 +769,27 @@ def create_dispo_rpc():
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS disponibilites (
                     id INT AUTO_INCREMENT PRIMARY KEY,
-                    user_id INT NOT NULL,
+                    medecin_id INT NOT NULL,
                     jour_semaine VARCHAR(20) NOT NULL,
                     heure_debut TIME NOT NULL,
                     heure_fin TIME NOT NULL,
                     date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    INDEX idx_user_id (user_id),
+                    INDEX idx_medecin_id (medecin_id),
                     INDEX idx_jour (jour_semaine)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             """)
             conn.commit()
         
-        # Vérifier les conflits
         cursor.execute("""
             SELECT * FROM disponibilites 
-            WHERE user_id = %s AND jour_semaine = %s 
+            WHERE medecin_id = %s AND jour_semaine = %s 
             AND (
                 (heure_debut <= %s AND heure_fin > %s) OR
                 (heure_debut < %s AND heure_fin >= %s) OR
                 (heure_debut >= %s AND heure_fin <= %s)
             )
         """, (
-            user_id, data['jour_semaine'],
+            medecin_id, data['jour_semaine'],
             data['heure_debut'], data['heure_debut'],
             data['heure_fin'], data['heure_fin'],
             data['heure_debut'], data['heure_fin']
@@ -763,20 +801,17 @@ def create_dispo_rpc():
             conn.close()
             return jsonify({'ok': False, 'error': 'Une disponibilité existe déjà pour cette plage horaire'}), 409
         
-        # Insérer la disponibilité
         cursor.execute("""
-            INSERT INTO disponibilites (user_id, jour_semaine, heure_debut, heure_fin)
+            INSERT INTO disponibilites (medecin_id, jour_semaine, heure_debut, heure_fin)
             VALUES (%s, %s, %s, %s)
-        """, (user_id, data['jour_semaine'], data['heure_debut'], data['heure_fin']))
+        """, (medecin_id, data['jour_semaine'], data['heure_debut'], data['heure_fin']))
         
         conn.commit()
         dispo_id = cursor.lastrowid
         
-        # Récupérer la disponibilité créée pour la retourner
         cursor.execute("SELECT * FROM disponibilites WHERE id = %s", (dispo_id,))
         new_dispo = cursor.fetchone()
         
-        # Convertir les timedelta en strings
         if new_dispo:
             if 'heure_debut' in new_dispo and isinstance(new_dispo['heure_debut'], timedelta):
                 total_seconds = int(new_dispo['heure_debut'].total_seconds())
@@ -821,7 +856,11 @@ def update_dispo_rpc(dispo_id):
     try:
         user_id = payload["user_id"]
         
-        # Vérifier les heures
+        # Récupérer l'ID du médecin à partir du user_id
+        medecin_id = get_medecin_id_from_user_id(user_id)
+        if not medecin_id:
+            return jsonify({'ok': False, 'error': 'Médecin non trouvé'}), 404
+        
         if 'heure_debut' in data and 'heure_fin' in data:
             if data['heure_debut'] >= data['heure_fin']:
                 return jsonify({'ok': False, 'error': 'L\'heure de début doit être avant l\'heure de fin'}), 400
@@ -832,11 +871,10 @@ def update_dispo_rpc(dispo_id):
         
         cursor = conn.cursor(dictionary=True)
         
-        # Vérifier que la disponibilité appartient à l'utilisateur
         cursor.execute("""
             SELECT * FROM disponibilites 
-            WHERE id = %s AND user_id = %s
-        """, (dispo_id, user_id))
+            WHERE id = %s AND medecin_id = %s
+        """, (dispo_id, medecin_id))
         
         dispo = cursor.fetchone()
         if not dispo:
@@ -844,7 +882,6 @@ def update_dispo_rpc(dispo_id):
             conn.close()
             return jsonify({'ok': False, 'error': 'Disponibilité non trouvée ou accès non autorisé'}), 404
         
-        # Vérifier les conflits (sauf avec elle-même)
         if 'jour_semaine' in data or 'heure_debut' in data or 'heure_fin' in data:
             jour = data.get('jour_semaine', dispo['jour_semaine'])
             debut = data.get('heure_debut', dispo['heure_debut'])
@@ -852,7 +889,7 @@ def update_dispo_rpc(dispo_id):
             
             cursor.execute("""
                 SELECT * FROM disponibilites 
-                WHERE user_id = %s AND jour_semaine = %s 
+                WHERE medecin_id = %s AND jour_semaine = %s 
                 AND id != %s
                 AND (
                     (heure_debut <= %s AND heure_fin > %s) OR
@@ -860,7 +897,7 @@ def update_dispo_rpc(dispo_id):
                     (heure_debut >= %s AND heure_fin <= %s)
                 )
             """, (
-                user_id, jour, dispo_id,
+                medecin_id, jour, dispo_id,
                 debut, debut,
                 fin, fin,
                 debut, fin
@@ -872,17 +909,16 @@ def update_dispo_rpc(dispo_id):
                 conn.close()
                 return jsonify({'ok': False, 'error': 'Une disponibilité existe déjà pour cette plage horaire'}), 409
         
-        # Mettre à jour
         cursor.execute("""
             UPDATE disponibilites
             SET jour_semaine = %s, heure_debut = %s, heure_fin = %s
-            WHERE id = %s AND user_id = %s
+            WHERE id = %s AND medecin_id = %s
         """, (
             data.get('jour_semaine', dispo['jour_semaine']),
             data.get('heure_debut', dispo['heure_debut']),
             data.get('heure_fin', dispo['heure_fin']),
             dispo_id,
-            user_id
+            medecin_id
         ))
         
         conn.commit()
@@ -906,17 +942,21 @@ def delete_dispo_rpc(dispo_id):
     try:
         user_id = payload["user_id"]
         
+        # Récupérer l'ID du médecin à partir du user_id
+        medecin_id = get_medecin_id_from_user_id(user_id)
+        if not medecin_id:
+            return jsonify({'ok': False, 'error': 'Médecin non trouvé'}), 404
+        
         conn = create_connection()
         if not conn:
             return jsonify({'ok': False, 'error': 'Erreur de connexion à la base'}), 500
         
         cursor = conn.cursor()
         
-        # Vérifier que la disponibilité appartient à l'utilisateur
         cursor.execute("""
             SELECT id FROM disponibilites 
-            WHERE id = %s AND user_id = %s
-        """, (dispo_id, user_id))
+            WHERE id = %s AND medecin_id = %s
+        """, (dispo_id, medecin_id))
         
         dispo = cursor.fetchone()
         if not dispo:
@@ -924,8 +964,7 @@ def delete_dispo_rpc(dispo_id):
             conn.close()
             return jsonify({'ok': False, 'error': 'Disponibilité non trouvée ou accès non autorisé'}), 404
         
-        # Supprimer la disponibilité
-        cursor.execute("DELETE FROM disponibilites WHERE id = %s", (dispo_id,))
+        cursor.execute("DELETE FROM disponibilites WHERE id = %s AND medecin_id = %s", (dispo_id, medecin_id))
         conn.commit()
         
         cursor.close()
@@ -947,7 +986,6 @@ def get_patients_api():
     
     try:
         patients = Patient.get_all()
-        # Retourner uniquement les champs nécessaires
         patients_data = []
         for p in patients:
             patients_data.append({
@@ -959,7 +997,7 @@ def get_patients_api():
         return jsonify(patients_data)
     except Exception as e:
         print(f"❌ Erreur get_patients_api: {e}")
-        return jsonify([]), 200  # Retourner une liste vide plutôt qu'une erreur
+        return jsonify([]), 200
 
 @medecin.route('/api/patients/<int:patient_id>', methods=['GET'])
 def get_patient_api(patient_id):
