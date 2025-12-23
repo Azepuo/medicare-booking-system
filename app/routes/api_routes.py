@@ -1,7 +1,7 @@
 from flask import jsonify, request
-from models.patient import Patient
-from models.rendezvous import RendezVous
-from models.medecin import Medecin
+from models.patientp import Patient
+from models.rendezvousp import RendezVous
+from models.medecinp import Medecin
 
 def init_api_routes(app):
     
