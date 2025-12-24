@@ -1,91 +1,82 @@
-/* Style global */
 * {
     margin: 0;
     padding: 0;
-    font-family: 'Poppins', sans-serif;
     box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
 }
 
 body {
-    background: #f0f6ff;
+    min-height: 100vh;
+    background: linear-gradient(
+        135deg,
+        #f4f9ff 0%,
+        #edf4ff 50%,
+        #f8fbff 100%
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+/* WRAPPER */
+.auth-wrapper {
+    min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
 }
 
-.container {
-    background: white;
+/* CARD */
+.auth-card {
     width: 900px;
+    background: white;
     display: flex;
-    border-radius: 14px;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.12);
+    border-radius: 16px;
     overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,.12);
 }
 
-/* Animation du côté gauche */
-@keyframes leftSlideIn {
-    0% { opacity: 0; transform: translateX(-50px); }
-    100% { opacity: 1; transform: translateX(0); }
-}
-
-.left {
-    background: #0a63a8;
-    color: white;
+/* LEFT */
+.auth-left {
     width: 45%;
-    padding: 60px 40px;
+    padding: 50px 40px;
+    background: #0d6efd;
+    color: white;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    animation: leftSlideIn 1s ease-out;
 }
 
-/* Gradient pour register */
-.register-left {
-    background: linear-gradient(135deg, #3fa7ff, #0a63a8);
+.auth-left.gradient {
+    background: linear-gradient(135deg, #3fa7ff, #0d6efd);
 }
 
-/* Animation titre h1 */
-@keyframes titleBounce {
-    0% { transform: translateY(-20px); opacity: 0; }
-    50% { transform: translateY(5px); opacity: 1; }
-    100% { transform: translateY(0); }
+.auth-left h1 {
+    font-size: 32px;
+    margin-bottom: 10px;
 }
 
-.left h1 {
-    animation: titleBounce 1s ease-out;
+.auth-left p {
+    font-size: 15px;
+    opacity: .9;
 }
 
-/* Effet zoom sur l'image */
-.left img {
-    width: 85%;
+.auth-left img {
+    width: 80%;
     margin-top: auto;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.left img:hover {
-    transform: scale(1.05);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-}
-
-/* Animation du formulaire */
-@keyframes formFadeIn {
-    0% { opacity: 0; transform: translateY(30px); }
-    100% { opacity: 1; transform: translateY(0); }
-}
-
-.right {
+/* RIGHT */
+.auth-right {
     width: 55%;
-    padding: 60px 40px;
+    padding: 60px 50px;
     display: flex;
-    justify-content: center;
     align-items: center;
 }
 
-.login-box {
+form {
     width: 100%;
-    max-width: 340px;
-    animation: formFadeIn 0.8s ease-out;
 }
 
 h2 {
@@ -93,195 +84,120 @@ h2 {
     margin-bottom: 30px;
 }
 
-.input-group {
+/* INPUT */
+.field {
     position: relative;
     margin-bottom: 18px;
 }
 
-.input-group input {
-    width: 100%;
-    padding: 10px;
-    border: 2px solid #d6e4f3;
-    border-radius: 8px;
-    margin-top: 5px;
-    transition: all 0.3s ease;
-}
-
-.input-group label {
-    position: absolute;
-    top: 50%;
-    left: 10px;
-    transform: translateY(-50%);
-    color: #999;
-    font-size: 14px;
-    pointer-events: none;
-    transition: all 0.3s ease;
-}
-
-/* Input focus effects */
-.input-group input:focus {
-    border-color: #0a63a8;
-    box-shadow: 0 4px 12px rgba(10, 99, 168, 0.25);
-}
-
-.input-group input:focus + label,
-.input-group input:not(:placeholder-shown) + label {
-    color: #0a63a8;
-    font-weight: 500;
-    transform: translateY(-25px);
-    font-size: 12px;
-}
-
-/* Register input focus */
-.register-left ~ .right .input-group input:focus {
-    border-color: #1abc9c;
-    box-shadow: 0 4px 12px rgba(26, 188, 156, 0.25);
-}
-
-.register-left ~ .right .input-group input:focus + label,
-.register-left ~ .right .input-group input:not(:placeholder-shown) + label {
-    color: #1abc9c;
-}
-
-/* Boutons */
-.btn {
+.field input {
     width: 100%;
     padding: 12px;
+    border: 1.8px solid #dbe7f3;
+    border-radius: 10px;
+    outline: none;
+    transition: .3s;
+}
+
+.field label {
+    position: absolute;
+    top: 50%;
+    left: 14px;
+    font-size: 14px;
+    color: #888;
+    transform: translateY(-50%);
+    transition: .3s;
+    pointer-events: none;
+}
+
+.field input:focus,
+.field input:not(:placeholder-shown) {
+    border-color: #0d6efd;
+}
+
+.field input:focus + label,
+.field input:not(:placeholder-shown) + label {
+    top: -8px;
+    font-size: 12px;
+    background: white;
+    padding: 0 6px;
+    color: #0d6efd;
+}
+
+/* BUTTON */
+.btn-primary {
+    width: 100%;
+    padding: 14px;
+    background: #0d6efd;
+    color: white;
     border: none;
-    color: rgba(9, 10, 86, 0.669);
-    font-size: 16px;
-    border-radius: 8px;
+    border-radius: 10px;
+    font-size: 15px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: .3s;
 }
 
-/* Login button hover */
-.btn:hover {
-    background: #084f86;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+.btn-primary:hover {
+    background: #0b5ed7;
 }
 
-/* Register button */
-.register-left ~ .right .btn {
-    background: #1abc9c;
+.btn-primary.success {
+    background: #22c55e;
 }
 
-.register-left ~ .right .btn:hover {
-    background: #16a085;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(26, 188, 156, 0.2);
+.btn-primary.success:hover {
+    background: #16a34a;
 }
 
-/* Liens */
-.register-text {
+/* LINKS */
+.switch {
+    margin-top: 15px;
     text-align: center;
-    margin-top: 12px;
     font-size: 14px;
 }
 
-.register-text a {
-    color: #0a63a8;
+.switch a {
+    color: #0d6efd;
     font-weight: 500;
-    transition: all 0.3s ease;
 }
 
-.register-left ~ .right .register-text a {
-    color: #1abc9c;
-}
-
-.register-text a:hover {
-    text-decoration: underline;
-}
-
-.register-left ~ .right .register-text a:hover {
-    color: #16a085;
-}
-
-.link-services {
+.back {
     display: block;
     text-align: center;
-    margin-top: 18px;
+    margin-top: 20px;
     font-size: 14px;
-    color: #444;
-    transition: all 0.3s ease;
+    color: #555;
 }
 
-.link-services:hover {
-    text-decoration: underline;
-    color: #0a63a8;
-}
-
-/* Messages d'erreur */
-.error-msg {
-    background: #ffe1e1;
-    color: #c40000;
+/* ERROR */
+.error-box {
+    display: none;
+    background: #ffe4e4;
+    color: #b00000;
     padding: 10px;
     border-radius: 8px;
     margin-bottom: 15px;
     text-align: center;
 }
 
-/* Responsive */
-@media (max-width: 850px) {
-    .container {
+/* RESPONSIVE */
+@media (max-width: 900px) {
+    .auth-card {
         flex-direction: column;
         width: 90%;
-        height: auto;
     }
-    .left, .right {
+
+    .auth-left {
         width: 100%;
-        padding: 40px;
         text-align: center;
     }
-    .left img {
+
+    .auth-left img {
         display: none;
     }
-}
 
-/* Conteneur du select pour le style général */
-.input-group select {
-    width: 100%;
-    padding: 12px 40px 12px 12px; /* espace pour la flèche */
-    font-size: 16px;
-    border: 2px solid #ccc;
-    border-radius: 8px;
-    background-color: #fff;
-    appearance: none; /* enlève la flèche native */
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    outline: none;
-    transition: border-color 0.3s, box-shadow 0.3s;
-    cursor: pointer;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='20,50 70,100 120,50' stroke='%23999' stroke-width='10' fill='none'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 16px 16px;
-}
-
-/* Animation au focus */
-.input-group select:focus {
-    border-color: #4a90e2;
-    box-shadow: 0 0 5px rgba(74, 144, 226, 0.5);
-}
-
-/* Pour label flottant si tu en utilises */
-.input-group label {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    font-size: 16px;
-    color: #999;
-    pointer-events: none;
-    transition: all 0.2s ease;
-}
-
-/* Si select a du texte, le label monte */
-.input-group select:focus + label,
-.input-group select:not(:placeholder-shown) + label {
-    top: -8px;
-    font-size: 12px;
-    color: #4a90e2;
-    background: #fff;
-    padding: 0 4px;
+    .auth-right {
+        width: 100%;
+        padding: 40px;
+    }
 }

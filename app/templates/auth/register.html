@@ -2,70 +2,71 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <title>Inscription | Medicare Booking</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inscription - Medicare</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/auth/login.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 
 <body>
 
-    <div class="container">
+<div class="auth-wrapper">
+    <div class="auth-card">
 
-        <div class="left register-left">
+        <!-- LEFT -->
+        <div class="auth-left gradient">
             <h1>Bienvenue 👋</h1>
-            <p>Créez votre compte pour accéder à votre espace.</p>
-            <img src="https://cdn-icons-png.flaticon.com/512/2966/2966488.png" alt="Medical illustration">
+            <p>Créez votre compte et gérez vos rendez-vous médicaux.</p>
+            <img src="https://cdn-icons-png.flaticon.com/512/2966/2966488.png" alt="medical">
         </div>
 
-        <div class="right">
-            <form id="registerForm" class="login-box">
-                <h2>S'inscrire</h2>
+        <!-- RIGHT -->
+        <div class="auth-right">
+            <form id="registerForm">
+                <h2>S’inscrire</h2>
 
-                <div id="register_error" style="color:red; display:none; margin-bottom:10px;"></div>
+                <div id="register_error" class="error-box"></div>
 
-                <div class="input-group">
-                    <input id="register_fullname" name="register_fullname" type="text" placeholder=" " required>
+                <div class="field">
+                    <input id="register_fullname" type="text" required>
                     <label>Nom complet</label>
                 </div>
 
-                <div class="input-group">
-                    <input id="register_email" name="register_email" type="email" placeholder=" " required>
+                <div class="field">
+                    <input id="register_email" type="email" required>
                     <label>Email</label>
                 </div>
 
-                <div class="input-group">
-                    <input id="register_tele" name="register_tele" type="tel" placeholder=" " required>
+                <div class="field">
+                    <input id="register_tele" type="tel" required>
                     <label>Téléphone</label>
                 </div>
 
-                <div class="input-group">
-                    <input id="register_password" name="register_password" type="password" placeholder=" " required>
+                <div class="field">
+                    <input id="register_password" type="password" required>
                     <label>Mot de passe</label>
                 </div>
 
-                <div class="input-group">
-                    <input id="register_confirm_password" name="register_confirm_password" type="password" placeholder=" " required>
+                <div class="field">
+                    <input id="register_confirm_password" type="password" required>
                     <label>Confirmer le mot de passe</label>
                 </div>
 
+                <button class="btn-primary success">S’inscrire</button>
 
-                <button type="submit" class="btn">S'inscrire</button>
-
-                <p class="register-text">
-                    Vous avez déjà un compte ? 
+                <p class="switch">
+                    Déjà un compte ?
                     <a href="{{ url_for('auth.login') }}">Se connecter</a>
                 </p>
 
-                <a href="{{ url_for('auth.accueil') }}" class="link-services">← Retour à l'accueil</a>
-            
+                <a href="{{ url_for('auth.accueil') }}" class="back">← Retour à l’accueil</a>
             </form>
         </div>
 
     </div>
+</div>
 
-    <script src="/socket.io/socket.io.js" defer></script>
-    <script src="{{ url_for('static', filename='js/auth/auth.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/auth/auth.js') }}" defer></script>
 </body>
 </html>

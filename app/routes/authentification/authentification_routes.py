@@ -56,9 +56,9 @@ def login():
     }, REFRESH_SECRET_KEY, algorithm="HS256")
 
     url_map = {
-        "PATIENT": "http://localhost:5001/dashboard",
-        "MEDECIN": "http://localhost:5002/dashboard",
-        "ADMIN": "http://127.0.0.1:5003/admin/dashboard"
+         "PATIENT": "http://127.0.0.1:5001/patient/dashboard",
+        "MEDECIN": "http://127.0.0.1:5002/medecin/dashboard",
+        "ADMIN":   "http://127.0.0.1:5003/admin/dashboard"
     }
 
     response = make_response(redirect(url_map.get(user.role, "/")))

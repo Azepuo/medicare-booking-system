@@ -2,59 +2,56 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <title>Connexion | Medicare Booking</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion - Medicare</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/auth/login.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 
 <body>
 
-    <div class="container">
+<div class="auth-wrapper">
+    <div class="auth-card">
 
-        <div class="left">
+        <!-- LEFT -->
+        <div class="auth-left">
             <h1>Bienvenue 👋</h1>
-            <p>Connectez-vous pour accéder à votre espace.</p>
-            <img src="https://cdn-icons-png.flaticon.com/512/2966/2966488.png" alt="Medical illustration">
+            <p>Accédez à votre espace personnel en toute sécurité.</p>
+            <img src="https://cdn-icons-png.flaticon.com/512/2966/2966488.png" alt="medical">
         </div>
 
-        <div class="right">
-            <form id="loginForm" class="login-box">
+        <!-- RIGHT -->
+        <div class="auth-right">
+            <form id="loginForm">
                 <h2>Se connecter</h2>
 
-                <div id="login_error" style="color:red; display:none; margin-bottom:10px;"></div>
+                <div id="login_error" class="error-box"></div>
 
-                    <div class="input-group">
-                    <input id="login_email" name="login_email" type="email" placeholder=" " required>
+                <div class="field">
+                    <input id="login_email" type="email" required>
                     <label>Email</label>
                 </div>
 
-                <div class="input-group">
-                    <input id="login_password" name="login_password" type="password" placeholder=" " required>
+                <div class="field">
+                    <input id="login_password" type="password" required>
                     <label>Mot de passe</label>
                 </div>
 
-            
-                <button type="submit" class="btn">Connexion</button>
+                <button class="btn-primary">Connexion</button>
 
-                <p class="register-text">
-                Pas de compte ? 
-                <a href="{{ url_for('auth.register') }}">Créer un compte</a>
-
+                <p class="switch">
+                    Pas de compte ?
+                    <a href="{{ url_for('auth.register') }}">Créer un compte</a>
                 </p>
 
-                <a href="{{ url_for('auth.accueil') }}" class="link-services">← Retour à l'accueil</a>
-
-            
+                <a href="{{ url_for('auth.accueil') }}" class="back">← Retour à l’accueil</a>
             </form>
-
         </div>
 
     </div>
+</div>
 
-
-    
-    <script src="{{ url_for('static', filename='js/auth/auth.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/auth/auth.js') }}" defer></script>
 </body>
 </html>

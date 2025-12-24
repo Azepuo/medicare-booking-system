@@ -60,8 +60,8 @@ def rpc_login(params):
     }, REFRESH_SECRET_KEY, algorithm="HS256")
 
     redirect_map = {
-        "PATIENT": "http://localhost:5001/patient/dashboard",
-        "MEDECIN": "http://localhost:5002/medecin/dashboard",
+        "PATIENT": "http://127.0.0.1:5001/patient/dashboard",
+        "MEDECIN": "http://127.0.0.1:5002/medecin/dashboard",
         "ADMIN":   "http://127.0.0.1:5003/admin/dashboard"
     }
 
