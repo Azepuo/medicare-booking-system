@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, time, date
 import calendar
 from decimal import Decimal
 from werkzeug.security import generate_password_hash, check_password_hash
-
+import bcrypt
 # Fonction pour obtenir une connexion à la base de données
 def get_db_connection():
     try:
@@ -1383,7 +1383,7 @@ class ServerRPC:
     # ==========================================
     def change_password(self, user_id, old_password, new_password):
      """
-    Change le mot de passe d'un patient en utilisant Werkzeug (comme l'inscription)
+    Change le mot de passe d'un patient en utilisant bcrypt
     """
      try:
         print("="*50)
@@ -1405,8 +1405,16 @@ class ServerRPC:
         stored_password = row["password"]
         print(f"[DEBUG] Mot de passe stocké: {stored_password[:60]}...")
 
-        # Vérifier l'ancien mot de passe avec Werkzeug
-        if not check_password_hash(stored_password, old_password):
+        # Vérifier l'ancien mot de passe avec bcrypt
+        # Convertir les chaînes en bytes pour bcrypt
+        if isinstance(stored_password, str):
+            stored_password_bytes = stored_password.encode('utf-8')
+        else:
+            stored_password_bytes = stored_password
+            
+        old_password_bytes = old_password.encode('utf-8')
+        
+        if not bcrypt.checkpw(old_password_bytes, stored_password_bytes):
             print(f"[DEBUG] ❌ Mot de passe incorrect")
             cursor.close()
             conn.close()
@@ -1414,15 +1422,20 @@ class ServerRPC:
 
         print(f"[DEBUG] ✅ Ancien mot de passe vérifié")
 
-        # Générer le nouveau hash avec Werkzeug (cohérent avec l'inscription)
-        new_hashed_password = generate_password_hash(new_password)
+        # Générer le nouveau hash avec bcrypt
+        new_password_bytes = new_password.encode('utf-8')
+        salt = bcrypt.gensalt()
+        new_hashed_password = bcrypt.hashpw(new_password_bytes, salt)
         
-        print(f"[DEBUG] Nouveau hash généré avec Werkzeug")
-        print(f"[DEBUG]   - Hash: {new_hashed_password[:60]}...")
+        # Convertir le hash bytes en string pour stockage en base
+        new_hashed_password_str = new_hashed_password.decode('utf-8')
+        
+        print(f"[DEBUG] Nouveau hash généré avec bcrypt")
+        print(f"[DEBUG]   - Hash: {new_hashed_password_str[:60]}...")
 
         # Mise à jour dans la table users
         cursor.execute("UPDATE users SET password=%s WHERE id=%s", 
-                      (new_hashed_password, user_id))
+                      (new_hashed_password_str, user_id))
         conn.commit()
         
         print(f"[DEBUG] ✅ Mot de passe mis à jour en base")

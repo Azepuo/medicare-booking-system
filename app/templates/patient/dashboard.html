@@ -297,6 +297,43 @@
         box-shadow: 0 4px 12px rgba(16, 122, 202, 0.3);
         transition: all 0.3s;
     }
+
+    .btn-print {
+        transition: all 0.3s;
+    }
+
+    .btn-print:hover {
+        background: #059669 !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-print:active {
+        transform: translateY(0);
+    }
+
+    /* Styles pour la page d'impression */
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+
+        #printableInvoice,
+        #printableInvoice * {
+            visibility: visible;
+        }
+
+        #printableInvoice {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+
+        .no-print {
+            display: none !important;
+        }
+    }
 </style>
 
 <div class="content" id="dashboardContent">
@@ -312,13 +349,18 @@
             {% for rdv in upcoming_appointments %}
             <div class="appointment-card2">
                 <!-- ✅ NOUVEAU -->
-                    
+
                 <div style="flex: 1;">
                     <p style="margin: 0; font-weight: 600; color: #1e293b;">{{ rdv.medecin_nom }}</p>
                     <p style="margin: 3px 0; color: #64748b; font-size: 0.9em;">{{ rdv.specialite }}</p>
                     <p style="margin: 3px 0; color: #107aca; font-size: 0.9em;">{{ rdv.date_heure }}</p>
                 </div>
                 <div style="display: flex; gap: 8px;">
+                    <button class="btn-print" data-rdv-id="{{ rdv.id }}"
+                        style="padding: 6px 12px; border: none; background: #10b981; color: white; border-radius: 6px; cursor: pointer;">
+                        🖨️ Imprimer
+                    </button>
+
                     <button class="btn-details" data-rdv-id="{{ rdv.id }}"
                         style="padding: 6px 12px; border: none; background: #107aca; color: white; border-radius: 6px; cursor: pointer;">
                         📋 Détails
@@ -459,30 +501,30 @@
     // Fonction pour afficher les détails
     // Fonction pour afficher les détails du rendez-vous dans le modal
     // Compatible avec la nouvelle structure RPC (sans photo_url, annee_experience, adresse_cabinet, description)
-// Fonction pour afficher les détails
-function displayRdvDetails(rdv) {
-    const modalBody = document.getElementById('modalBody');
+    // Fonction pour afficher les détails
+    function displayRdvDetails(rdv) {
+        const modalBody = document.getElementById('modalBody');
 
-    // ✅ DEBUG: Vérifiez ce qui est dans rdv
-    console.log('[MODAL] Données RDV:', rdv);
-    console.log('[MODAL] adresse_cabinet:', rdv.adresse_cabinet);
+        // ✅ DEBUG: Vérifiez ce qui est dans rdv
+        console.log('[MODAL] Données RDV:', rdv);
+        console.log('[MODAL] adresse_cabinet:', rdv.adresse_cabinet);
 
-    // ✅ Gérer les différents statuts possibles
-    let statutClass = 'status-en-attente';
-    let statutText = 'En attente';
+        // ✅ Gérer les différents statuts possibles
+        let statutClass = 'status-en-attente';
+        let statutText = 'En attente';
 
-    if (rdv.statut === 'Confirmé' || rdv.statut === 'confirmé') {
-        statutClass = 'status-confirme';
-        statutText = 'Confirmé';
-    } else if (rdv.statut === 'terminé' || rdv.statut === 'Terminé') {
-        statutClass = 'status-termine';
-        statutText = 'Terminé';
-    } else if (rdv.statut === 'Annulé' || rdv.statut === 'annulé') {
-        statutClass = 'status-annule';
-        statutText = 'Annulé';
-    }
+        if (rdv.statut === 'Confirmé' || rdv.statut === 'confirmé') {
+            statutClass = 'status-confirme';
+            statutText = 'Confirmé';
+        } else if (rdv.statut === 'terminé' || rdv.statut === 'Terminé') {
+            statutClass = 'status-termine';
+            statutText = 'Terminé';
+        } else if (rdv.statut === 'Annulé' || rdv.statut === 'annulé') {
+            statutClass = 'status-annule';
+            statutText = 'Annulé';
+        }
 
-    modalBody.innerHTML = `
+        modalBody.innerHTML = `
     <div class="doctor-info">
         <div class="doctor-details">
             <h4>${rdv.medecin_nom || 'Nom non disponible'}</h4>
@@ -581,17 +623,17 @@ function displayRdvDetails(rdv) {
     ` : ''}
     `;
 
-    // Debug pour vérifier les données
-    console.log('[MODAL] Détails du RDV affichés:', {
-        id: rdv.id,
-        medecin: rdv.medecin_nom,
-        specialite: rdv.specialite,
-        statut: rdv.statut,
-        tarif: rdv.tarif_consultation,
-        adresse_cabinet: rdv.adresse_cabinet
-    });
-}
-// Fermer le modal
+        // Debug pour vérifier les données
+        console.log('[MODAL] Détails du RDV affichés:', {
+            id: rdv.id,
+            medecin: rdv.medecin_nom,
+            specialite: rdv.specialite,
+            statut: rdv.statut,
+            tarif: rdv.tarif_consultation,
+            adresse_cabinet: rdv.adresse_cabinet
+        });
+    }
+    // Fermer le modal
     function closeModal() {
         document.getElementById('detailsModal').classList.remove('active');
     }
@@ -885,66 +927,244 @@ function displayRdvDetails(rdv) {
             .catch(error => console.error('[NOTIF] Erreur:', error));
     }
     function loadNextAppointment() {
-    fetch('/patient/get_next_appointment')
-        .then(response => response.json())
-        .then(data => {
-            const badge = document.getElementById('nextRdvBadge');
-            
-            if (!badge) return;
-            
-            if (data.success && data.appointment) {
-                // Mettre à jour le badge avec les vraies données
-                badge.innerHTML = `
+        fetch('/patient/get_next_appointment')
+            .then(response => response.json())
+            .then(data => {
+                const badge = document.getElementById('nextRdvBadge');
+
+                if (!badge) return;
+
+                if (data.success && data.appointment) {
+                    // Mettre à jour le badge avec les vraies données
+                    badge.innerHTML = `
                     <i class="fas fa-calendar-day"></i>
                     <div class="rdv-info">
                         <small>Prochain RDV</small>
                         <strong>${data.appointment.date}</strong>
                     </div>
                 `;
-                
-                // Ajouter un tooltip au survol
-                badge.title = `${data.appointment.medecin} à ${data.appointment.time}`;
-                
-                console.log('[NEXT-RDV] ✅ Chargé:', data.appointment);
-            } else {
-                // Aucun RDV à venir
-                badge.innerHTML = `
+
+                    // Ajouter un tooltip au survol
+                    badge.title = `${data.appointment.medecin} à ${data.appointment.time}`;
+
+                    console.log('[NEXT-RDV] ✅ Chargé:', data.appointment);
+                } else {
+                    // Aucun RDV à venir
+                    badge.innerHTML = `
                     <i class="fas fa-calendar-day"></i>
                     <div class="rdv-info">
                         <small>Prochain RDV</small>
                         <strong>Aucun</strong>
                     </div>
                 `;
-                badge.style.opacity = '0.6';
-                
-                console.log('[NEXT-RDV] ⚠️ Aucun RDV');
-            }
-        })
-        .catch(error => {
-            console.error('[NEXT-RDV] ❌ Erreur:', error);
-            
-            // En cas d'erreur, afficher "Indisponible"
-            const badge = document.getElementById('nextRdvBadge');
-            if (badge) {
-                badge.innerHTML = `
+                    badge.style.opacity = '0.6';
+
+                    console.log('[NEXT-RDV] ⚠️ Aucun RDV');
+                }
+            })
+            .catch(error => {
+                console.error('[NEXT-RDV] ❌ Erreur:', error);
+
+                // En cas d'erreur, afficher "Indisponible"
+                const badge = document.getElementById('nextRdvBadge');
+                if (badge) {
+                    badge.innerHTML = `
                     <i class="fas fa-calendar-day"></i>
                     <div class="rdv-info">
                         <small>Prochain RDV</small>
                         <strong>--</strong>
                     </div>
                 `;
-            }
+                }
+            });
+    }
+
+    // Charger au démarrage de la page
+    document.addEventListener('DOMContentLoaded', function () {
+        loadNextAppointment();
+
+        // Optionnel: Rafraîchir toutes les 5 minutes
+        setInterval(loadNextAppointment, 5 * 60 * 1000);
+    });
+    // Gestion des boutons Imprimer
+    document.querySelectorAll('.btn-print').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const rdvId = this.getAttribute('data-rdv-id');
+            printInvoice(rdvId);
         });
-}
+    });
 
-// Charger au démarrage de la page
-document.addEventListener('DOMContentLoaded', function() {
-    loadNextAppointment();
-    
-    // Optionnel: Rafraîchir toutes les 5 minutes
-     setInterval(loadNextAppointment, 5 * 60 * 1000);
-});
+    /**
+     * Génère et imprime la facture
+     */
+    function printInvoice(rdvId) {
+        console.log(`[PRINT] 🖨️ Impression facture RDV ${rdvId}`);
 
+        // Récupérer les détails du RDV
+        fetch(`/patient/rdv/details/${rdvId}`)
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    generateInvoiceHTML(result.data);
+                } else {
+                    alert('Impossible de charger les détails du rendez-vous');
+                }
+            })
+            .catch(error => {
+                console.error('[PRINT] Erreur:', error);
+                alert('Erreur lors du chargement de la facture');
+            });
+    }
+
+    /**
+     * Génère le HTML de la facture et lance l'impression
+     */
+    function generateInvoiceHTML(rdv) {
+        const today = new Date().toLocaleDateString('fr-FR', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric'
+        });
+
+        const invoiceHTML = `
+    <div id="printableInvoice" style="padding: 40px; font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
+        <!-- En-tête -->
+        <div style="text-align: center; border-bottom: 3px solid #107aca; padding-bottom: 20px; margin-bottom: 30px;">
+            <h1 style="color: #107aca; margin: 0; font-size: 32px;">WeCare</h1>
+            <p style="color: #64748b; margin: 5px 0;">Plateforme de gestion médicale</p>
+        </div>
+        
+        <!-- Titre -->
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h2 style="color: #1e293b; margin: 0;">FACTURE DE CONSULTATION</h2>
+            <p style="color: #64748b; margin: 10px 0;">N° ${rdv.id} - ${today}</p>
+        </div>
+        
+        <!-- Informations médecin -->
+        <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+            <h3 style="color: #1e293b; margin-top: 0; border-bottom: 2px solid #107aca; padding-bottom: 10px;">
+                Informations du praticien
+            </h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px 0; color: #64748b; width: 40%;">Nom du médecin :</td>
+                    <td style="padding: 8px 0; color: #1e293b; font-weight: 600;">${rdv.medecin_nom || 'Non spécifié'}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #64748b;">Spécialité :</td>
+                    <td style="padding: 8px 0; color: #1e293b; font-weight: 600;">${rdv.specialite || 'Non spécifiée'}</td>
+                </tr>
+                ${rdv.adresse_cabinet ? `
+                <tr>
+                    <td style="padding: 8px 0; color: #64748b;">Adresse du cabinet :</td>
+                    <td style="padding: 8px 0; color: #1e293b;">${rdv.adresse_cabinet}</td>
+                </tr>
+                ` : ''}
+                ${rdv.medecin_telephone ? `
+                <tr>
+                    <td style="padding: 8px 0; color: #64748b;">Téléphone :</td>
+                    <td style="padding: 8px 0; color: #1e293b;">${rdv.medecin_telephone}</td>
+                </tr>
+                ` : ''}
+            </table>
+        </div>
+        
+        <!-- Détails de la consultation -->
+        <div style="background: #eff6ff; padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+            <h3 style="color: #1e293b; margin-top: 0; border-bottom: 2px solid #107aca; padding-bottom: 10px;">
+                Détails de la consultation
+            </h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px 0; color: #64748b; width: 40%;">Date et heure :</td>
+                    <td style="padding: 8px 0; color: #1e293b; font-weight: 600;">${rdv.date_heure || 'Non spécifiée'}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: #64748b;">Statut :</td>
+                    <td style="padding: 8px 0;">
+                        <span style="background: ${rdv.statut === 'Confirmé' || rdv.statut === 'confirmé' ? '#d1fae5' : '#fef3c7'}; 
+                                     color: ${rdv.statut === 'Confirmé' || rdv.statut === 'confirmé' ? '#065f46' : '#92400e'}; 
+                                     padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 14px;">
+                            ${rdv.statut || 'En attente'}
+                        </span>
+                    </td>
+                </tr>
+                ${rdv.notes ? `
+                <tr>
+                    <td style="padding: 8px 0; color: #64748b; vertical-align: top;">Notes :</td>
+                    <td style="padding: 8px 0; color: #1e293b;">${rdv.notes}</td>
+                </tr>
+                ` : ''}
+            </table>
+        </div>
+        
+        <!-- Montant -->
+        <div style="background: linear-gradient(135deg, #107aca 0%, #0d5fa3 100%); color: white; padding: 25px; border-radius: 12px; margin-bottom: 30px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <p style="margin: 0; font-size: 14px; opacity: 0.9;">MONTANT DE LA CONSULTATION</p>
+                    <p style="margin: 10px 0 0 0; font-size: 36px; font-weight: 700;">
+                        ${rdv.tarif_consultation ? rdv.tarif_consultation + ' DH' : 'Non spécifié'}
+                    </p>
+                </div>
+                <div style="font-size: 48px; opacity: 0.3;">💰</div>
+            </div>
+        </div>
+        
+        <!-- Pied de page -->
+        <div style="text-align: center; padding-top: 30px; border-top: 2px solid #e2e8f0; color: #64748b; font-size: 13px;">
+            <p style="margin: 5px 0;">Ce document sert de preuve de consultation</p>
+            <p style="margin: 5px 0;">Pour toute question, contactez le secrétariat au : ${rdv.medecin_telephone || 'Non renseigné'}</p>
+            <p style="margin: 15px 0 5px 0; color: #107aca; font-weight: 600;">WeCare - Votre santé, notre priorité</p>
+        </div>
+    </div>
+    `;
+
+        // Créer une nouvelle fenêtre d'impression
+        const printWindow = window.open('', '_blank', 'width=900,height=700,scrollbars=yes');
+        if (!printWindow) {
+            alert('Veuillez autoriser les popups pour imprimer la facture.');
+            return;
+        }
+
+        printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Facture - RDV ${rdv.id}</title>
+            <style>
+                body {
+                    margin: 0;
+                    padding: 20px;
+                    font-family: Arial, sans-serif;
+                }
+                @media print {
+                    body {
+                        padding: 0;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            ${invoiceHTML}
+        </body>
+        </html>
+    `);
+
+        printWindow.document.close();
+
+        // Attendre que le contenu soit chargé puis lancer l'impression
+        printWindow.onload = function () {
+            setTimeout(() => {
+                printWindow.print();
+                // Optionnel : fermer la fenêtre après impression
+                // printWindow.onafterprint = function() {
+                //     printWindow.close();
+                // };
+            }, 250);
+        };
+    }
 </script>
 
 {% endblock %}
@@ -952,12 +1172,15 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- templates/patient/dashboard.html -->
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Dashboard Patient</title>
 </head>
+
 <body>
     <h1>Bienvenue, {{ username }} !</h1>
     <p>User ID : {{ user_id }}</p>
     <p>Role : {{ role }}</p>
 </body>
+
 </html>
