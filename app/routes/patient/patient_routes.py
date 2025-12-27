@@ -909,6 +909,45 @@ def get_next_appointment():
             "appointment": None,
             "message": "Erreur serveur"
         }), 500
+@patient.route("/get_invoice/<int:appointment_id>")
+def get_invoice(appointment_id):
+    """Route pour récupérer les données de facture"""
+    
+    # 🔒 Vérifier authentification
+    user_id, role = get_current_user()
+    
+    if not user_id or role != "PATIENT":
+        return jsonify({
+            "success": False, 
+            "message": "Non autorisé"
+        }), 403
+    
+    try:
+        print("="*50)
+        print(f"[GET_INVOICE] Récupération facture:")
+        print(f"  - Patient ID: {user_id}")
+        print(f"  - RDV ID: {appointment_id}")
+        
+        # Appel RPC
+        rpc_server = get_rpc_server()
+        result = rpc_server.get_appointment_invoice(user_id, appointment_id)
+        
+        print(f"[GET_INVOICE] ✅ Résultat RPC: {result.get('success')}")
+        
+        if result.get("success"):
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 400
+            
+    except Exception as e:
+        print(f"[GET_INVOICE] ❌ Erreur: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        return jsonify({
+            "success": False,
+            "message": f"Erreur serveur: {str(e)}"
+        }), 500
 @patient.route("/change_password", methods=["POST"])
 def change_password():
     """

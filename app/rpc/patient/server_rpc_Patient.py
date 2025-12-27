@@ -1614,7 +1614,119 @@ class ServerRPC:
     """
      print("[RPC-LOGOUT] ✅ Déconnexion traitée côté serveur")
      return {"success": True, "message": "Déconnexion réussie"}
-     
+     # ==========================================
+     # MÉTHODE: get_appointment_invoice
+     # ==========================================
+    def get_appointment_invoice(self, user_id, appointment_id):
+     """
+    Récupère les détails de la facture pour un rendez-vous
+     """
+     patient_id = user_id
+    
+     try:
+        print(f"[RPC] 🧾 Génération facture pour RDV {appointment_id}")
+        
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Récupérer l'ID interne du patient
+        cursor.execute("SELECT id, nom, email, telephone FROM patients WHERE user_id=%s", (patient_id,))
+        patient_row = cursor.fetchone()
+        if not patient_row:
+            cursor.close()
+            conn.close()
+            return {"success": False, "message": "Patient introuvable"}
+        
+        internal_patient_id = patient_row['id']
+        
+        # Récupérer les détails complets du RDV + Médecin
+        cursor.execute("""
+            SELECT 
+                r.id,
+                r.date_heure,
+                r.statut,
+                r.notes,
+                m.nom as medecin_nom,
+                m.email as medecin_email,
+                m.telephone as medecin_telephone,
+                m.tarif_consultation,
+                m.clinic as adresse_cabinet,
+                s.nom as specialite
+            FROM rendezvous r
+            JOIN medecins m ON r.medecin_id = m.id
+            LEFT JOIN specialisations s ON m.id_specialisation = s.id
+            WHERE r.id = %s AND r.patient_id = %s
+        """, (appointment_id, internal_patient_id))
+        
+        rdv = cursor.fetchone()
+        
+        if not rdv:
+            cursor.close()
+            conn.close()
+            return {"success": False, "message": "Rendez-vous introuvable"}
+        
+        # Vérifier que le RDV est terminé
+        if rdv['statut'].lower() != 'terminé':
+            cursor.close()
+            conn.close()
+            return {"success": False, "message": "La facture n'est disponible que pour les RDV terminés"}
+        
+        # Calculer les montants
+        tarif = float(rdv['tarif_consultation']) if rdv['tarif_consultation'] else 0.0
+        tva_rate = 0.20  # 20% TVA
+        tva_amount = tarif * tva_rate
+        total_ttc = tarif + tva_amount
+        
+        # Générer numéro de facture
+        invoice_number = f"FAC-{rdv['id']:06d}"
+        
+        # Formater la date
+        if isinstance(rdv['date_heure'], datetime):
+            rdv['date_heure'] = rdv['date_heure'].strftime("%d/%m/%Y à %H:%M")
+        
+        invoice_data = {
+            "invoice_number": invoice_number,
+            "date_emission": datetime.now().strftime("%d/%m/%Y"),
+            "patient": {
+                "nom": patient_row['nom'],
+                "email": patient_row['email'],
+                "telephone": patient_row['telephone']
+            },
+            "medecin": {
+                "nom": rdv['medecin_nom'],
+                "specialite": rdv['specialite'],
+                "email": rdv['medecin_email'],
+                "telephone": rdv['medecin_telephone'],
+                "adresse": rdv['adresse_cabinet']
+            },
+            "consultation": {
+                "date": rdv['date_heure'],
+                "motif": rdv['notes'] or "Consultation générale"
+            },
+            "montants": {
+                "tarif_ht": round(tarif, 2),
+                "tva_rate": tva_rate * 100,
+                "tva_amount": round(tva_amount, 2),
+                "total_ttc": round(total_ttc, 2)
+            }
+        }
+        
+        cursor.close()
+        conn.close()
+        
+        print(f"[RPC] ✅ Facture générée: {invoice_number}")
+        return {"success": True, "invoice": invoice_data}
+        
+     except Exception as e:
+        print(f"[RPC] ❌ Erreur: {e}")
+        import traceback
+        traceback.print_exc()
+        try:
+            cursor.close()
+            conn.close()
+        except:
+            pass
+        return {"success": False, "message": f"Erreur: {str(e)}"}
 # ==========================================
 # LANCEMENT DU SERVEUR RPC
 # ==========================================

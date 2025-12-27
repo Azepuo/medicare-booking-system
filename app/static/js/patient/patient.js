@@ -508,14 +508,27 @@ function renderAppointments() {
         // ⭐ Ajout du système d'avis pour les rendez-vous terminés
         if (a.normalizedStatus === 'terminé') {
             const cardFooter = card.querySelector('.card-footer');
-            
+            // Container pour les boutons
+            const btnContainer = document.createElement('div');
+            btnContainer.className = 'terminated-appointment-actions';
+            btnContainer.style.cssText = 'display: flex; gap: 10px; margin-top: 12px; width: 100%;';
             // Bouton pour ouvrir le formulaire d'avis
             const btnOpenReview = document.createElement('button');
             btnOpenReview.className = 'patient-review-trigger';
             btnOpenReview.innerHTML = '⭐ Laisser un avis';
-            
-            cardFooter.appendChild(btnOpenReview);
-            
+             btnOpenReview.style.flex = '1';
+             // Bouton pour imprimer le reçu
+            const btnPrint = document.createElement('button');
+            btnPrint.className = 'btn-print-receipt';
+            btnPrint.innerHTML = '<i class="fas fa-print"></i> Imprimer';
+            btnPrint.style.cssText = 'flex: 1; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 10px 18px; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);';
+            btnContainer.appendChild(btnOpenReview);
+            btnContainer.appendChild(btnPrint);
+            cardFooter.appendChild(btnContainer);
+            // Event listener pour l'impression
+            btnPrint.addEventListener('click', () => {
+                printAppointmentReceipt(a);
+            });
             // Vérifier si un avis existe déjà pour ce RDV
             btnOpenReview.addEventListener('click', () => {
                 // D'abord vérifier si un avis existe
@@ -1918,3 +1931,355 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
+
+
+
+//add facture
+/**
+ * Affiche la facture d'un rendez-vous
+ */
+function printAppointmentReceipt(appointment) {
+    console.log('🧾 Chargement facture pour RDV:', appointment.id);
+    
+    // Afficher un loader
+    showToast("📄 Génération de la facture...", false);
+    
+    fetch(`/patient/get_invoice/${appointment.id}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                displayInvoiceModal(data.invoice);
+            } else {
+                showToast("❌ " + (data.message || "Erreur"), true);
+            }
+        })
+        .catch(err => {
+            console.error('Erreur:', err);
+            showToast("❌ Erreur de chargement", true);
+        });
+}
+
+/**
+ * Affiche le modal de facture
+ */
+function displayInvoiceModal(invoice) {
+    const modalHTML = `
+        <div class="invoice-overlay" id="invoiceOverlay">
+            <div class="invoice-modal">
+                <div class="invoice-header">
+                    <div class="invoice-logo">
+                        <h1>WeCare</h1>
+                        <p>Plateforme Médicale</p>
+                    </div>
+                    <div class="invoice-title">
+                        <h2>FACTURE</h2>
+                        <p>N° ${invoice.invoice_number}</p>
+                        <p>Date: ${invoice.date_emission}</p>
+                    </div>
+                </div>
+                
+                <div class="invoice-body">
+                    <div class="invoice-parties">
+                        <div class="invoice-party">
+                            <h3>Patient</h3>
+                            <p><strong>${invoice.patient.nom}</strong></p>
+                            <p>${invoice.patient.email}</p>
+                            <p>${invoice.patient.telephone}</p>
+                        </div>
+                        <div class="invoice-party">
+                            <h3>Médecin</h3>
+                            <p><strong>Dr. ${invoice.medecin.nom}</strong></p>
+                            <p>${invoice.medecin.specialite}</p>
+                            <p>${invoice.medecin.adresse || ''}</p>
+                            <p>${invoice.medecin.telephone}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="invoice-details">
+                        <h3>Détails de la consultation</h3>
+                        <table class="invoice-table">
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th>Date</th>
+                                    <th>Montant HT</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>${invoice.consultation.motif}</td>
+                                    <td>${invoice.consultation.date}</td>
+                                    <td>${invoice.montants.tarif_ht} MAD</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="invoice-totals">
+                        <div class="total-line">
+                            <span>Sous-total HT:</span>
+                            <strong>${invoice.montants.tarif_ht} MAD</strong>
+                        </div>
+                        <div class="total-line">
+                            <span>TVA (${invoice.montants.tva_rate}%):</span>
+                            <strong>${invoice.montants.tva_amount} MAD</strong>
+                        </div>
+                        <div class="total-line total-final">
+                            <span>Total TTC:</span>
+                            <strong>${invoice.montants.total_ttc} MAD</strong>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="invoice-footer">
+                    <button class="btn-download" onclick="downloadInvoicePDF()">
+                        <i class="fas fa-download"></i> Télécharger PDF
+                    </button>
+                    <button class="btn-close-invoice" onclick="closeInvoiceModal()">
+                        <i class="fas fa-times"></i> Fermer
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.body.style.overflow = 'hidden';
+}
+
+/**
+ * Ferme le modal de facture
+ */
+function closeInvoiceModal() {
+    const modal = document.getElementById('invoiceOverlay');
+    if (modal) {
+        modal.remove();
+        document.body.style.overflow = 'auto';
+    }
+}
+
+
+
+/**
+ * Télécharge la facture en PDF - VERSION IMPRESSION AMÉLIORÉE
+ */
+function downloadInvoicePDF() {
+    showToast("📄 Préparation de l'impression...", false);
+    
+    const invoiceModal = document.querySelector('.invoice-modal');
+    const invoiceFooter = document.querySelector('.invoice-footer');
+    
+    if (!invoiceModal) {
+        showToast("❌ Erreur: Modal introuvable", true);
+        return;
+    }
+    
+    // Créer une nouvelle fenêtre pour l'impression
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    
+    // Cloner le contenu
+    const content = invoiceModal.cloneNode(true);
+    
+    // Retirer le footer du clone
+    const footerClone = content.querySelector('.invoice-footer');
+    if (footerClone) {
+        footerClone.remove();
+    }
+    
+    // Écrire le HTML avec tous les styles
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Facture WeCare</title>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+            <style>
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                
+                body {
+                    font-family: Arial, sans-serif;
+                    background: white;
+                    padding: 20px;
+                }
+                
+                .invoice-modal {
+                    max-width: 800px;
+                    margin: 0 auto;
+                    background: white;
+                    box-shadow: none;
+                    border-radius: 0;
+                }
+                
+                .invoice-header {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 30px;
+                    border-bottom: 3px solid #667eea;
+                    background: linear-gradient(135deg, #f6f8fb 0%, #eef2f7 100%);
+                }
+                
+                .invoice-logo h1 {
+                    color: #667eea;
+                    margin: 0;
+                    font-size: 28px;
+                }
+                
+                .invoice-logo p {
+                    color: #718096;
+                    margin: 5px 0 0 0;
+                    font-size: 14px;
+                }
+                
+                .invoice-title {
+                    text-align: right;
+                }
+                
+                .invoice-title h2 {
+                    margin: 0 0 10px 0;
+                    color: #1a202c;
+                }
+                
+                .invoice-title p {
+                    margin: 5px 0;
+                    color: #718096;
+                    font-size: 14px;
+                }
+                
+                .invoice-body {
+                    padding: 30px;
+                }
+                
+                .invoice-parties {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 30px;
+                    margin-bottom: 30px;
+                }
+                
+                .invoice-party h3 {
+                    color: #667eea;
+                    margin-bottom: 10px;
+                    border-bottom: 2px solid #eef2f7;
+                    padding-bottom: 8px;
+                    font-size: 16px;
+                }
+                
+                .invoice-party p {
+                    margin: 8px 0;
+                    color: #2d3748;
+                    font-size: 14px;
+                }
+                
+                .invoice-details h3 {
+                    color: #1a202c;
+                    margin-bottom: 15px;
+                    font-size: 18px;
+                }
+                
+                .invoice-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin: 20px 0;
+                }
+                
+                .invoice-table th,
+                .invoice-table td {
+                    padding: 12px;
+                    text-align: left;
+                    border-bottom: 1px solid #e2e8f0;
+                }
+                
+                .invoice-table th {
+                    background: #f6f8fb;
+                    font-weight: 600;
+                    color: #2d3748;
+                }
+                
+                .invoice-totals {
+                    margin-top: 30px;
+                    padding: 20px;
+                    background: #f6f8fb;
+                    border-radius: 8px;
+                }
+                
+                .total-line {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 10px 0;
+                }
+                
+                .total-final {
+                    border-top: 2px solid #667eea;
+                    margin-top: 10px;
+                    padding-top: 15px;
+                    font-size: 18px;
+                    color: #667eea;
+                    font-weight: bold;
+                }
+                
+                @media print {
+                    body {
+                        padding: 0;
+                    }
+                    
+                    .invoice-modal {
+                        box-shadow: none;
+                    }
+                    
+                    /* Forcer les couleurs à l'impression */
+                    .invoice-header {
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                        background: #f6f8fb !important;
+                    }
+                    
+                    .invoice-party h3 {
+                        color: #667eea !important;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                    
+                    .total-final {
+                        color: #667eea !important;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                    
+                    .invoice-table th {
+                        background: #f6f8fb !important;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                    
+                    .invoice-totals {
+                        background: #f6f8fb !important;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            ${content.outerHTML}
+            <script>
+                window.onload = function() {
+                    window.print();
+                };
+                
+                window.onafterprint = function() {
+                    window.close();
+                };
+            </script>
+        </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+    
+    showToast("✅ Fenêtre d'impression ouverte!", false);
+}
