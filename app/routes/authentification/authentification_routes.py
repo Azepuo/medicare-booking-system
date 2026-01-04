@@ -1,6 +1,7 @@
 # app/routes/authentification/authentification_routes.py
 from flask import Blueprint, request, redirect, make_response, jsonify, render_template
 import jwt, datetime
+from database.connection import create_connection
 from models.User import User
 
 auth_bp = Blueprint("auth", __name__)
@@ -74,35 +75,57 @@ def register():
     if request.method == "GET":
         return render_template("auth/register.html")
 
-    # Récupérer tous les champs du formulaire
-    nom = request.form.get("register_fullname")  
+    # Données formulaire
+    nom = request.form.get("register_fullname")
     email = request.form.get("register_email")
     telephone = request.form.get("register_tele")
     password = request.form.get("password")
     confirm_password = request.form.get("register_confirm_password")
 
+    # Vérifications
     if not all([nom, email, password, confirm_password]):
         return "Tous les champs sont requis", 400
 
     if password != confirm_password:
         return "Les mots de passe ne correspondent pas", 400
 
-    if User.get_by_email(email):
-        return "Cet email est déjà utilisé", 400
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
 
-    # Créer l'utilisateur PATIENT
-    new_user = User(
-        nom=nom,
-        email=email,
-        role="PATIENT",
-        telephone=telephone
-    )
-    new_user.set_password(password)
-    new_user.save()
+    try:
+        # 🔎 Vérifier si email existe
+        cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
+        if cursor.fetchone():
+            return "Cet email est déjà utilisé", 400
 
-    return redirect("/login")
+        # 🔐 Hash mot de passe
+        hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
+        # 1️⃣ INSERT USER
+        cursor.execute("""
+            INSERT INTO users (nom, email, telephone, password, role)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (nom, email, telephone, hashed_password, "PATIENT"))
 
+        user_id = cursor.lastrowid  # ✅ ID généré
+
+        # 2️⃣ INSERT PATIENT (lié au user)
+        cursor.execute("""
+            INSERT INTO patients (user_id, nom, email, telephone)
+            VALUES (%s, %s, %s, %s)
+        """, (user_id, nom, email, telephone))
+
+        conn.commit()
+        return redirect("/login")
+
+    except Exception as e:
+        conn.rollback()
+        print("Erreur REGISTER :", e)
+        return "Erreur lors de l'inscription", 500
+
+    finally:
+        cursor.close()
+        conn.close()
 # ---------------- REFRESH ----------------
 @auth_bp.route("/refresh", methods=["POST"])
 def refresh():

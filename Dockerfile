@@ -1,18 +1,12 @@
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copier les dépendances
 COPY requirements.txt .
-
-# Installer les dépendances
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copier le code source
 COPY . .
 
-# Exposer les ports
-EXPOSE 5000 8000 8001 8002
+ENV PYTHONUNBUFFERED=1
 
-# Commande par défaut
-CMD ["python", "app/app.py"]
+CMD ["python", "app.py"]

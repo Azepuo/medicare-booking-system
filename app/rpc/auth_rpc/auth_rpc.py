@@ -73,6 +73,12 @@ def rpc_login(params):
     response.set_cookie("refresh_token", refresh_token, httponly=True, samesite="Lax")
     return response
 
+import bcrypt
+import re
+from database.connection import create_connection
+
+EMAIL_REGEX = r"^[^@]+@[^@]+\.[^@]+$"
+
 # ---------------- RPC REGISTER ----------------
 def rpc_register(params, role="PATIENT"):
     nom = params.get("fullname", "").strip()
@@ -82,24 +88,58 @@ def rpc_register(params, role="PATIENT"):
     confirm = params.get("confirm_password", "")
 
     if not all([nom, email, password, confirm]):
-        return jsonify({"success": False, "message": "Veuillez remplir tous les champs"}), 400
+        return {"success": False, "message": "Veuillez remplir tous les champs"}
 
     if password != confirm:
-        return jsonify({"success": False, "message": "Les mots de passe ne correspondent pas"}), 400
+        return {"success": False, "message": "Les mots de passe ne correspondent pas"}
 
     if not re.match(EMAIL_REGEX, email):
-        return jsonify({"success": False, "message": "Email invalide"}), 400
+        return {"success": False, "message": "Email invalide"}
 
-    if get_user_by_email(email):
-        return jsonify({"success": False, "message": "Email déjà utilisé"}), 400
+    conn = create_connection()
+    cursor = conn.cursor(dictionary=True)
 
-    user = create_user(nom, email, password, role, telephone)
+    try:
+        # 🔎 Vérifier email
+        cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
+        if cursor.fetchone():
+            return {"success": False, "message": "Email déjà utilisé"}
 
-    return jsonify({
-        "success": True,
-        "message": f"Compte {role.lower()} créé avec succès",
-        "user_id": user.id
-    })
+        # 🔐 Hash
+        hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+        # 1️⃣ INSERT USERS
+        cursor.execute("""
+            INSERT INTO users (nom, email, telephone, password, role)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (nom, email, telephone, hashed, role))
+
+        user_id = cursor.lastrowid
+
+        # 2️⃣ INSERT METIER (PATIENT)
+        if role == "PATIENT":
+            cursor.execute("""
+                INSERT INTO patients (user_id, nom, email, telephone, sexe)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (user_id, nom, email, telephone, "Non défini"))
+
+        conn.commit()
+
+        return {
+            "success": True,
+            "message": f"Compte {role.lower()} créé avec succès",
+            "user_id": user_id
+        }
+
+    except Exception as e:
+        conn.rollback()
+        print("RPC REGISTER ERROR :", e)
+        return {"success": False, "message": "Erreur serveur"}
+
+    finally:
+        cursor.close()
+        conn.close()
+
 
 # ---------------- HANDLER ----------------
 @auth_rpc.route("/api/rpc", methods=["POST"])
