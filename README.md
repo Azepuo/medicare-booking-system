@@ -180,5 +180,28 @@ docker compose down
 * Docker / Docker Compose
 
 ---
+## 🔐 Comptes de test & Codes d’accès
+
+### 📋 Comptes existants
+
+| Nom      | Rôle     | Email              | Code d’accès |
+|----------|----------|--------------------|--------------|
+| Mouad    | ADMIN    | mouad@gmail.admin  | 12345        |
+| Hamza   | MEDECIN  | hamza@gmail.com    | 00000        |
+| Mohamed | PATIENT  | mohamed@gg.com     | 00000        |
+
+---
+
+## 📝 Inscription & Gestion des utilisateurs
+
+- ✅ **L’inscription (Register) est disponible uniquement pour les PATIENTS**
+- ❌ Les **Médecins et Admins ne peuvent pas s’inscrire eux-mêmes**
+
+### 👨‍⚕️👤 Création des comptes
+- Les comptes **Médecin** et **Patient** peuvent également être **créés depuis l’espace Admin**
+- Lorsqu’un compte est créé par l’Admin, le **code d’accès par défaut est : `00000`**
+
+
+
 
 
